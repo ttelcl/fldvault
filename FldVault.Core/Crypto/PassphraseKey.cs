@@ -27,7 +27,11 @@ namespace FldVault.Core.Crypto
     // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
     private const int __iterationCount = 600000;
     private static readonly HashAlgorithmName __algorithm = HashAlgorithmName.SHA256;
-    private const int __saltlength = 64;
+    
+    /// <summary>
+    /// The number of bytes generated for the salt
+    /// </summary>
+    public const int Saltlength = 64;
 
     /// <summary>
     /// Create a new PassphraseKey, copying the key and salt.
@@ -85,7 +89,7 @@ namespace FldVault.Core.Crypto
       int keyLength,
       CryptoBuffer<byte> passbytes)
     {
-      var salt = new byte[__saltlength];
+      var salt = new byte[Saltlength];
       RandomNumberGenerator.Fill(salt);
       return FromBytes(keyLength, passbytes, salt);
     }
@@ -135,7 +139,7 @@ namespace FldVault.Core.Crypto
       int keyLength,
       CryptoBuffer<char> passchars)
     {
-      var salt = new byte[__saltlength];
+      var salt = new byte[Saltlength];
       RandomNumberGenerator.Fill(salt);
       return FromCharacters(keyLength, passchars, salt);
     }

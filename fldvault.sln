@@ -16,7 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CliApps", "CliApps", "{E554
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "UnitTests", "UnitTests", "{9DF68B86-BDCC-44FB-BFC3-96D5BC52E88D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FldVault.Core", "FldVault.Core\FldVault.Core.csproj", "{14A805A3-DE66-4493-B505-650E041F5FE8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FldVault.Core", "FldVault.Core\FldVault.Core.csproj", "{14A805A3-DE66-4493-B505-650E041F5FE8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests.FldVault", "UnitTests.FldVault\UnitTests.FldVault.csproj", "{B26B2494-F1DC-4083-BAD1-831AC561E070}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,12 +30,17 @@ Global
 		{14A805A3-DE66-4493-B505-650E041F5FE8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{14A805A3-DE66-4493-B505-650E041F5FE8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{14A805A3-DE66-4493-B505-650E041F5FE8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B26B2494-F1DC-4083-BAD1-831AC561E070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B26B2494-F1DC-4083-BAD1-831AC561E070}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B26B2494-F1DC-4083-BAD1-831AC561E070}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B26B2494-F1DC-4083-BAD1-831AC561E070}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{14A805A3-DE66-4493-B505-650E041F5FE8} = {8A375364-B265-4786-AD15-DA3F01B77376}
+		{B26B2494-F1DC-4083-BAD1-831AC561E070} = {9DF68B86-BDCC-44FB-BFC3-96D5BC52E88D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {031C7C67-97E0-4943-B6F7-344A9A89CC1D}

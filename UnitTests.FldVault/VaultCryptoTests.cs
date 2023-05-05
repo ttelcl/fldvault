@@ -8,6 +8,8 @@ using FldVault.Core;
 using FldVault.Core.Crypto;
 using System.Security;
 using System.Text.Unicode;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace UnitTests.FldVault;
 
@@ -102,7 +104,35 @@ public class VaultCryptoTests
 
     Assert.Equal(key1, key2);
     Assert.Equal(key1, key3);
+  }
 
+  [Fact]
+  public void CanCreateNonces()
+  {
+    const int repetitions = 15;
+    var buffer = new byte[repetitions*12];
+    var span = new Span<byte>(buffer);
+
+    var nonceGenerator = new NonceGenerator();
+    for(var i = 0; i < repetitions; i++)
+    {
+      // keep this loop tight
+      nonceGenerator.Next(span.Slice(i*12, 12));
+      // var s = DumpHex(span.Slice(i*12, 12));
+    }
+    
+    var hexes =
+      Enumerable.Range(0, repetitions)
+      .Select(i => DumpHex(buffer.AsSpan(i*12, 12)))
+      .ToList();
+
+    foreach(var hex in hexes)
+    {
+      _outputHelper.WriteLine($"- {hex}");
+    }
+
+    var hexset = new HashSet<string>(hexes);
+    Assert.Equal(hexes.Count, hexset.Count); // in other words: they are all unique
   }
 
   private string DumpHex(ReadOnlySpan<byte> bytes)

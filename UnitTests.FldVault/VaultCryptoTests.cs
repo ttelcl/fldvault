@@ -65,9 +65,8 @@ public class VaultCryptoTests
     const int keyLength = 16;
 
     byte[] key1;
-    using(var characters = new CryptoBuffer<char>(passphrase.Length))
+    using(var characters = CryptoBuffer<char>.FromSpanClear(passphrase.ToCharArray()))
     {
-      passphrase.CopyTo(characters.Span());
       using(var pk = PassphraseKey.FromCharacters(keyLength, characters, salt))
       {
         key1 = pk.Bytes.ToArray();

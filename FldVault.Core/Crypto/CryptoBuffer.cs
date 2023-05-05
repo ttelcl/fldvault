@@ -19,11 +19,32 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   private readonly T[] _buffer;
 
   /// <summary>
-  /// Create a new CryptoBuffer
+  /// Create a new CryptoBuffer of the specified size
   /// </summary>
   public CryptoBuffer(int size)
   {
     _buffer = new T[size];
+  }
+
+  
+  /// <summary>
+  /// Create a new CryptoBuffer and copy the source as its content
+  /// </summary>
+  public CryptoBuffer(ReadOnlySpan<T> source)
+    : this(source.Length)
+  {
+    source.CopyTo(_buffer);
+  }
+
+  /// <summary>
+  /// Create a new CryptoBuffer copying the content of the source
+  /// subsequently clears the source buffer
+  /// </summary>
+  public static CryptoBuffer<T> FromSpanClear(Span<T> source)
+  {
+    var b = new CryptoBuffer<T>(source);
+    source.Clear();
+    return b;
   }
 
   /// <summary>

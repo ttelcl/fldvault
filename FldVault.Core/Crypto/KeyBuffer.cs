@@ -17,6 +17,7 @@ namespace FldVault.Core.Crypto
   public class KeyBuffer: IDisposable
   {
     private readonly CryptoBuffer<byte> _buffer;
+    private HashResult? _hashResult;
 
     /// <summary>
     /// Create a new KeyBase, copying the source span into an equal-sized
@@ -35,6 +36,28 @@ namespace FldVault.Core.Crypto
     /// Return a view on the stored key bytes
     /// </summary>
     public ReadOnlySpan<byte> Bytes { get => _buffer.Span(); }
+
+    /// <summary>
+    /// Return the result of hashing the key bytes with SHA256.
+    /// The result is calculated upon first invocation, then cached.
+    /// </summary>
+    public HashResult GetSha256()
+    {
+      if(_hashResult == null)
+      {
+        _hashResult = HashResult.FromSha256(_buffer.Span());
+      }
+      return _hashResult;
+    }
+
+    /// <summary>
+    /// Get a GUID for the stored key bytes calculated via the
+    /// SHA256 hash of the key bytes.
+    /// </summary>
+    public Guid GetId()
+    {
+      return GetSha256().AsGuid;
+    }
 
     /// <summary>
     /// Erase the buffer

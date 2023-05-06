@@ -63,20 +63,23 @@ public class VaultCryptoTests
 
     _outputHelper.WriteLine($"Salt = {DumpHex(salt.Slice(0, 20))} ...");
 
-    const string passphrase = "Hellö, wörld!";
+    const string passphrase = "Hellö, wörld!!";
     const int keyLength = 16;
 
     byte[] key1;
+    Guid id1;
     using(var characters = CryptoBuffer<char>.FromSpanClear(passphrase.ToCharArray()))
     {
       using(var pk = PassphraseKey.FromCharacters(keyLength, characters, salt))
       {
         key1 = pk.Bytes.ToArray();
+        id1 = pk.GetId();
       }
     }
-    _outputHelper.WriteLine($"Key via character array = {DumpHex(key1)}");
+    _outputHelper.WriteLine($"Key via character array = {DumpHex(key1)} {id1}");
 
     byte[] key2;
+    Guid id2;
     using(var securepw = new SecureString())
     {
       foreach(var ch in passphrase)
@@ -86,11 +89,13 @@ public class VaultCryptoTests
       using(var pk = PassphraseKey.FromSecureString(keyLength, securepw, salt))
       {
         key2 = pk.Bytes.ToArray();
+        id2 = pk.GetId();
       }
     }
-    _outputHelper.WriteLine($"Key via secure string   = {DumpHex(key2)}");
+    _outputHelper.WriteLine($"Key via secure string   = {DumpHex(key2)} {id2}");
 
     byte[] key3;
+    Guid id3;
     var byteCount = Encoding.UTF8.GetByteCount(passphrase);
     using(var bytes = new CryptoBuffer<byte>(byteCount))
     {
@@ -98,9 +103,10 @@ public class VaultCryptoTests
       using(var pk = PassphraseKey.FromBytes(keyLength, bytes, salt))
       {
         key3 = pk.Bytes.ToArray();
+        id3 = pk.GetId();
       }
     }
-    _outputHelper.WriteLine($"Key via byte array      = {DumpHex(key3)}");
+    _outputHelper.WriteLine($"Key via byte array      = {DumpHex(key3)} {id3}");
 
     Assert.Equal(key1, key2);
     Assert.Equal(key1, key3);

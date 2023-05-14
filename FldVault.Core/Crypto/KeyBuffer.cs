@@ -45,7 +45,7 @@ namespace FldVault.Core.Crypto
     {
       if(_hashResult == null)
       {
-        _hashResult = HashResult.FromSha256(_buffer.Span());
+        _hashResult = HashResult.FromSha256(_buffer);
       }
       return _hashResult;
     }

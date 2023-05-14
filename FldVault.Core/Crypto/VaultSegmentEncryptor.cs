@@ -11,6 +11,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Vaults;
+
 namespace FldVault.Core.Crypto
 {
   /// <summary>
@@ -90,7 +92,7 @@ namespace FldVault.Core.Crypto
       }
       LengthCode = new KindAndLength(segmentKind, contentLength);
       BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(0, 8), LengthCode.PackedValue);
-      BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(8, 8), stamp.Ticks);
+      BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(8, 8), stamp.Ticks - VaultFormat.EpochTicks);
       _authenticationTag.AsSpan().Clear();
     }
 

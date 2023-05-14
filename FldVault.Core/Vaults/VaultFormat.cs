@@ -12,10 +12,25 @@ using System.Threading.Tasks;
 namespace FldVault.Core.Vaults;
 
 /// <summary>
-/// Constants used for vault serialization
+/// Constants used for vault serialization (and related files)
 /// </summary>
 public static class VaultFormat
 {
+
+  /// <summary>
+  /// *.pass.key-inf file signature
+  /// </summary>
+  public const long PassphraseKeyInfoSignature = 0x00464E4953534150L; // "PASSINF\0"
+
+  /// <summary>
+  /// *.link.key-inf file signature
+  /// </summary>
+  public const long LinkKeyInfoSignature = 0x00464E494B4E494CL; // "LINKINF\0"
+
+  /// <summary>
+  /// The number of .NET ticks at 1970-01-01 00:00:00 UTC
+  /// </summary>
+  public const long EpochTicks = 0x089F7FF5F7B58000L; 
 
   /// <summary>
   /// Vault signature for vaults containing a file

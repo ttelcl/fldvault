@@ -19,18 +19,19 @@ namespace FldVault.Core.Vaults;
 /// </summary>
 public class VaultWriter
 {
-  private KeyBuffer _keyBuffer;
-  private DateTime _writeTime;
-  private DateTime _originalTime;
-  private long _signature;
-  private bool _expectName;
-  private bool _expectFileBlob;
-  private bool _expectSecretBlob;
+  private readonly KeyBuffer _keyBuffer;
+  private readonly DateTime _writeTime;
+  private readonly DateTime _originalTime;
+  private readonly long _signature;
+  private readonly bool _expectName;
+  private readonly bool _expectFileBlob;
+  private readonly bool _expectSecretBlob;
   private readonly NonceGenerator _nonceGenerator;
-  private CryptoBuffer<byte>? _chunkBuffer; 
+  private CryptoBuffer<byte>? _chunkBuffer;
+  private const int __version = 0x00010001;
 
   /// <summary>
-  /// Create a new VaultWriter
+  /// Create a new VaultWriter (format 0x00010001)
   /// </summary>
   public VaultWriter(
     long signature,
@@ -67,9 +68,11 @@ public class VaultWriter
   public void WriteHeader(BinaryWriter w)
   {
     w.Write(_signature);
+    w.Write((int)__version);
+    w.Write((int)0); // unused
     w.Write(_keyBuffer.GetId().ToByteArray());
-    w.Write(_writeTime.Ticks);
-    w.Write(_originalTime.Ticks);
+    w.Write(_writeTime.Ticks - VaultFormat.EpochTicks);
+    w.Write(_originalTime.Ticks - VaultFormat.EpochTicks);
   }
 
   
@@ -101,7 +104,7 @@ public class VaultWriter
       w.Write(encryptor.LengthCode.PackedValue);
       w.Write(1);
       WriteChunk(w, encryptor, bytes);
-      WriteTerminatorChunk(w);
+      FinishSegment(w);
     }
   }
 
@@ -139,7 +142,7 @@ public class VaultWriter
         bytesLeft -= n;
         WriteChunk(w, encryptor, span.Slice(0, n));
       }
-      WriteTerminatorChunk(w);
+      FinishSegment(w);
     }
   }
 
@@ -167,19 +170,18 @@ public class VaultWriter
       w.Write(encryptor.LengthCode.PackedValue);
       w.Write(1);
       WriteChunk(w, encryptor, source.Span());
-      WriteTerminatorChunk(w);
+      FinishSegment(w);
     }
 
     throw new NotImplementedException();
   }
 
   /// <summary>
-  /// Write a pseudo-chunk as terminator of the chunk list of a segment
+  /// Cleanup buffer used during segment writing
   /// </summary>
   /// <param name="w"></param>
-  private void WriteTerminatorChunk(BinaryWriter w)
+  private void FinishSegment(BinaryWriter w)
   {
-    w.Write(0L);
     if(_chunkBuffer != null)
     {
       _chunkBuffer.Dispose();

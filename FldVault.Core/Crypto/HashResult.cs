@@ -38,6 +38,15 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
+    /// Calculates the SHA256 hash of the bytes in the buffer and stores the result
+    /// in a new HashResult instance
+    /// </summary>
+    public static HashResult FromSha256(CryptoBuffer<byte> bufferToHash)
+    {
+      return FromSha256(bufferToHash.Span());
+    }
+
+    /// <summary>
     /// Return the stored hash
     /// </summary>
     public ReadOnlySpan<byte> HashBytes { get => _hash; }

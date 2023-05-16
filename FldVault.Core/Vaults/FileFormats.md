@@ -19,6 +19,8 @@ be decrypted to memory, never to a file or other persisted medium.
 
 ### File header
 
+The file header has 48 bytes and contains the following fields
+
 | Name | Format | Description |
 |  --- | --- | --- |
 | Signature | 8 bytes (long) | See signature table below |
@@ -37,7 +39,7 @@ be decrypted to memory, never to a file or other persisted medium.
 
 Time stamps are represented in "epoch ticks". Epoch ticks are .net ticks
 since the unix epoch: 100 nanosecond intervals since 1970-01-01 00:00:00 UTC.
-In other words: stamp.Ticks - 0x089F7FF5F7B58000L.
+In other words: `stamp.Ticks - 0x089F7FF5F7B58000L`.
 
 ### Segment header
 
@@ -62,12 +64,42 @@ contain multiple chunks.
 | 2 | normal | File contemt |
 | 3 | secret | Secret blob content |
 
+### Chunks
 
+The content for each segment is split in one or more "chunks". Each chunk
+is encrypted or decrypted in one call using AES-GCM. Since the input and
+output must fit in a reasonably small memory buffer, the maximum size of
+a chunk is restricted - we chose the maximum chunk size as 256kb. The
+reason chunks exist is because the system must be able to handle files
+larger than that.
 
+When encrypting data that is not intended to ever be persisted to a file
+(but used in-memory only), the segment must have only 1 chunk.
 
+#### Chunk content
 
+| Name | Format | Notes |
+| --- |
+| Size | 4 bytes (int) | The total chunk size in the vault file in bytes |
+| Nonce | 12 bytes | The AES-GCM nonce for this chunk |
+| Auth Tag | 16 bytes | The AES-GCM authentication tag |
+| Cihertext | X bytes | The rest of the chunk |
 
+#### Chunk associated data
 
+The encryption does include a 16 byte "associated data" for each chunk.
+This data is deterministic, so it is not stored anywhere. For the second
+and later chunks of a segment, the associated data is the Authentication
+Tag of the previous chunk. For the first chunk the 16 bytes are two
+8 byte fields.
 
+| Name | Format | Notes |
+| --- |
+| kind and segment length | 8 bytes | Copied from the segment header |
+| write time | 8 bytes | Copied from the vault header |
 
+The associated data is part of the checksum (authentication tag) of a
+chunk. The idea is to include fields that when included in the MAC 
+prevent misusing an encrypted chunk to pose as anything other than
+what it actually is.
 

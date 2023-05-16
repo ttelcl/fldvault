@@ -16,8 +16,9 @@ using System.Threading.Tasks;
 namespace FldVault.Core.Crypto
 {
   /// <summary>
-  /// Stores key data derived from a passphrase (or password),
-  /// using Rfc2898DeriveBytes
+  /// Stores key data derived from a passphrase (or password), using Rfc2898DeriveBytes.
+  /// The constructor is private, use one of the static From{Bytes|Characters|SecureString}
+  /// methods to create an instance.
   /// </summary>
   public class PassphraseKey: KeyBuffer
   {
@@ -32,6 +33,11 @@ namespace FldVault.Core.Crypto
     /// The number of bytes generated for the salt
     /// </summary>
     public const int Saltlength = 64;
+
+    /// <summary>
+    /// The default key length in bytes (32 for AES256)
+    /// </summary>
+    public const int DefaultKeyLength = 32;
 
     /// <summary>
     /// Create a new PassphraseKey, copying the key and salt.
@@ -61,9 +67,9 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromBytes(
-      int keyLength,
       CryptoBuffer<byte> passbytes,
-      ReadOnlySpan<byte> salt)
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
     {
       using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
       {
@@ -86,12 +92,12 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromBytes(
-      int keyLength,
-      CryptoBuffer<byte> passbytes)
+      CryptoBuffer<byte> passbytes,
+      int keyLength = DefaultKeyLength)
     {
       var salt = new byte[Saltlength];
       RandomNumberGenerator.Fill(salt);
-      return FromBytes(keyLength, passbytes, salt);
+      return FromBytes(passbytes, salt, keyLength);
     }
 
     /// <summary>
@@ -111,9 +117,9 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromCharacters(
-      int keyLength,
       CryptoBuffer<char> passchars,
-      ReadOnlySpan<byte> salt)
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
     {
       using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
       {
@@ -136,12 +142,12 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromCharacters(
-      int keyLength,
-      CryptoBuffer<char> passchars)
+      CryptoBuffer<char> passchars,
+      int keyLength = DefaultKeyLength)
     {
       var salt = new byte[Saltlength];
       RandomNumberGenerator.Fill(salt);
-      return FromCharacters(keyLength, passchars, salt);
+      return FromCharacters(passchars, salt, keyLength);
     }
 
     /// <summary>
@@ -161,13 +167,13 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromSecureString(
-      int keyLength,
       SecureString passphrase,
-      ReadOnlySpan<byte> salt)
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
     {
       using(var characters = UnpackSecureString(passphrase))
       {
-        return FromCharacters(keyLength, characters, salt);
+        return FromCharacters(characters, salt, keyLength);
       }
     }
 
@@ -185,12 +191,12 @@ namespace FldVault.Core.Crypto
     /// A new PassphraseKey instance
     /// </returns>
     public static PassphraseKey FromSecureString(
-      int keyLength,
-      SecureString passphrase)
+      SecureString passphrase,
+      int keyLength = DefaultKeyLength)
     {
       using(var characters = UnpackSecureString(passphrase))
       {
-        return FromCharacters(keyLength, characters);
+        return FromCharacters(characters, keyLength);
       }
     }
 

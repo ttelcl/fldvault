@@ -165,6 +165,53 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
+  /// Write the content of this info object to a stream
+  /// </summary>
+  public void Write(Stream stream)
+  {
+    Span<byte> buffer = stackalloc byte[96];
+    SerializeToSpan(buffer);
+    stream.Write(buffer);
+  }
+
+  /// <summary>
+  /// Write the content to a file in the specified folder.
+  /// The file name is created based on the Key ID.
+  /// If necessary, this method creates the folder.
+  /// </summary>
+  /// <param name="folder">
+  /// The folder to write this key-info to
+  /// </param>
+  public void WriteToFolder(string folder)
+  {
+    if(!Directory.Exists(folder))
+    {
+      Directory.CreateDirectory(folder);
+    }
+    var fileName = Path.Combine(folder, DefaultFileName);
+    WriteToFile(fileName);
+  }
+
+  /// <summary>
+  /// The default file name for this key-info
+  /// </summary>
+  public string DefaultFileName { get => $"{KeyId}.pass.key-info"; }
+
+  /// <summary>
+  /// Write the content to a file. Consider using <see cref="WriteToFolder(string)"/>
+  /// instead to ensure consistent file naming
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the file. The folder is assumed to exist.
+  /// </param>
+  public void WriteToFile(string fileName)
+  {
+    var buffer = new byte[96];
+    SerializeToSpan(buffer);
+    File.WriteAllBytes(fileName, buffer);
+  }
+
+  /// <summary>
   /// The key id (derived from the raw key, suitable for validating
   /// the raw key)
   /// </summary>

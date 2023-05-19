@@ -11,6 +11,7 @@ using System.Text.Unicode;
 using System.Linq;
 using System.Collections.Generic;
 using FldVault.Core.Vaults;
+using System.IO;
 
 namespace UnitTests.FldVault;
 
@@ -214,6 +215,51 @@ public class VaultCryptoTests
       byte[] key4 = keychain[id1]!.Bytes.ToArray();
       Assert.Equal(key1, key4);
     }
+  }
+
+  [Fact]
+  public void CanWriteAndReadKeyInfo()
+  {
+    ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
+    const string passphraseText = "Hellö, wörld!!";
+    var stamp = new DateTime(2023, 5, 19, 0, 0, 0, DateTimeKind.Utc);
+    PassphraseKeyInfoFile pkif;
+    using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
+    {
+      using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
+      {
+        pkif = new PassphraseKeyInfoFile(pk, stamp);
+      }
+    }
+
+    var filename = Path.GetFullPath(pkif.DefaultFileName);
+
+    if(File.Exists(filename))
+    {
+      _outputHelper.WriteLine($"Deleting existing {filename}");
+      File.Delete(filename);
+    }
+    Assert.False(File.Exists(filename));
+
+    _outputHelper.WriteLine($"Writing {filename}");
+    pkif.WriteToFolder(".");
+    Assert.True(File.Exists(filename));
+    var fi = new FileInfo(filename);
+    Assert.Equal(96, fi.Length);
+
+    _outputHelper.WriteLine($"Trying to read key-info for key {pkif.KeyId}");
+    var pkif2 = PassphraseKeyInfoFile.TryRead(pkif.KeyId, ".");
+    Assert.NotNull(pkif2);
+    Assert.Equal(pkif.KeyId, pkif2!.KeyId);
+    _outputHelper.WriteLine("Validating passphrase correctness");
+    using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
+    {
+      using(var pk = PassphraseKey.TryPassphrase(passphraseBuffer, pkif2))
+      {
+        Assert.NotNull(pk);
+      }
+    }
+
   }
 
   /// <summary>

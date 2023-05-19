@@ -305,6 +305,16 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
+    /// Generate a brand new salt
+    /// </summary>
+    public static byte[] GenerateSalt()
+    {
+      var salt = new byte[Saltlength];
+      RandomNumberGenerator.Fill(salt);
+      return salt;
+    }
+
+    /// <summary>
     /// Return a view on the salt bytes stored in this object
     /// </summary>
     public ReadOnlySpan<byte> Salt { get => _salt; }

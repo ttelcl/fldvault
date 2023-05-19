@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Crypto;
+
 namespace FldVault.Core.Vaults;
 
 /// <summary>
@@ -21,7 +23,9 @@ public class PassphraseKeyInfoFile
   private readonly byte[] _salt;
 
   /// <summary>
-  /// Create a new PassphraseKeyInfoFile
+  /// Create a new PassphraseKeyInfoFile. Consider using one of the static
+  /// ReadFrom(*) overloads or TryRead() instead. For initializing a new key
+  /// use the other constructor instead.
   /// </summary>
   public PassphraseKeyInfoFile(
     Guid keyId,
@@ -42,6 +46,20 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
+  /// Create a new PassphraseKeyInfoFile from an existing key (to initialize a new file)
+  /// </summary>
+  /// <param name="key">
+  /// The key to represent
+  /// </param>
+  /// <param name="stamp">
+  /// The UTC timestamp to associate with the key, or null (default) to use the current time.
+  /// </param>
+  public PassphraseKeyInfoFile(PassphraseKey key, DateTime? stamp = null)
+    : this(key.GetId(), key.Salt, stamp ?? DateTime.UtcNow)
+  {
+  }
+
+  /// <summary>
   /// Read a PassphraseKeyInfoFile from its 96 byte serialized format
   /// </summary>
   public static PassphraseKeyInfoFile ReadFrom(ReadOnlySpan<byte> blob96)
@@ -57,7 +75,7 @@ public class PassphraseKeyInfoFile
       throw new InvalidOperationException(
         "Unrecognized file format for *.pass.key-info file");
     }
-    var ticks = BinaryPrimitives.ReadInt64LittleEndian(blob96.Slice(8, 8));
+    var ticks = BinaryPrimitives.ReadInt64LittleEndian(blob96.Slice(8, 8)) + VaultFormat.EpochTicks;
     var stamp = new DateTime(ticks, DateTimeKind.Utc);
     var guid = new Guid(blob96.Slice(16, 16));
     return new PassphraseKeyInfoFile(guid, blob96.Slice(32, 64), stamp);
@@ -129,6 +147,24 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
+  /// Write the content of this object to a 96 byte blob
+  /// </summary>
+  /// <param name="span">
+  /// A 96 byte buffer
+  /// </param>
+  public void SerializeToSpan(Span<byte> span)
+  {
+    if(span.Length != 96)
+    {
+      throw new ArgumentOutOfRangeException(nameof(span), "Expecting a 96 byte span");
+    }
+    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), VaultFormat.PassphraseKeyInfoSignature);
+    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(8, 8), UtcKeyStamp.Ticks - VaultFormat.EpochTicks);
+    KeyId.TryWriteBytes(span.Slice(16, 16));
+    Salt.CopyTo(span.Slice(32, 64));
+  }
+
+  /// <summary>
   /// The key id (derived from the raw key, suitable for validating
   /// the raw key)
   /// </summary>
@@ -143,4 +179,5 @@ public class PassphraseKeyInfoFile
   /// The UTC time the key was created
   /// </summary>
   public DateTime UtcKeyStamp { get; init; }
+
 }

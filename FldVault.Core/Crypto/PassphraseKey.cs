@@ -13,6 +13,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Vaults;
+
 namespace FldVault.Core.Crypto
 {
   /// <summary>
@@ -101,6 +103,40 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
+    /// Create a PassphraseKey from the given bytes and salt in the info object
+    /// and verify it matches the key id in the info object
+    /// </summary>
+    /// <param name="passbytes">
+    /// The bytes used as "password"
+    /// </param>
+    /// <param name="info">
+    /// The object containing the salt and the expected resulting key id
+    /// </param>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key (default 32)
+    /// </param>
+    /// <returns>
+    /// The key object if successful, or null if validation failed. The caller
+    /// is responsible for disposing it (if not null)
+    /// </returns>
+    public static PassphraseKey? TryPassphrase(
+      CryptoBuffer<byte> passbytes,
+      PassphraseKeyInfoFile info,
+      int keyLength = DefaultKeyLength)
+    {
+      var pk = FromBytes(passbytes, info.Salt, keyLength);
+      if(pk.GetId() != info.KeyId)
+      {
+        pk.Dispose();
+        return null;
+      }
+      else
+      {
+        return pk;
+      }
+    }
+
+    /// <summary>
     /// Create a PassphraseKey from a "password" given as character span and
     /// a predefined salt (for reconstructing a previously used key).
     /// </summary>
@@ -132,11 +168,11 @@ namespace FldVault.Core.Crypto
     /// Create a PassphraseKey from a "password" given as character span and
     /// a newly created salt (for first use of a new key).
     /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
     /// <param name="passchars">
     /// The characters used as "password"
+    /// </param>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key (default 32)
     /// </param>
     /// <returns>
     /// A new PassphraseKey instance
@@ -148,6 +184,40 @@ namespace FldVault.Core.Crypto
       var salt = new byte[Saltlength];
       RandomNumberGenerator.Fill(salt);
       return FromCharacters(passchars, salt, keyLength);
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from the given characters and salt in the info object
+    /// and verify it matches the key id in the info object
+    /// </summary>
+    /// <param name="passchars">
+    /// The characters used as "password"
+    /// </param>
+    /// <param name="info">
+    /// The object containing the salt and the expected resulting key id
+    /// </param>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key (default 32)
+    /// </param>
+    /// <returns>
+    /// The key object if successful, or null if validation failed. The caller
+    /// is responsible for disposing it (if not null)
+    /// </returns>
+    public static PassphraseKey? TryPassphrase(
+      CryptoBuffer<char> passchars,
+      PassphraseKeyInfoFile info,
+      int keyLength = DefaultKeyLength)
+    {
+      var pk = FromCharacters(passchars, info.Salt, keyLength);
+      if(pk.GetId() != info.KeyId)
+      {
+        pk.Dispose();
+        return null;
+      }
+      else
+      {
+        return pk;
+      }
     }
 
     /// <summary>
@@ -197,6 +267,40 @@ namespace FldVault.Core.Crypto
       using(var characters = UnpackSecureString(passphrase))
       {
         return FromCharacters(characters, keyLength);
+      }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from the given SecureString and salt in the info object
+    /// and verify it matches the key id in the info object
+    /// </summary>
+    /// <param name="passphrase">
+    /// The passphrase / password
+    /// </param>
+    /// <param name="info">
+    /// The object containing the salt and the expected resulting key id
+    /// </param>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key (default 32)
+    /// </param>
+    /// <returns>
+    /// The key object if successful, or null if validation failed. The caller
+    /// is responsible for disposing it (if not null)
+    /// </returns>
+    public static PassphraseKey? TryPassphrase(
+      SecureString passphrase,
+      PassphraseKeyInfoFile info,
+      int keyLength = DefaultKeyLength)
+    {
+      var pk = FromSecureString(passphrase, info.Salt, keyLength);
+      if(pk.GetId() != info.KeyId)
+      {
+        pk.Dispose();
+        return null;
+      }
+      else
+      {
+        return pk;
       }
     }
 

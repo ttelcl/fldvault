@@ -64,13 +64,13 @@ public class VaultCryptoTests
     _outputHelper.WriteLine($"Salt = {DumpHex(salt.Slice(0, 20))} ...");
 
     const string passphrase = "Hellö, wörld!!";
-    const int keyLength = 16;
+    const int keyLength = 32;
 
     byte[] key1;
     Guid id1;
     using(var characters = CryptoBuffer<char>.FromSpanClear(passphrase.ToCharArray()))
     {
-      using(var pk = PassphraseKey.FromCharacters(keyLength, characters, salt))
+      using(var pk = PassphraseKey.FromCharacters(characters, salt, keyLength))
       {
         key1 = pk.Bytes.ToArray();
         id1 = pk.GetId();
@@ -86,7 +86,7 @@ public class VaultCryptoTests
       {
         securepw.AppendChar(ch);
       }
-      using(var pk = PassphraseKey.FromSecureString(keyLength, securepw, salt))
+      using(var pk = PassphraseKey.FromSecureString(securepw, salt, keyLength))
       {
         key2 = pk.Bytes.ToArray();
         id2 = pk.GetId();
@@ -100,7 +100,7 @@ public class VaultCryptoTests
     using(var bytes = new CryptoBuffer<byte>(byteCount))
     {
       Encoding.UTF8.GetBytes(passphrase.ToCharArray(), bytes.Span());
-      using(var pk = PassphraseKey.FromBytes(keyLength, bytes, salt))
+      using(var pk = PassphraseKey.FromBytes(bytes, salt, keyLength))
       {
         key3 = pk.Bytes.ToArray();
         id3 = pk.GetId();

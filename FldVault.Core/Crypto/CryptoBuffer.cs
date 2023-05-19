@@ -17,6 +17,7 @@ namespace FldVault.Core.Crypto;
 public class CryptoBuffer<T>: IDisposable where T : struct
 {
   private readonly T[] _buffer;
+  private bool _disposed;
 
   /// <summary>
   /// Create a new CryptoBuffer of the specified size
@@ -24,6 +25,7 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   public CryptoBuffer(int size)
   {
     _buffer = new T[size];
+    _disposed = false;
   }
 
   
@@ -52,6 +54,7 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   /// </summary>
   public void Clear()
   {
+    // allow even if disposed
     Array.Clear(_buffer);
   }
 
@@ -60,6 +63,10 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   /// </summary>
   public Span<T> Span()
   {
+    if(_disposed)
+    {
+      throw new ObjectDisposedException(GetType().Name);
+    }
     return _buffer; 
   }
 
@@ -73,6 +80,10 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   /// </summary>
   public Span<T> Span(int start, int length)
   {
+    if(_disposed)
+    {
+      throw new ObjectDisposedException(GetType().Name);
+    }
     return new Span<T>(_buffer, start, length);
   }
 
@@ -82,5 +93,6 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   public void Dispose()
   {
     Clear();
+    _disposed = true;
   }
 }

@@ -26,7 +26,7 @@ let runNewKey args =
       rest |> parsemore o
     | "-p" :: rest ->
       rest |> parsemore {o with KeyKind = Some(KeyKind.Passphrase)}
-    | "-d" :: folder :: rest ->
+    | "-dv" :: folder :: rest ->
       if folder |> Directory.Exists |> not then
         failwith $"Unknown directory {folder}"
       rest |> parsemore {o with Folder = folder}
@@ -40,7 +40,6 @@ let runNewKey args =
     Folder = Environment.CurrentDirectory
     KeyKind = None
   }
-
   let pkif =
     match o.KeyKind with
     | Some(KeyKind.Passphrase) ->
@@ -53,7 +52,55 @@ let runNewKey args =
       new PassphraseKeyInfoFile(key1)
     | None ->
       failwith "No key kind provided"
-  
   cp $"Initializing \fg{pkif.DefaultFileName}\f0 in \fc{o.Folder}\f0."
   pkif.WriteToFolder(o.Folder)  
+  0
+
+type private KeyOpOptions = {
+  KeyTag: string option
+  KeyFile: string option
+  Folder: string
+}
+
+let private parseKeyOptions args =
+  let rec parseMore o args =
+    match args with
+    | "-v" :: rest ->
+      verbose <- true
+      rest |> parseMore o
+    | "-key" :: keytag :: rest ->
+      rest |> parseMore {o with KeyTag = Some(keytag)}
+    | "-kf" :: file :: rest ->
+      rest |> parseMore {o with KeyFile = Some(file)}
+    | "-dv" :: folder :: rest ->
+      if folder |> Directory.Exists |> not then
+        failwith $"Unknown directory {folder}"
+      rest |> parseMore {o with Folder = folder}
+    | [] ->
+      match o.KeyTag, o.KeyFile with
+      | Some(_), None -> ()
+      | None, Some(_) -> ()
+      | None, None ->
+        failwith "Expecting one of -key or -kf"
+      | Some(_), Some(_) ->
+        failwith "Expecting either -key or -kf, but not both"
+      o
+    | x :: _ ->
+      failwith $"Unrecognized argument {x}"
+  args |> parseMore {
+    KeyTag = None
+    KeyFile = None
+    Folder = "."
+  }
+
+let runCheckKey args =
+  let o = args |> parseKeyOptions
+  0
+
+let runUnlockKey args =
+  let o = args |> parseKeyOptions
+  0
+
+let runLockKey args =
+  let o = args |> parseKeyOptions
   0

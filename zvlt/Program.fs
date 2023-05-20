@@ -18,12 +18,15 @@ let rec run arglist =
   | [] ->
     usage verbose
     0  // program return status code to the operating system; 0 == "OK"
-  //  *EXAMPLE*:
-  //| "foo" :: rest ->
-  //  rest |> AppFoo.runFoo
   | "key" :: "new" :: rest
   | "key-new" :: rest ->
     rest |> KeyApp.runNewKey
+  | "check" :: rest ->
+    rest |> KeyApp.runCheckKey
+  | "unlock" :: rest ->
+    rest |> KeyApp.runUnlockKey
+  | "lock" :: rest ->
+    rest |> KeyApp.runLockKey
   | x :: _ ->
     cp $"\frUnknown or incomplete command: {x}"
     1

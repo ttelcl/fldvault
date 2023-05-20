@@ -28,6 +28,11 @@ public static class VaultFormat
   public const long LinkKeyInfoSignature = 0x00464E494B4E494CL; // "LINKINF\0"
 
   /// <summary>
+  /// *.unlock file signature
+  /// </summary>
+  public const long Unlock0Signature = 0x000059454B574152L; // "RAWKEY\0\0"
+
+  /// <summary>
   /// The number of .NET ticks at 1970-01-01 00:00:00 UTC
   /// </summary>
   public const long EpochTicks = 0x089F7FF5F7B58000L; 

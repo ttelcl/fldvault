@@ -262,6 +262,49 @@ public class VaultCryptoTests
 
   }
 
+  [Fact]
+  public void CanSplitKeyInfoName()
+  {
+    const string name1 = "937e3642-110a-4c1f-aaed-87031d048a1e.pass.key-info";
+    const string name2 = "937e3642-110a-4c1f-aaed-87031d048a1e.hello-world.pass.key-info";
+    var guid = Guid.Parse("937e3642-110a-4c1f-aaed-87031d048a1e");
+
+    var kin1 = KeyInfoName.FromFile(name1);
+    Assert.Equal(guid, kin1.KeyId);
+    Assert.Equal(KeyKind.Passphrase, kin1.Kind);
+    Assert.Null(kin1.Tag);
+
+    var kin2 = KeyInfoName.FromFile(name2);
+    Assert.Equal(guid, kin2.KeyId);
+    Assert.Equal(KeyKind.Passphrase, kin2.Kind);
+    Assert.Equal("hello-world", kin2.Tag);
+
+    var kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.75BC30DE-DA48-4800-889D-BA86570EF97C.link.key-info");
+    Assert.NotNull(kin3);
+    Assert.Equal(guid, kin3!.KeyId);
+    Assert.Equal(KeyKind.Link, kin3!.Kind);
+    Assert.Equal("75BC30DE-DA48-4800-889D-BA86570EF97C", kin3!.Tag);
+
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e..pass.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.hellö.pass.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.hello.world.pass.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.hello world.pass.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.pass!.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.pass.keyinfo");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.pass.key-info");
+    Assert.NotNull(kin3);
+    kin3 = KeyInfoName.TryFromFile("937e3642110a4c1faaed87031d048a1e.pass.key-info");
+    Assert.Null(kin3);
+    kin3 = KeyInfoName.TryFromFile("fluffy-bunny.pass.key-info");
+    Assert.Null(kin3);
+  }
+
   /// <summary>
   /// Create a new "salt" with a fixed content.
   /// For testing purposes only of course! "fixed content" and "proper salt"

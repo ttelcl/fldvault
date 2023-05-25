@@ -36,6 +36,11 @@ namespace FldVault.Core.Vaults
     }
 
     /// <summary>
+    /// Default instance
+    /// </summary>
+    public static IKeyCacheStore Default = new UnlockStore();
+
+    /// <summary>
     /// The size of an unlock file
     /// </summary>
     public const int UnlockSize = 48;

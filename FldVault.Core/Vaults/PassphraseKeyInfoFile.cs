@@ -175,14 +175,17 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
-  /// Write the content to a file in the specified folder.
+  /// Write the content to a file in the specified raw folder.
   /// The file name is created based on the Key ID.
   /// If necessary, this method creates the folder.
   /// </summary>
   /// <param name="folder">
   /// The folder to write this key-info to
   /// </param>
-  public void WriteToFolder(string folder)
+  /// <returns>
+  /// The full name of the written file
+  /// </returns>
+  public string WriteToFolder(string folder)
   {
     if(!Directory.Exists(folder))
     {
@@ -190,6 +193,7 @@ public class PassphraseKeyInfoFile
     }
     var fileName = Path.Combine(folder, DefaultFileName);
     WriteToFile(fileName);
+    return fileName;
   }
 
   /// <summary>

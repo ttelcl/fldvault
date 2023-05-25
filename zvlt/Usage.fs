@@ -17,8 +17,8 @@ let usage detailed =
   cp "  \fg-dv \fc<directory>\f0  The vault folder."
   cp "  \fg-key \fc<id>\f0        The first few characters of the key id"
   cp "  \fg-kf \fc<file>\f0       The full name of the key file"
-  cp "\fozvlt unlock [\fg-key \fc<id>\f0|\fg-kf \fc<file>\f0] [\fg-d \fc<directory>\f0]"
-  cp "\fozvlt lock [\fg-key \fc<id>\f0|\fg-kf \fc<file>\f0] [\fg-d \fc<directory>\f0]"
+  cp "\fozvlt unlock [\fg-key \fc<id>\f0|\fg-kf \fc<file>\f0] [\fg-dv \fc<directory>\f0]"
+  cp "\fozvlt lock [\fg-key \fc<id>\f0|\fg-kf \fc<file>\f0] [\fg-dv \fc<directory>\f0]"
   cp "\fg-v               \f0Verbose mode"
 
 

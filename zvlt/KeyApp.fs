@@ -53,7 +53,8 @@ let runNewKey args =
     | None ->
       failwith "No key kind provided"
   cp $"Initializing \fg{pkif.DefaultFileName}\f0 in \fc{o.Folder}\f0."
-  pkif.WriteToFolder(o.Folder)  
+  let vaultsFolder = new VaultsFolder(o.Folder)
+  let fnm = vaultsFolder.PutKeyInfo(pkif)
   0
 
 type private KeyOpOptions = {

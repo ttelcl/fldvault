@@ -9,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Vaults;
+
 namespace FldVault.Core.Crypto;
 
 /// <summary>
@@ -173,6 +175,67 @@ public class KeyChain: IDisposable
       _store[id] = key;
       return null;
     }
+  }
+
+  /// <summary>
+  /// Import mising keys in the key ID list from the given key cache,
+  /// if available
+  /// </summary>
+  /// <param name="source">
+  /// The key cache that may have some of the missing keys available
+  /// </param>
+  /// <param name="keyIds">
+  /// The IDs of the keys to find
+  /// </param>
+  public void ImportMissingKeys(
+    IKeyCacheStore source, IEnumerable<Guid> keyIds)
+  {
+    foreach(var keyId in keyIds)
+    {
+      if(!_store.ContainsKey(keyId))
+      {
+        using(var key = source.LoadKey(keyId))
+        {
+          if(key!=null)
+          {
+            PutCopy(key);
+          }
+        }
+      }
+    }
+  }
+
+  /// <summary>
+  /// If the key with the given ID is in this chain, return it.
+  /// Otherwise try to import it from the key source, returning
+  /// the imported copy on success, or null on failure.
+  /// </summary>
+  /// <param name="keyId">
+  /// The id of the key to look up
+  /// </param>
+  /// <param name="source">
+  /// The source for cached keys, or null to skip the import attempt.
+  /// </param>
+  /// <returns></returns>
+  public KeyBuffer? FindOrImportKey(Guid keyId, IKeyCacheStore? source)
+  {
+    var kb = this[keyId];
+    if(kb != null)
+    {
+      return kb;
+    }
+    if(source != null)
+    {
+      using(var key = source.LoadKey(keyId))
+      {
+        if(key!=null)
+        {
+          PutCopy(key);
+          return this[keyId];
+        }
+      }
+    }
+    return null;
   }
 
   /// <summary>

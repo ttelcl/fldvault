@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Crypto;
+
 namespace FldVault.Core.Vaults;
 
 /// <summary>
@@ -74,7 +76,7 @@ public class VaultsFolder
   }
 
   /// <summary>
-  /// Return keys from the key cache with the given key ID, and if not not null
+  /// Return keys from the key name cache with the given key ID, and if not not null
   /// the given key kind.
   /// </summary>
   /// <param name="keyId">
@@ -103,6 +105,39 @@ public class VaultsFolder
   }
 
   /// <summary>
+  /// Return keys from the key name cache with the given key ID, and if not not null
+  /// the given key kind.
+  /// </summary>
+  /// <param name="prefix">
+  /// A prefix of the key ID to find (case insensitive, using "D" serialization
+  /// of GUIDs).
+  /// </param>
+  /// <param name="keyKind">
+  /// If not null: the key kind to look for (default null)
+  /// </param>
+  /// <param name="rescan">
+  /// If true, force a cache refresh first
+  /// </param>
+  /// <returns></returns>
+  public IEnumerable<KeyInfoName> FindKeysByPrefix(
+    string prefix,
+    string? keyKind = null,
+    bool rescan = false)
+  {
+    if(String.IsNullOrEmpty(keyKind))
+    {
+      return KeyInfoCache(rescan)
+        .Where(kin => kin.KeyId.ToString("D").StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase));
+    }
+    else
+    {
+      return KeyInfoCache(rescan)
+        .Where(kin => kin.KeyId.ToString("D")
+                               .StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase) && kin.Kind == keyKind);
+    }
+  }
+
+  /// <summary>
   /// Write a passphrase based key-info object to a *.pass.key-info into this folder
   /// </summary>
   /// <param name="pkif"></param>
@@ -116,4 +151,18 @@ public class VaultsFolder
     return name;
   }
 
+  /// <summary>
+  /// Import keys used in this VaultsFolder into the key chain if they
+  /// are missing there but are available in the source.
+  /// </summary>
+  /// <param name="keyChain"></param>
+  /// <param name="source"></param>
+  /// <param name="rescan"></param>
+  public void ImportKeysIntoChain(
+    KeyChain keyChain,
+    IKeyCacheStore source,
+    bool rescan = false)
+  {
+    keyChain.ImportMissingKeys(source, KeyInfoCache(rescan).Select(kin => kin.KeyId));
+  }
 }

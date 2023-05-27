@@ -96,6 +96,17 @@ let private parseKeyOptions args =
 
 let runCheckKey args =
   let o = args |> parseKeyOptions
+
+  let keyFile =
+    match o.KeyTag, o.KeyFile with
+    | Some(tag), None ->
+      failwith "NYI"
+    | None, Some(kf) ->
+      failwith "NYI"
+    | None, None ->
+      failwith "Expecting one of -key or -kf"
+    | Some(_), Some(_) ->
+      failwith "Expecting either -key or -kf, but not both"
   0
 
 let runUnlockKey args =

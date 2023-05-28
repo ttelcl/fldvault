@@ -18,6 +18,7 @@ namespace FldVault.Core.Crypto
   {
     private readonly CryptoBuffer<byte> _buffer;
     private HashResult? _hashResult;
+    private bool _disposed;
 
     /// <summary>
     /// Create a new KeyBase, copying the source span into an equal-sized
@@ -35,7 +36,7 @@ namespace FldVault.Core.Crypto
     /// <summary>
     /// Return a view on the stored key bytes
     /// </summary>
-    public ReadOnlySpan<byte> Bytes { get => _buffer.Span(); }
+    public ReadOnlySpan<byte> Bytes { get => _buffer.Span(); } // _buffer.Span checks disposal
 
     /// <summary>
     /// Return the result of hashing the key bytes with SHA256.
@@ -43,6 +44,10 @@ namespace FldVault.Core.Crypto
     /// </summary>
     public HashResult GetSha256()
     {
+      if(_disposed)
+      {
+        throw new ObjectDisposedException(GetType().FullName);
+      }
       if(_hashResult == null)
       {
         _hashResult = HashResult.FromSha256(_buffer);
@@ -64,6 +69,7 @@ namespace FldVault.Core.Crypto
     /// </summary>
     public virtual void Dispose()
     {
+      _disposed = true;
       _buffer.Dispose();
     }
   }

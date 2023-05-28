@@ -177,7 +177,7 @@ let runUnlockKey args =
       cp "\frIncorrect key\f0."
       1
     else
-      keyChain.PutCopy(pk)
+      keyChain.PutCopy(pk) |> ignore
       unlockCache.StoreKey(pk) |> ignore
       cp $"\foUnlocking\f0 key \fg{kin.KeyId}\f0"
       0

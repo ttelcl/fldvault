@@ -97,13 +97,14 @@ public class KeyChain: IDisposable
   /// lost)
   /// </para>
   /// </remarks>
-  public void PutCopy(KeyBuffer key)
+  public KeyBuffer PutCopy(KeyBuffer key)
   {
     if(!_store.ContainsKey(key.GetId()))
     {
       var copy = new KeyBuffer(key.Bytes);
       _store.Add(copy.GetId(), copy);
     }
+    return _store[key.GetId()];
   }
 
   /// <summary>

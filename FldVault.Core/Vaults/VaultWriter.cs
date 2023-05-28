@@ -85,7 +85,7 @@ public class VaultWriter
   /// <param name="fileName">
   /// The file name to store in the vault
   /// </param>
-  public void WriteFileNameSegment(BinaryWriter w, string fileName)
+  public Guid WriteFileNameSegment(BinaryWriter w, string fileName)
   {
     if(!_expectName)
     {
@@ -105,6 +105,7 @@ public class VaultWriter
       w.Write(1);
       WriteChunk(w, encryptor, bytes);
       FinishSegment(w);
+      return encryptor.LatestTagGuid;
     }
   }
 
@@ -114,7 +115,7 @@ public class VaultWriter
   /// <param name="w"></param>
   /// <param name="source"></param>
   /// <exception cref="InvalidOperationException"></exception>
-  public void WriteContentSegment(BinaryWriter w, Stream source)
+  public Guid WriteContentSegment(BinaryWriter w, Stream source)
   {
     if(!_expectFileBlob)
     {
@@ -122,7 +123,7 @@ public class VaultWriter
         "Not expecting a file content segment for this vault subtype");
     }
     var sourceLength = source.Length;
-    var chunkCount = (sourceLength + VaultFormat.MaxChunkSize - 1) / VaultFormat.MaxChunkSize;
+    int chunkCount = (int)((sourceLength + VaultFormat.MaxChunkSize - 1) / VaultFormat.MaxChunkSize);
     if(chunkCount == 0)
     {
       // Probably requires special-casing
@@ -136,13 +137,21 @@ public class VaultWriter
       w.Write(encryptor.LengthCode.PackedValue);
       w.Write(chunkCount);
       var span = inputBuffer.Span();
+      var remainingChunks = chunkCount;
       while(bytesLeft > 0)
       {
         var n = source.Read(span);
         bytesLeft -= n;
         WriteChunk(w, encryptor, span.Slice(0, n));
+        remainingChunks--;
       }
       FinishSegment(w);
+      if(remainingChunks != 0)
+      {
+        throw new InvalidOperationException(
+          $"Internal error in chunk count calculation ({remainingChunks} / {chunkCount})");
+      }
+      return encryptor.LatestTagGuid;
     }
   }
 
@@ -152,7 +161,7 @@ public class VaultWriter
   /// <param name="w"></param>
   /// <param name="source"></param>
   /// <exception cref="InvalidOperationException"></exception>
-  public void WriteSecretSegment(BinaryWriter w, CryptoBuffer<byte> source)
+  public Guid WriteSecretSegment(BinaryWriter w, CryptoBuffer<byte> source)
   {
     if(!_expectSecretBlob)
     {
@@ -171,9 +180,8 @@ public class VaultWriter
       w.Write(1);
       WriteChunk(w, encryptor, source.Span());
       FinishSegment(w);
+      return encryptor.LatestTagGuid;
     }
-
-    throw new NotImplementedException();
   }
 
   /// <summary>
@@ -201,7 +209,7 @@ public class VaultWriter
     w.Write(chunk.Length + 32);
     w.Write(nonce);
     w.Write(authenticationTag);
-    w.Write(_chunkBuffer.Span());
+    w.Write(_chunkBuffer.Span(0, chunk.Length));
   }
 
 }

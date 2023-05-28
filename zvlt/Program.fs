@@ -29,6 +29,8 @@ let rec run arglist =
     rest |> KeyApp.runUnlockKey
   | "lock" :: rest ->
     rest |> KeyApp.runLockKey
+  | "put" :: rest ->
+    rest |> EncryptApp.runPut
   | x :: _ ->
     cp $"\frUnknown or incomplete command: {x}"
     1

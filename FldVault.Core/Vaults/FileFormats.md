@@ -83,7 +83,7 @@ When encrypting data that is not intended to ever be persisted to a file
 | Size | 4 bytes (int) | The total chunk size in the vault file in bytes |
 | Nonce | 12 bytes | The AES-GCM nonce for this chunk |
 | Auth Tag | 16 bytes | The AES-GCM authentication tag |
-| Cihertext | X bytes | The rest of the chunk |
+| Ciphertext | X bytes | The rest of the chunk |
 
 #### Chunk associated data
 

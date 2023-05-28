@@ -112,7 +112,8 @@ public class PassphraseKeyInfoFile
 
   /// <summary>
   /// Try to read the *.pass.key-info file for the given key in the given folder.
-  /// Returns null if not found.
+  /// Returns null if not found. This overload assumes the key-info file has no tag part.
+  /// DEPRECATED.
   /// </summary>
   /// <param name="keyId">
   /// The key ID to look for (derive the file name from)
@@ -142,6 +143,47 @@ public class PassphraseKeyInfoFile
     {
       throw new InvalidOperationException(
         $"The content of ${fileName} does not match its name (key ID is ${pkif.KeyId})");
+    }
+    return pkif;
+  }
+
+  /// <summary>
+  /// Try to read the *.pass.key-info file for the given key in the given folder.
+  /// Returns null if not found.
+  /// </summary>
+  /// <param name="kin">
+  /// The key info file name descriptor
+  /// </param>
+  /// <param name="folderName">
+  /// The folder where to look for the file
+  /// </param>
+  /// <returns>
+  /// Null if the file was not found, the key file content if found
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if the Key ID in the file did not match the name, or if the
+  /// key-info was not a passphrase based key-info.
+  /// </exception>
+  public static PassphraseKeyInfoFile? TryRead(KeyInfoName kin, string folderName)
+  {
+    if(!Directory.Exists(folderName))
+    {
+      return null;
+    }
+    if(!File.Exists(kin.FileName))
+    {
+      return null;
+    }
+    if(kin.Kind != KeyKind.Passphrase)
+    {
+      throw new ArgumentException(
+        "Expecting a key-info descriptor for a passphrase based key.");
+    }
+    var pkif = ReadFrom(kin.FileName);
+    if(pkif.KeyId != kin.KeyId)
+    {
+      throw new InvalidOperationException(
+        $"The content of ${kin.FileName} does not match its name (key ID is ${pkif.KeyId})");
     }
     return pkif;
   }

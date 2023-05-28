@@ -273,11 +273,13 @@ public class VaultCryptoTests
     Assert.Equal(guid, kin1.KeyId);
     Assert.Equal(KeyKind.Passphrase, kin1.Kind);
     Assert.Null(kin1.Tag);
+    Assert.Equal(name1, kin1.FileName);
 
     var kin2 = KeyInfoName.FromFile(name2);
     Assert.Equal(guid, kin2.KeyId);
     Assert.Equal(KeyKind.Passphrase, kin2.Kind);
     Assert.Equal("hello-world", kin2.Tag);
+    Assert.Equal(name2, kin2.FileName);
 
     var kin3 = KeyInfoName.TryFromFile("937e3642-110a-4c1f-aaed-87031d048a1e.75BC30DE-DA48-4800-889D-BA86570EF97C.link.key-info");
     Assert.NotNull(kin3);

@@ -76,7 +76,7 @@ public class UnlockStore: IKeyCacheStore
           var unused = BinaryPrimitives.ReadInt64LittleEndian(span.Slice(8, 8));
           if(signature == VaultFormat.Unlock0Signature && unused == 0L)
           {
-            var kb = new KeyBuffer(span.Slice(8, 32));
+            var kb = new KeyBuffer(span.Slice(16, 32));
             if(kb.GetId() == keyId)
             {
               return kb;

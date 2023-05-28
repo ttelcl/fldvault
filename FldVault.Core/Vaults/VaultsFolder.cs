@@ -165,4 +165,15 @@ public class VaultsFolder
   {
     keyChain.ImportMissingKeys(source, KeyInfoCache(rescan).Select(kin => kin.KeyId));
   }
+
+  /// <summary>
+  /// Try to read the key-info file indicated by <paramref name="kin"/> from 
+  /// this folder as a passphrase-based key-info
+  /// </summary>
+  /// <param name="kin"></param>
+  /// <returns></returns>
+  public PassphraseKeyInfoFile? TryReadPassphraseInfo(KeyInfoName kin)
+  {
+    return PassphraseKeyInfoFile.TryRead(kin, Folder);
+  }
 }

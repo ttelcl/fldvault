@@ -161,7 +161,7 @@ namespace FldVault.Core.Vaults
     /// The kind of key source. Should be one of the KeyKind constants
     /// (*.{Kind}.key-info is the double file extension)
     /// </summary>
-    public string Kind { get; init; } 
+    public string Kind { get; init; }
 
     /// <summary>
     /// The tag string, or null or empty if missing.
@@ -169,15 +169,21 @@ namespace FldVault.Core.Vaults
     public string? Tag { get; init; }
 
     /// <summary>
+    /// Reconstruct the file name (without path)
+    /// </summary>
+    public string FileName {
+      get => String.IsNullOrEmpty(Tag)
+        ? $"{KeyId}.{Kind}.key-info"
+        : $"{KeyId}.{Tag}.{Kind}.key-info";
+    }
+
+    /// <summary>
     /// Convert this KeyInfoName to a plain file name (without directory information)
     /// </summary>
     /// <returns></returns>
     public override string ToString()
     {
-      return
-        String.IsNullOrEmpty(Tag)
-        ? $"{KeyId}.{Kind}.key-info"
-        : $"{KeyId}.{Tag}.{Kind}.key-info";
+      return FileName;
     }
   }
 }

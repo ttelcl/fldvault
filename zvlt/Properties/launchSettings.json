@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "zvlt": {
+      "commandName": "Project",
+      "commandLineArgs": "unlock -key 476"
+    }
+  }
+}

@@ -23,6 +23,8 @@ let rec run arglist =
     rest |> KeyApp.runNewKey
   | "check" :: rest ->
     rest |> KeyApp.runCheckKey
+  | "status" :: rest ->
+    rest |> KeyApp.runStatusKey
   | "unlock" :: rest ->
     rest |> KeyApp.runUnlockKey
   | "lock" :: rest ->

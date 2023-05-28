@@ -8,7 +8,7 @@ open FldVault.Core.Crypto
 open ColorPrint
 open CommonTools
 
-let enterKey prompt salt =
+let enterKey prompt (salt: ReadOnlySpan<byte>) =
   if prompt |> String.IsNullOrEmpty |> not then
     cp $"\fy%s{prompt}\f0: "
   let mutable complete = false
@@ -32,7 +32,7 @@ let enterKey prompt salt =
   cp ""
   if ss.Length < 4 then
     failwith "Expecting at least 4 characters"
-  PassphraseKey.FromSecureString(ss, salt, PassphraseKey.Saltlength)
+  PassphraseKey.FromSecureString(ss, salt)
 
 let enterNewKey prompt =
   let saltBytes = PassphraseKey.GenerateSalt()

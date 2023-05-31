@@ -28,7 +28,7 @@ public class VaultWriter
   private readonly bool _expectSecretBlob;
   private readonly NonceGenerator _nonceGenerator;
   private CryptoBuffer<byte>? _chunkBuffer;
-  private const int __version = 0x00010001;
+  private const int __version = VaultFormat.VaultFileVersion;
 
   /// <summary>
   /// Create a new VaultWriter (format 0x00010001)

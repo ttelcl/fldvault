@@ -31,6 +31,8 @@ let rec run arglist =
     rest |> KeyApp.runLockKey
   | "put" :: rest ->
     rest |> EncryptApp.runPut
+  | "extract" :: rest ->
+    rest |> DecryptApp.runExtract
   | x :: _ ->
     cp $"\frUnknown or incomplete command: {x}"
     1

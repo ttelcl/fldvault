@@ -54,6 +54,11 @@ public static class VaultFormat
   public const int MaxChunkSize = 0x040000;
 
   /// <summary>
+  /// The vault file version
+  /// </summary>
+  public const int VaultFileVersion = 0x00010001;
+
+  /// <summary>
   /// Test if a stream signature is known
   /// </summary>
   public static bool IsKnownSignature(long signature)

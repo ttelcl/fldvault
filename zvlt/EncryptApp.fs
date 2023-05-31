@@ -86,7 +86,6 @@ let runPut args =
   let vw = new VaultWriter(VaultFormat.VaultSignatureFile, rawKey, dfi.LastWriteTimeUtc)
   let tmpName = Path.Combine(vaultsFolder.Folder, $"{Guid.NewGuid()}.zvlt.tmp")
   cp $"Storing \fg{Path.GetFileName(dataFile)}\f0 (\fb{dfi.Length}\f0 bytes)"
-  // cp $"\fkUsing temporary file {tmpName}\f0."
   let finalGuid =
     use fs = File.Create(tmpName)
     use bw = new BinaryWriter(fs)

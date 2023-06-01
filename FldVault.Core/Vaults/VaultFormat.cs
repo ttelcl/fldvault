@@ -38,14 +38,19 @@ public static class VaultFormat
   public const long EpochTicks = 0x089F7FF5F7B58000L; 
 
   /// <summary>
-  /// Vault signature for vaults containing a file
+  /// Vault signature for V1 vaults containing a file
   /// </summary>
   public const long VaultSignatureFile = 0x00454C46544C565AL; // "ZVLTFLE\0"
 
   /// <summary>
-  /// Vault signature for vaults containing data for in-memory use only
+  /// Vault signature for V1 vaults containing data for in-memory use only
   /// </summary>
   public const long VaultSignatureSecret = 0x00434553544C565AL; // "ZVLTSEC\0"
+
+  /// <summary>
+  /// Vault signature for V2 vaults
+  /// </summary>
+  public const int VaultSignatureV2 = 0x746C665A; // "Zvlt"
 
   /// <summary>
   /// Maximum chunk size (256 kb). Also maximum size for non-file segments, since

@@ -48,10 +48,12 @@ The file header of a ZVLT file is a block of kind 'Zvlt'
 | Name | Format | Notes |
 | --- | 
 | Kind | 'Zvlt' | 0x746C665A |
-| Size | 4 bytes | value is 32 |
+| Size | 4 bytes | value is 48 |
 | Version | 1 int (2 shorts) | 0x00020000 |
-| Unused | 1 int | 0x00000000 |
+| Reserved | 1 int | 0x00000000 |
 | Key ID | Guid (16 bytes) | |
+| Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
+| Reserved | 8 bytes | 0x0000000000000000L |
 
 ### Encrypted content sub-blocks
 

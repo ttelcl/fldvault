@@ -20,7 +20,7 @@ public static class Zvlt2BlockType
   /// <summary>
   /// ZVLT file header block ('Zvlt')
   /// </summary>
-  public const int ZvltFile = 0x746C665A;
+  public const int ZvltFile = 0x746C765A;
 
   /// <summary>
   /// Embedded *.pass.key-info file ('PASS')

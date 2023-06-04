@@ -12,6 +12,7 @@ using System.Linq;
 using System.Collections.Generic;
 using FldVault.Core.Vaults;
 using System.IO;
+using FldVault.Core.Zvlt2;
 
 namespace UnitTests.FldVault;
 
@@ -305,6 +306,37 @@ public class VaultCryptoTests
     Assert.Null(kin3);
     kin3 = KeyInfoName.TryFromFile("fluffy-bunny.pass.key-info");
     Assert.Null(kin3);
+  }
+
+  [Fact]
+  public void CanCreateNewZvlt2File()
+  {
+    ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
+    const string passphraseText = "HelloWorld";
+    var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
+    PassphraseKeyInfoFile pkif;
+    using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
+    {
+      using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
+      {
+        pkif = new PassphraseKeyInfoFile(pk, stamp);
+      }
+    }
+    _outputHelper.WriteLine($"Key ID is {pkif.KeyId}");
+
+    const string fileName = "HelloWorld.zvlt";
+    if(File.Exists(fileName))
+    {
+      _outputHelper.WriteLine($"Deleting existing {fileName}");
+      File.Delete(fileName);
+    }
+
+    Assert.False(File.Exists(fileName));
+
+    var vaultFile = VaultFile.OpenOrCreate(fileName, pkif, stamp);
+    Assert.NotNull(vaultFile);
+    Assert.True(File.Exists(fileName));
+
   }
 
   /// <summary>

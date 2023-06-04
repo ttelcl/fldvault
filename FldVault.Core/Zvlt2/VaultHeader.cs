@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Zvlt2;
 
@@ -25,12 +26,20 @@ public class VaultHeader
     BlockInfo blockHeader,
     int version,
     Guid keyId,
-    int unused = 0)
+    DateTime timeStamp,
+    int unused1 = 0,
+    long unused2 = 0L)
   {
     BlockHeader = blockHeader;
     Version = version;
     KeyId = keyId;
-    Unused = unused;
+    Unused1 = unused1;
+    Unused2 = unused2;
+    TimeStamp = timeStamp;
+    if(timeStamp.Kind != DateTimeKind.Utc)
+    {
+      throw new ArgumentOutOfRangeException(nameof(timeStamp), "Expecting timestamp to be in UTC");
+    }
   }
 
   /// <summary>
@@ -62,13 +71,22 @@ public class VaultHeader
   public static BlockInfo WriteSync(
     Stream destination,
     Guid keyId,
+    DateTime? stamp = null,
     int version = VaultFormat2.VaultFileVersion2,
-    int unused = 0)
+    int unused1 = 0,
+    long unused2 = 0L)
   {
-    Span<byte> data = stackalloc byte[24];
+    var stamp1 = stamp ?? DateTime.UtcNow;
+    if(stamp1.Kind != DateTimeKind.Utc)
+    {
+      throw new ArgumentOutOfRangeException(nameof(stamp), "Expecting timestamp to be in UTC");
+    }
+    Span<byte> data = stackalloc byte[40];
     BinaryPrimitives.WriteInt32LittleEndian(data.Slice(0, 4), version);
-    BinaryPrimitives.WriteInt32LittleEndian(data.Slice(4, 4), unused);
+    BinaryPrimitives.WriteInt32LittleEndian(data.Slice(4, 4), unused1);
     keyId.TryWriteBytes(data.Slice(8, 16));
+    BinaryPrimitives.WriteInt64LittleEndian(data.Slice(24, 8), stamp1.Ticks - VaultFormat.EpochTicks);
+    BinaryPrimitives.WriteInt64LittleEndian(data.Slice(32, 8), unused2);
     var bi = BlockInfo.WriteSync(destination, Zvlt2BlockType.ZvltFile, data);
     return bi;
   }
@@ -85,9 +103,19 @@ public class VaultHeader
   public int Version { get; init; }
 
   /// <summary>
-  /// Extra field in the header, currently unused
+  /// Extra field 1 in the header, currently unused
   /// </summary>
-  public int Unused { get; init; }
+  public int Unused1 { get; init; }
+
+  /// <summary>
+  /// Extra field 2 in the header, currently unused
+  /// </summary>
+  public long Unused2 { get; init; }
+
+  /// <summary>
+  /// The UTC time stamp the vault file was created
+  /// </summary>
+  public DateTime TimeStamp { get; init; }
 
   /// <summary>
   /// The ID of the key used in this file
@@ -106,10 +134,10 @@ public class VaultHeader
       throw new InvalidOperationException(
         "This is not a ZVLT file");
     }
-    if(hdr.Size != 32)
+    if(hdr.Size != 48)
     {
       throw new InvalidOperationException(
-        "Expecting header block to be 32 bytes");
+        "Expecting header block to be 48 bytes");
     }
     return hdr;
   }
@@ -122,14 +150,22 @@ public class VaultHeader
       throw new InvalidOperationException(
         "Incompatible ZVLT version");
     }
-    var unused = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(4, 4));
-    if(unused != 0)
+    var unused1 = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(4, 4));
+    if(unused1 != 0)
     {
       throw new InvalidOperationException(
-        "Expecting reserved bytes in header to be 0");
+        "Expecting reserved field 1 in header to be 0");
     }
     var keyId = new Guid(data.Slice(8, 16));
-    return new VaultHeader(hdr, version, keyId, unused);
+    var ticks = BinaryPrimitives.ReadInt64LittleEndian(data.Slice(24, 8));
+    var stamp = new DateTime(ticks + VaultFormat.EpochTicks, DateTimeKind.Utc);
+    var unused2 = BinaryPrimitives.ReadInt64LittleEndian(data.Slice(32, 8));
+    if(unused2 != 0L)
+    {
+      throw new InvalidOperationException(
+        "Expecting reserved field 2 in header to be 0");
+    }
+    return new VaultHeader(hdr, version, keyId, stamp, unused1, unused2);
   }
 
 }

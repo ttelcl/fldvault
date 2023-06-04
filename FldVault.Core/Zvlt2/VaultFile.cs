@@ -59,10 +59,13 @@ public class VaultFile
   /// <param name="keyId">
   /// The key ID for the new file, or the expected key ID for an existing file
   /// </param>
+  /// <param name="stamp">
+  /// The creation time stamp in UTC, or null to use the current time.
+  /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, Guid keyId)
+  public static VaultFile OpenOrCreate(string fileName, Guid keyId, DateTime? stamp = null)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -79,7 +82,7 @@ public class VaultFile
     {
       using(var stream = File.Create(fileName))
       {
-        VaultHeader.WriteSync(stream, keyId);
+        VaultHeader.WriteSync(stream, keyId, stamp);
       }
       return new VaultFile(fileName);
     }
@@ -96,10 +99,13 @@ public class VaultFile
   /// <param name="keyInfo">
   /// The key descriptor for the new file, or the expected key descriptor for an existing file
   /// </param>
+  /// <param name="stamp">
+  /// The creation time stamp in UTC, or null to use the current time.
+  /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, PassphraseKeyInfoFile keyInfo)
+  public static VaultFile OpenOrCreate(string fileName, PassphraseKeyInfoFile keyInfo, DateTime? stamp = null)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -116,7 +122,7 @@ public class VaultFile
     {
       using(var stream = File.Create(fileName))
       {
-        VaultHeader.WriteSync(stream, keyInfo.KeyId);
+        VaultHeader.WriteSync(stream, keyInfo.KeyId, stamp);
         keyInfo.WriteBlock(stream);
       }
       return new VaultFile(fileName);

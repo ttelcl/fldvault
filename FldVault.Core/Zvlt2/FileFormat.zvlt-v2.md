@@ -13,12 +13,16 @@ in the following form:
 | Content | (Size-8) bytes | The content |
 
 The `Kind` of the block determines the format of the content. Kinds
-are normally prescribed by the application. There are a small number
-of predefined kinds that have a standardized meaning.
+are normally prescribed by the application.
+
+Note that the "Kind" of the first block in a block file implicitly
+acts as the file type signature.
+
+There are a small number of predefined kinds that have a standardized meaning.
 
 | Kind | Hex | Size | Notes |
 | --- |
-| _(null)_ | 0x00000000 | 8 | Generic terminator |
+| '    ' | 0x20202020 | 8 | Generic terminator |
 | '((((' | 0x28282828 | 8 | Group start |
 | '))))' | 0x29292929 | 8 | Group end |
 | ')   ' | 0x20202029 | 8 | Implied group terminator |

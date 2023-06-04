@@ -48,11 +48,6 @@ public static class VaultFormat
   public const long VaultSignatureSecret = 0x00434553544C565AL; // "ZVLTSEC\0"
 
   /// <summary>
-  /// Vault signature for V2 vaults
-  /// </summary>
-  public const int VaultSignatureV2 = 0x746C665A; // "Zvlt"
-
-  /// <summary>
   /// Maximum chunk size (256 kb). Also maximum size for non-file segments, since
   /// they need to fit in one chunk.
   /// </summary>
@@ -62,11 +57,6 @@ public static class VaultFormat
   /// The vault file version
   /// </summary>
   public const int VaultFileVersion = 0x00010001;
-
-  /// <summary>
-  /// The vault file version
-  /// </summary>
-  public const int VaultFileVersion2 = 0x00020000;
 
   /// <summary>
   /// Test if a stream signature is known

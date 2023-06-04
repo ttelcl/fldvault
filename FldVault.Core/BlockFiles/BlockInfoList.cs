@@ -10,68 +10,67 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FldVault.Core.BlockFiles
+namespace FldVault.Core.BlockFiles;
+
+/// <summary>
+/// A collection of blockinfo descriptors for a block file
+/// </summary>
+public class BlockInfoList
 {
+  private readonly List<BlockInfo> _blocks;
+
   /// <summary>
-  /// A collection of blockinfo descriptors for a block file
+  /// Create a new BlockInfoList and optionally load it from an existing stream
   /// </summary>
-  public class BlockInfoList
+  public BlockInfoList(Stream? source = null)
   {
-    private readonly List<BlockInfo> _blocks;
-
-    /// <summary>
-    /// Create a new BlockInfoList and optionally load it from an existing stream
-    /// </summary>
-    public BlockInfoList(Stream? source = null)
+    _blocks = new List<BlockInfo>();
+    Blocks = _blocks.AsReadOnly();
+    if(source != null)
     {
-      _blocks = new List<BlockInfo>();
-      Blocks = _blocks.AsReadOnly();
-      if(source != null)
-      {
-        Reload(source);
-      }
+      Reload(source);
     }
+  }
 
-    /// <summary>
-    /// A read-only view on the blocks in this list
-    /// </summary>
-    public IReadOnlyList<BlockInfo> Blocks { get; init; }
+  /// <summary>
+  /// A read-only view on the blocks in this list
+  /// </summary>
+  public IReadOnlyList<BlockInfo> Blocks { get; init; }
 
-    /// <summary>
-    /// Clear the existing list and load it from the specified stream
-    /// </summary>
-    public void Reload(Stream source)
+  /// <summary>
+  /// Clear the existing list and load it from the specified stream
+  /// </summary>
+  public void Reload(Stream source)
+  {
+    _blocks.Clear();
+    BlockInfo? bi;
+    while((bi = BlockInfo.TryReadHeaderSync(source, true)) != null)
     {
-      _blocks.Clear();
-      BlockInfo? bi;
-      while((bi = BlockInfo.TryReadHeaderSync(source, true)) != null)
-      {
-        _blocks.Add(bi);
-      }
+      _blocks.Add(bi);
     }
+  }
 
-    /// <summary>
-    /// Get the file index after the last block (where the next block would be inserted)
-    /// Return 0L if the list is empty.
-    /// </summary>
-    public long Tail { get => _blocks.Count == 0 ? 0L : (_blocks[^1].Offset + _blocks[^1].Size); }
+  /// <summary>
+  /// Get the file index after the last block (where the next block would be inserted)
+  /// Return 0L if the list is empty.
+  /// </summary>
+  public long Tail { get => _blocks.Count == 0 ? 0L : (_blocks[^1].Offset + _blocks[^1].Size); }
 
-    /// <summary>
-    /// Add the next block to the list. Its size must be valid and offset be contiguous
-    /// to the last block
-    /// </summary>
-    public void Add(BlockInfo block)
+  /// <summary>
+  /// Add the next block to the list. Its size must be valid and offset be contiguous
+  /// to the last block
+  /// </summary>
+  public void Add(BlockInfo block)
+  {
+    if(block.Size < 8)
     {
-      if(block.Size < 8)
-      {
-        throw new ArgumentException("Expecting a valid block descriptor (with a size of 8 or greater)");
-      }
-      if(block.Offset != Tail)
-      {
-        throw new ArgumentException(
-          "Incorrect offset for the block being added");
-      }
-      _blocks.Add(block);
+      throw new ArgumentException("Expecting a valid block descriptor (with a size of 8 or greater)");
     }
+    if(block.Offset != Tail)
+    {
+      throw new ArgumentException(
+        "Incorrect offset for the block being added");
+    }
+    _blocks.Add(block);
   }
 }

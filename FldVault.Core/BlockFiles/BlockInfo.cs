@@ -78,12 +78,17 @@ public class BlockInfo
   /// <summary>
   /// The block size. Mutable to support creation scenarios.
   /// </summary>
-  public int Size { get; set; }
+  public int Size { get; protected set; }
+
+  /// <summary>
+  /// The block content size: <see cref="Size"/> - 8
+  /// </summary>
+  public int ContentSize { get => Size - 8; }
 
   /// <summary>
   /// The offset of the block in its file. Mutable to support writing scenarios
   /// </summary>
-  public long Offset { get; set; }
+  public long Offset { get; protected set; }
 
   /// <summary>
   /// Adjust this BlockInfo to fit the given content and the current
@@ -118,6 +123,37 @@ public class BlockInfo
     var bi = new BlockInfo(kind, content.Length, target.Position);
     bi.WriteSync(target, content);
     return bi;
+  }
+
+  /// <summary>
+  /// Position the stream to the block offset in <see cref="Offset"/> and
+  /// read the content of the block (excluding block header) into the given buffer
+  /// </summary>
+  /// <param name="source">
+  /// The source stream to read from
+  /// </param>
+  /// <param name="content">
+  /// The buffer to read the data into. The length of the buffer must be 
+  /// (<see cref="Size"/>-8)
+  /// </param>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if the buffer size is incorrect
+  /// </exception>
+  /// <exception cref="EndOfStreamException">
+  /// Thrown if the read operation fails to return the expected number of bytes.
+  /// </exception>
+  public void ReadSync(Stream source, Span<byte> content)
+  {
+    if(content.Length != Size-8)
+    {
+      throw new InvalidOperationException(
+        $"Buffer size mismatch. Expecting buffer size {Size-8} but got {content.Length}");
+    }
+    source.Position = Offset + 8;
+    if(source.Read(content) != content.Length)
+    {
+      throw new EndOfStreamException("Block read failed");
+    }
   }
 
   /// <summary>

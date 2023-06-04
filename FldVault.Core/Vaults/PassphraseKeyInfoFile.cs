@@ -11,7 +11,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
+using FldVault.Core.Zvlt2;
 
 namespace FldVault.Core.Vaults;
 
@@ -111,6 +113,37 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
+  /// Read a new instance from a "PASS" (<see cref="Zvlt2BlockType.PassphraseLink"/>)
+  /// block embedded in a block file
+  /// </summary>
+  /// <param name="stream">
+  /// The block file stream (usually *.zvlt)
+  /// </param>
+  /// <param name="blockInfo">
+  /// The descriptor of the existing PASS block in the stream
+  /// </param>
+  /// <returns>
+  /// A new <see cref="PassphraseKeyInfoFile"/> instance
+  /// </returns>
+  public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, BlockInfo blockInfo)
+  {
+    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink)
+    {
+      throw new InvalidOperationException("Incorrect block kind");
+    }
+    if(blockInfo.Size != 96)
+    {
+      throw new InvalidOperationException("Unexpected block size");
+    }
+    Span<byte> content = stackalloc byte[blockInfo.ContentSize];
+    blockInfo.ReadSync(stream, content);
+    var ticks = BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)) + VaultFormat.EpochTicks;
+    var stamp = new DateTime(ticks, DateTimeKind.Utc);
+    var guid = new Guid(content.Slice(8, 16));
+    return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);
+  }
+
+  /// <summary>
   /// Try to read the *.pass.key-info file for the given key in the given folder.
   /// Returns null if not found. This overload assumes the key-info file has no tag part.
   /// DEPRECATED.
@@ -207,7 +240,7 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
-  /// Write the content of this info object to a stream
+  /// Write the content of this info object to a *.pass.key-info stream
   /// </summary>
   public void Write(Stream stream)
   {
@@ -236,6 +269,23 @@ public class PassphraseKeyInfoFile
     var fileName = Path.Combine(folder, DefaultFileName);
     WriteToFile(fileName);
     return fileName;
+  }
+
+  /// <summary>
+  /// Append the content as a new ZVLT v2 block to the end of the ZVLT stream
+  /// </summary>
+  /// <param name="blockStream">
+  /// The open ZVLT v2 block stream.
+  /// </param>
+  public BlockInfo WriteBlock(Stream blockStream)
+  {
+    blockStream.Position = blockStream.Length;
+    Span<byte> block = stackalloc byte[96-8];
+    BinaryPrimitives.WriteInt64LittleEndian(block.Slice(0, 8), UtcKeyStamp.Ticks - VaultFormat.EpochTicks);
+    KeyId.TryWriteBytes(block.Slice(8, 16));
+    Salt.CopyTo(block.Slice(24, 64));
+    var bi = BlockInfo.WriteSync(blockStream, Zvlt2BlockType.PassphraseLink, block);
+    return bi;
   }
 
   /// <summary>

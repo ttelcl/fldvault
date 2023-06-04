@@ -68,6 +68,34 @@ Any time stamps are expressed Epoch Ticks: the number of 100 nanosecond
 intervals since the Unix epoch (UTC implied). That is the number of 
 .net ticks minus 0x089F7FF5F7B58000L
 
+## Unauthenticated Comment
+
+A block that carries a non-encrypted text, without authentication
+info.
+
+| Name | Format | Notes |
+| --- |
+| Kind | 'UCMT' | 0x544D4F43 |
+| Block Size | 4 bytes | |
+| Comment | * | Encoded in UTF8 |
+
+## Passphrase key info
+
+Used as an embedded version of an external *.pass.key-info file. The
+content is almost the same as the *.pass.key-info file content, except
+that the signature is replaced by a block header.
+
+Presence of this block is optional, but enables the ZVLT file to be used
+stand-alone.
+
+| Name | Format | Notes |
+| --- |
+| Kind | 'PASS' | 0x53534150 |
+| Block Size | 4 bytes | 96 |
+| Stamp | 8 bytes | Timestamp this key-info was originally generated |
+| Key ID | 16 bytes (Guid) | The key ID (should match the file key) |
+| Salt | 64 bytes | The salt for the RFC2898 key derivation |
+
 ## File element
 
 Files are written as a variable number of blocks: header, name, one or
@@ -146,14 +174,3 @@ This is just the generic "implied group terminator"
 | --- |
 | Kind | ')   ' | 0x20202029 |
 | Block Size | 4 bytes | 8 |
-
-## Unauthenticated Comment
-
-A block that carries a non-encrypted text, without authentication
-info.
-
-| Name | Format | Notes |
-| --- |
-| Kind | 'UCMT' | 0x544D4F43 |
-| Block Size | 4 bytes | |
-| Comment | * | Encoded in UTF8 |

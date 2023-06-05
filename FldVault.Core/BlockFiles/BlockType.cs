@@ -34,4 +34,26 @@ public static class BlockType
   /// </summary>
   public const int UnauthenticatedComment = 0x544D4355;
 
+  /// <summary>
+  /// Return the block type code rendered as a 4CC string
+  /// </summary>
+  public static string ToText(int blockType)
+  {
+    Span<char> buffer = stackalloc char[4];
+
+    for(var i = 0; i < 4; i++)
+    {
+      int code = blockType & 0x000000FF;
+      blockType >>= 8;
+      if(code >= 0x20 && code < 0x7F)
+      {
+        buffer[i] = (char)code;
+      }
+      else
+      {
+        buffer[i] = '?';
+      }
+    }
+    return new String(buffer);
+  }
 }

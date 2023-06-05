@@ -61,6 +61,7 @@ public class VaultFile
   /// </param>
   /// <param name="stamp">
   /// The creation time stamp in UTC, or null to use the current time.
+  /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <returns>
   /// The VaultFile instance
@@ -101,6 +102,7 @@ public class VaultFile
   /// </param>
   /// <param name="stamp">
   /// The creation time stamp in UTC, or null to use the current time.
+  /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <returns>
   /// The VaultFile instance
@@ -157,6 +159,26 @@ public class VaultFile
   public PassphraseKeyInfoFile? GetPassphraseInfo()
   {
     return GetPassphraseInfo(null);
+  }
+
+  /// <summary>
+  /// Append an unauthenticated comment block
+  /// </summary>
+  /// <param name="comment">
+  /// The comment to add
+  /// </param>
+  public BlockInfo AppendComment(string comment)
+  {
+    var bytes = Encoding.UTF8.GetBytes(comment);
+    var bi = new BlockInfo(BlockType.UnauthenticatedComment);
+    // Writing the block will take care of setting the size and offset fields
+    using(var stream = File.OpenWrite(FileName))
+    {
+      stream.Position = stream.Length;
+      bi.WriteSync(stream, bytes);
+    }
+    Blocks.Add(bi);
+    return bi;
   }
 
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)

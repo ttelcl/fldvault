@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using FldVault.Core.Vaults;
 using System.IO;
 using FldVault.Core.Zvlt2;
+using FldVault.Core.BlockFiles;
 
 namespace UnitTests.FldVault;
 
@@ -336,7 +337,22 @@ public class VaultCryptoTests
     var vaultFile = VaultFile.OpenOrCreate(fileName, pkif, stamp);
     Assert.NotNull(vaultFile);
     Assert.True(File.Exists(fileName));
+    var length1 = new FileInfo(fileName).Length;
 
+    vaultFile.AppendComment("This is a U comment");
+    var length2 = new FileInfo(fileName).Length;
+    Assert.True(length2 > length1);
+
+    vaultFile.AppendComment("This is another U comment");
+
+    var vf2 = new VaultFile(fileName);
+    Assert.NotNull(vf2);
+    Assert.Equal(4, vf2.Blocks.Blocks.Count);
+
+    foreach(var block in vf2.Blocks.Blocks)
+    {
+      _outputHelper.WriteLine($"'{BlockType.ToText(block.Kind)}' @{block.Offset:X6} ({block.Size,6} bytes)");
+    }
   }
 
   /// <summary>

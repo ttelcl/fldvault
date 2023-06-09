@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Zvlt2;
@@ -44,7 +45,7 @@ public class VaultFile
       Header = VaultHeader.ReadSync(stream);
       stream.Position = 0;
       Blocks.Reload(stream);
-      GetPassphraseInfo(stream);
+      GetPassphraseInfo(stream); // caches it if found
     }
   }
 
@@ -181,6 +182,123 @@ public class VaultFile
     return bi;
   }
 
+  /// <summary>
+  /// Append a new file to the vault (encrypted). This overload takes the input
+  /// as a stream instead of a file.
+  /// </summary>
+  /// <param name="cryptor">
+  /// The encryption engine that wraps the key and the nonce generator.
+  /// </param>
+  /// <param name="content">
+  /// The stream that provides the content to be encrypted. The stream must have
+  /// a well defined Length.
+  /// </param>
+  /// <param name="fileStamp">
+  /// The UTC last write timestamp of the input file
+  /// </param>
+  /// <param name="logicalName">
+  /// The name of the file. This must be a realative path (and usually is just
+  /// the file name). If there are path separators they must be '/', not '\'.
+  /// None of the segments of the path can be '..' or '.'.
+  /// </param>
+  /// <returns>
+  /// A BlockElement wrapping the file block and its content blocks.
+  /// </returns>
+  public BlockElement AppendFile(
+    VaultCryptor cryptor,
+    Stream content,
+    DateTime fileStamp,
+    string logicalName)
+  {
+    if(fileStamp.Kind != DateTimeKind.Utc)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(fileStamp), "Expecting a time stamp in UTC");
+    }
+    var length = content.Length;
+    if(length > Int32.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(content), "This file is too large for storing in a *.zvlt file");
+    }
+    var remaining = (int)length;
+    CheckFileNameValidity(logicalName);
+    var encryptionStamp = DateTime.UtcNow;
+    using(var stream = File.OpenWrite(FileName))
+    {
+      throw new NotImplementedException();
+    }
+  }
+
+  /// <summary>
+  /// Append a new file to the vault (encrypted)
+  /// </summary>
+  /// <param name="cryptor">
+  /// The encryption engine that wraps the key and the nonce generator.
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the existing file to add
+  /// </param>
+  /// <param name="logicalName">
+  /// The name of the file. This must be a realative path (and usually is just
+  /// the file name). If there are path separators they must be '/', not '\'.
+  /// None of the segments of the path can be '..' or '.'.
+  /// If null, the file name part of <paramref name="fileName"/> is used
+  /// (without path)
+  /// </param>
+  /// <returns>
+  /// A BlockElement wrapping the file block and its content blocks.
+  /// </returns>
+  public BlockElement AppendFile(
+    VaultCryptor cryptor,
+    string fileName,
+    string? logicalName = null)
+  {
+    logicalName ??= Path.GetFileName(fileName);
+    using(var stream = File.OpenRead(fileName))
+    {
+      return AppendFile(cryptor, stream, File.GetLastWriteTimeUtc(fileName), logicalName);
+    }
+  }
+
+  /// <summary>
+  /// If there is no passphrase key link element in this Vaultfile yet, append one.
+  /// </summary>
+  /// <param name="pkif">
+  /// The passphrase key link information
+  /// </param>
+  public void AppendPassphraseLinkIfMissing(PassphraseKeyInfoFile pkif)
+  {
+    if(pkif.KeyId != KeyId)
+    {
+      throw new InvalidOperationException(
+        "Expecting key ID of the password info to match this file's key ID");
+    }
+    var passBlock = Blocks.Blocks.FirstOrDefault(bi => bi.Kind == Zvlt2BlockType.PassphraseLink);
+    if(passBlock == null)
+    {
+      using(var stream = File.OpenWrite(FileName))
+      {
+        var bi = pkif.WriteBlock(stream);
+        Blocks.Add(bi);
+      }
+      _pkifSearched = true;
+      _pkifCache = pkif;
+    }
+  }
+
+  /// <summary>
+  /// Check if the name is valid for use as the logical name
+  /// of a file in a z-vault, throwing an exception if it isn't.
+  /// </summary>
+  /// <param name="logicalName">
+  /// The name to check
+  /// </param>
+  public static void CheckFileNameValidity(string logicalName)
+  {
+    throw new NotImplementedException();
+  }
+
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)
   {
     if(!_pkifSearched)
@@ -217,29 +335,4 @@ public class VaultFile
     return _pkifCache;
   }
 
-  /// <summary>
-  /// If there is no passphrase key link element in this Vaultfile yet, append one.
-  /// </summary>
-  /// <param name="pkif">
-  /// The passphrase key link information
-  /// </param>
-  public void AppendPassphraseLinkIfMissing(PassphraseKeyInfoFile pkif)
-  {
-    if(pkif.KeyId != KeyId)
-    {
-      throw new InvalidOperationException(
-        "Expecting key ID of the password info to match this file's key ID");
-    }
-    var passBlock = Blocks.Blocks.FirstOrDefault(bi => bi.Kind == Zvlt2BlockType.PassphraseLink);
-    if(passBlock == null)
-    {
-      using(var stream = File.OpenWrite(FileName))
-      {
-        var bi = pkif.WriteBlock(stream);
-        Blocks.Add(bi);
-      }
-      _pkifSearched = true;
-      _pkifCache = pkif;
-    }
-  }
 }

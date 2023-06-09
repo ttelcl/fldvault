@@ -56,4 +56,24 @@ public static class BlockType
     }
     return new String(buffer);
   }
+
+  /// <summary>
+  /// Return true if the block type is recognized as a group start.
+  /// That is: the last character of its 4CC representation is '('.
+  /// </summary>
+  public static bool IsGroupStart(int blockType)
+  {
+    return (blockType & 0x7F000000) == 0x28000000;
+  }
+
+  /// <summary>
+  /// Return true if the block type is recognized as a group end.
+  /// That is: the first or last character of its 4CC representation is ')'.
+  /// In practice group end blocks are usually of type <see cref="ImpliedGroupEnd"/>
+  /// </summary>
+  public static bool IsGroupEnd(int blockType)
+  {
+    return ((blockType & 0x000000FF) == 0x00000029) || ((blockType & 0x7F000000) == 0x29000000);
+  }
+
 }

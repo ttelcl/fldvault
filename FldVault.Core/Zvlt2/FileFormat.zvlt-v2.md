@@ -41,7 +41,7 @@ appear in a *.zvlt file. Each ZVLT file must start with a ZVLT file
 header block, and may subsequently contain 0 or more content elements,
 each of which contain 1 or more blocks.
 
-## File Header Block
+## ZVLT File Header Block
 
 The file header of a ZVLT file is a block of kind 'Zvlt'
 
@@ -108,7 +108,7 @@ Files are written as a variable number of blocks: header, name, one or
 more content blocks. Each content block except possibly
 the last contains 256kb of content
 
-### File header block
+### Content file header block
 
 | Name | Format | Notes |
 | --- |

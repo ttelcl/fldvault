@@ -73,4 +73,41 @@ public class BlockInfoList
     }
     _blocks.Add(block);
   }
+
+  /// <summary>
+  /// Build an element tree wrapping the blocks in the list
+  /// </summary>
+  public BlockElementContainer BuildElementTree()
+  {
+    var root = new BlockElementContainer();
+    var stack = new Stack<BlockElementContainer>();
+    var top = root;
+    foreach(var block in _blocks)
+    {
+      var e = new BlockElement(block);
+      top.AddChild(e);
+      if(BlockType.IsGroupEnd(block.Kind))
+      {
+        if(stack.Count == 0)
+        {
+          throw new InvalidOperationException(
+            $"Invalid block grouping detected (too many group end markers)");
+        }
+        top = stack.Pop();
+      }
+      if(BlockType.IsGroupStart(block.Kind))
+      {
+        stack.Push(top);
+        top = e;
+      }
+    }
+    if(stack.Count != 0)
+    {
+      throw new InvalidOperationException(
+        $"Invalid block grouping detected (too few group end markers)");
+    }
+    return root;
+  }
+
+
 }

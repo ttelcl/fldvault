@@ -116,7 +116,7 @@ the last contains 256kb of content
 | Block Size | 4 bytes | Value 28 |
 | Zvlt Stamp | 8 bytes | Time stamp this block was encrypted |
 | File Stamp | 8 bytes | Time stamp of source file |
-| File size | 4 bytes | Size of the file |
+| File size | 8 bytes | Size of the file (as 64 bit integer) |
 
 The number of content blocks can be predicted from the file size, but
 can also be determined by the terminator block.
@@ -140,7 +140,7 @@ The "associated data" for the name is constructed as the following
 28 bytes:
 
 * `<block header>` (8 bytes, 'FNAM' + size)
-* `<element header past block header>` (20 bytes)
+* `<element header past block header>` (24 bytes)
 
 ### File first content block
 
@@ -155,7 +155,7 @@ The "associated data" for the name is constructed as the following
 The "associated data" for the content is constructed as the following
 24 bytes:
 
-* `<block header>` (8 bytes, 'FCT1' + size)
+* `<block header>` (8 bytes, 'FCT1' + block size)
 * `<ZVLT stamp>` (8 bytes, from element header)
 * `<File stamp>` (8 bytes, from element header)
 

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.Utilities;
 
 namespace FldVault.Core.Vaults;
 
@@ -71,8 +72,8 @@ public class VaultWriter
     w.Write((int)__version);
     w.Write((int)0); // unused
     w.Write(_keyBuffer.GetId().ToByteArray());
-    w.Write(_writeTime.Ticks - VaultFormat.EpochTicks);
-    w.Write(_originalTime.Ticks - VaultFormat.EpochTicks);
+    w.Write(EpochTicks.FromUtc(_writeTime));
+    w.Write(EpochTicks.FromUtc(_originalTime));
   }
 
   

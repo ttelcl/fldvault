@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Utilities;
 using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Zvlt2;
@@ -77,15 +78,11 @@ public class VaultHeader
     long unused2 = 0L)
   {
     var stamp1 = stamp ?? DateTime.UtcNow;
-    if(stamp1.Kind != DateTimeKind.Utc)
-    {
-      throw new ArgumentOutOfRangeException(nameof(stamp), "Expecting timestamp to be in UTC");
-    }
     Span<byte> data = stackalloc byte[40];
     BinaryPrimitives.WriteInt32LittleEndian(data.Slice(0, 4), version);
     BinaryPrimitives.WriteInt32LittleEndian(data.Slice(4, 4), unused1);
     keyId.TryWriteBytes(data.Slice(8, 16));
-    BinaryPrimitives.WriteInt64LittleEndian(data.Slice(24, 8), stamp1.Ticks - VaultFormat.EpochTicks);
+    BinaryPrimitives.WriteInt64LittleEndian(data.Slice(24, 8), EpochTicks.FromUtc(stamp1));
     BinaryPrimitives.WriteInt64LittleEndian(data.Slice(32, 8), unused2);
     var bi = BlockInfo.WriteSync(destination, Zvlt2BlockType.ZvltFile, data);
     return bi;
@@ -157,8 +154,7 @@ public class VaultHeader
         "Expecting reserved field 1 in header to be 0");
     }
     var keyId = new Guid(data.Slice(8, 16));
-    var ticks = BinaryPrimitives.ReadInt64LittleEndian(data.Slice(24, 8));
-    var stamp = new DateTime(ticks + VaultFormat.EpochTicks, DateTimeKind.Utc);
+    var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(data.Slice(24, 8)));
     var unused2 = BinaryPrimitives.ReadInt64LittleEndian(data.Slice(32, 8));
     if(unused2 != 0L)
     {

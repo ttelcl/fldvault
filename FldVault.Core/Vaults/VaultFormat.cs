@@ -33,11 +33,6 @@ public static class VaultFormat
   public const long Unlock0Signature = 0x000059454B574152L; // "RAWKEY\0\0"
 
   /// <summary>
-  /// The number of .NET ticks at 1970-01-01 00:00:00 UTC
-  /// </summary>
-  public const long EpochTicks = 0x089F7FF5F7B58000L; 
-
-  /// <summary>
   /// Vault signature for V1 vaults containing a file
   /// </summary>
   public const long VaultSignatureFile = 0x00454C46544C565AL; // "ZVLTFLE\0"

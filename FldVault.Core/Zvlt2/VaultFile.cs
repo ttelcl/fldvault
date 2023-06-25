@@ -493,7 +493,7 @@ public class VaultFile
     Span<byte> nonce = stackalloc byte[12];
     var size = 36 + plainText.Length;
     destination.Position = destination.Length;
-    var bi = new BlockInfo(Zvlt2BlockType.FileContent1, size, destination.Position);
+    var bi = new BlockInfo(Zvlt2BlockType.FileContentN, size, destination.Position);
     cryptor.Encrypt(tagIn, plainText, cipherText, nonce, tagOut);
     Span<byte> header = stackalloc byte[8];
     bi.FormatBlockHeader(header);

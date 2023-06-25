@@ -347,35 +347,20 @@ public class VaultCryptoTests
   }
 
   [Fact]
-  public void CanEncryptFile()
+  public void CanEncryptFileSmall()
   {
     var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
     const string passphraseText = "HelloWorld";
-    const string testname1 = "testfile.xxx";
+    const string testname1 = "testfile-small.xxx";
     const string testfileOriginalName = "xunit.abstractions.dll";
-    const string vaultName = "HelloWorld2.zvlt";
+    const string vaultName = "HelloWorld-encrypt-small.zvlt";
     using(var keyChain = new KeyChain())
     {
       var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
-      if(File.Exists(testname1))
-      {
-        File.Delete(testname1);
-      }
-      File.Copy(testfileOriginalName, testname1);
-      Assert.True(File.Exists(testname1));
-      File.SetLastWriteTimeUtc(testname1, stamp);
+      CloneSource(testfileOriginalName, testname1, stamp);
+      var vaultFile = ResetVault(pkif, vaultName, stamp);
 
-      if(File.Exists(vaultName))
-      {
-        File.Delete(vaultName);
-      }
-      Assert.False(File.Exists(vaultName));
-
-      var vaultFile = VaultFile.OpenOrCreate(vaultName, pkif, stamp);
       BlockElement be;
-      Assert.NotNull(vaultFile);
-      Assert.True(File.Exists(vaultName));
-
       var nonceGenerator = new NonceGenerator();
       using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
       {
@@ -403,6 +388,78 @@ public class VaultCryptoTests
       Assert.Equal(0, elemTree2.Children[0].Children.Count);
       Assert.Equal(0, elemTree2.Children[1].Children.Count);
       Assert.Equal(3, elemTree2.Children[2].Children.Count);
+    }
+  }
+
+  [Fact]
+  public void CanEncryptFileLarge()
+  {
+    var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
+    const string passphraseText = "HelloWorld";
+    const string testname1 = "testfile-large.xxx";
+    const string testfileOriginalName = "Newtonsoft.Json.dll";
+    const string vaultName = "HelloWorld-encrypt-large.zvlt";
+    using(var keyChain = new KeyChain())
+    {
+      var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
+      CloneSource(testfileOriginalName, testname1, stamp);
+      var vaultFile = ResetVault(pkif, vaultName, stamp);
+
+      BlockElement be;
+      var nonceGenerator = new NonceGenerator();
+      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      {
+        be = vaultFile.AppendFile(cryptor, testname1);
+      }
+
+      Assert.NotNull(be);
+      Assert.Equal(4, be.Children.Count);
+      Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileName, be.Children[0].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent1, be.Children[1].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContentN, be.Children[2].Block.Kind);
+      Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[3].Block.Kind);
+
+      var readVault = VaultFile.Open(vaultName);
+      Assert.NotNull(readVault);
+      foreach(var block in readVault.Blocks.Blocks)
+      {
+        _outputHelper.WriteLine($"'{BlockType.ToText(block.Kind)}' @{block.Offset:X6} ({block.Size,6} bytes)");
+      }
+      Assert.Equal(7, readVault.Blocks.Blocks.Count);
+
+      var elemTree2 = readVault.Blocks.BuildElementTree();
+      Assert.NotNull(elemTree2);
+      Assert.Equal(3, elemTree2.Children.Count);
+      Assert.Equal(0, elemTree2.Children[0].Children.Count);
+      Assert.Equal(0, elemTree2.Children[1].Children.Count);
+      Assert.Equal(4, elemTree2.Children[2].Children.Count);
+    }
+  }
+
+  [Fact(Skip = "Functionality NYI")]
+  public void CanDecryptFile()
+  {
+    var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
+    const string passphraseText = "HelloWorld";
+    const string testname1 = "testfile-decryption.xxx";
+    const string testfileOriginalName = "xunit.abstractions.dll";
+    const string vaultName = "HelloWorld-decrypt.zvlt";
+    var nonceGenerator = new NonceGenerator();
+    using(var keyChain = new KeyChain())
+    {
+      var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
+      CloneSource(testfileOriginalName, testname1, stamp);
+      var vaultFile = ResetVault(pkif, vaultName, stamp);
+      BlockElement be;
+      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      {
+        be = vaultFile.AppendFile(cryptor, testname1);
+      }
+      Assert.NotNull(be);
+      Assert.Equal(3, be.Children.Count);
+
+      
     }
   }
 
@@ -466,6 +523,31 @@ public class VaultCryptoTests
       sb.Append(b.ToString("X2"));
     }
     return sb.ToString();
+  }
+
+  private VaultFile ResetVault(PassphraseKeyInfoFile pkif, string vaultName, DateTime stamp)
+  {
+    if(File.Exists(vaultName))
+    {
+      File.Delete(vaultName);
+    }
+    Assert.False(File.Exists(vaultName));
+
+    var vaultFile = VaultFile.OpenOrCreate(vaultName, pkif, stamp);
+    Assert.NotNull(vaultFile);
+    Assert.True(File.Exists(vaultName));
+    return vaultFile;
+  }
+
+  private void CloneSource(string original, string copy, DateTime stamp)
+  {
+    if(File.Exists(copy))
+    {
+      File.Delete(copy);
+    }
+    File.Copy(original, copy);
+    Assert.True(File.Exists(copy));
+    File.SetLastWriteTimeUtc(copy, stamp);
   }
 
 

@@ -61,7 +61,7 @@ public class SpanWriter
   }
 
   /// <summary>
-  /// Write an signed 16 bit integer
+  /// Write a signed 16 bit integer
   /// </summary>
   public SpanWriter WriteI16(Span<byte> span, short i16)
   {
@@ -81,7 +81,7 @@ public class SpanWriter
   }
 
   /// <summary>
-  /// Write an signed 32 bit integer
+  /// Write a signed 32 bit integer
   /// </summary>
   public SpanWriter WriteI32(Span<byte> span, int i32)
   {
@@ -101,7 +101,7 @@ public class SpanWriter
   }
 
   /// <summary>
-  /// Write an signed 64 bit integer
+  /// Write a signed 64 bit integer
   /// </summary>
   public SpanWriter WriteI64(Span<byte> span, long i64)
   {
@@ -132,7 +132,6 @@ public class SpanWriter
   /// <param name="bytes">
   /// The source span providing the content to write
   /// </param>
-  /// <returns></returns>
   public SpanWriter WriteSpan(Span<byte> span, ReadOnlySpan<byte> bytes)
   {
     bytes.CopyTo(span.Slice(Position, bytes.Length));
@@ -191,18 +190,8 @@ public class SpanWriter
   /// </summary>
   public SpanWriter WriteEpochTicks(Span<byte> span, DateTime utcTime)
   {
-    if(utcTime.Kind != DateTimeKind.Utc)
-    {
-      throw new ArgumentOutOfRangeException(nameof(utcTime), "Expecting an UTC time as argument");
-    }
-    var et = utcTime.Ticks - EpochTicks;
+    var et = EpochTicks.FromUtc(utcTime);
     return WriteI64(span, et);
   }
-
-  /// <summary>
-  /// The number of .NET ticks at 1970-01-01 00:00:00 UTC
-  /// </summary>
-  public const long EpochTicks = 0x089F7FF5F7B58000L;
-
 
 }

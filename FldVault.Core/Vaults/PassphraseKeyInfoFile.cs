@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
+using FldVault.Core.Utilities;
 using FldVault.Core.Zvlt2;
 
 namespace FldVault.Core.Vaults;
@@ -77,8 +78,7 @@ public class PassphraseKeyInfoFile
       throw new InvalidOperationException(
         "Unrecognized file format for *.pass.key-info file");
     }
-    var ticks = BinaryPrimitives.ReadInt64LittleEndian(blob96.Slice(8, 8)) + VaultFormat.EpochTicks;
-    var stamp = new DateTime(ticks, DateTimeKind.Utc);
+    var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(blob96.Slice(8, 8)));
     var guid = new Guid(blob96.Slice(16, 16));
     return new PassphraseKeyInfoFile(guid, blob96.Slice(32, 64), stamp);
   }
@@ -137,8 +137,7 @@ public class PassphraseKeyInfoFile
     }
     Span<byte> content = stackalloc byte[blockInfo.ContentSize];
     blockInfo.ReadSync(stream, content);
-    var ticks = BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)) + VaultFormat.EpochTicks;
-    var stamp = new DateTime(ticks, DateTimeKind.Utc);
+    var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)));
     var guid = new Guid(content.Slice(8, 16));
     return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);
   }
@@ -234,7 +233,7 @@ public class PassphraseKeyInfoFile
       throw new ArgumentOutOfRangeException(nameof(span), "Expecting a 96 byte span");
     }
     BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), VaultFormat.PassphraseKeyInfoSignature);
-    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(8, 8), UtcKeyStamp.Ticks - VaultFormat.EpochTicks);
+    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(8, 8), EpochTicks.FromUtc(UtcKeyStamp));
     KeyId.TryWriteBytes(span.Slice(16, 16));
     Salt.CopyTo(span.Slice(32, 64));
   }
@@ -281,7 +280,7 @@ public class PassphraseKeyInfoFile
   {
     blockStream.Position = blockStream.Length;
     Span<byte> block = stackalloc byte[96-8];
-    BinaryPrimitives.WriteInt64LittleEndian(block.Slice(0, 8), UtcKeyStamp.Ticks - VaultFormat.EpochTicks);
+    BinaryPrimitives.WriteInt64LittleEndian(block.Slice(0, 8), EpochTicks.FromUtc(UtcKeyStamp));
     KeyId.TryWriteBytes(block.Slice(8, 16));
     Salt.CopyTo(block.Slice(24, 64));
     var bi = BlockInfo.WriteSync(blockStream, Zvlt2BlockType.PassphraseLink, block);

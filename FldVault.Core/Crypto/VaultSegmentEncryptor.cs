@@ -11,6 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Utilities;
 using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Crypto
@@ -85,14 +86,9 @@ namespace FldVault.Core.Crypto
     /// </summary>
     public void Reset(short segmentKind, long contentLength, DateTime stamp)
     {
-      if(stamp.Kind != DateTimeKind.Utc)
-      {
-        throw new ArgumentException(
-          "Expecting the time stamp to be in UTC");
-      }
       LengthCode = new KindAndLength(segmentKind, contentLength);
       BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(0, 8), LengthCode.PackedValue);
-      BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(8, 8), stamp.Ticks - VaultFormat.EpochTicks);
+      BinaryPrimitives.WriteInt64LittleEndian(_associatedData.AsSpan().Slice(8, 8), EpochTicks.FromUtc(stamp));
       _authenticationTag.AsSpan().Clear();
     }
 

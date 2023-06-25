@@ -113,7 +113,7 @@ the last contains 256kb of content
 | Name | Format | Notes |
 | --- |
 | Kind | 'FLX(' | 0x28584C46 |
-| Block Size | 4 bytes | Value 28 |
+| Block Size | 4 bytes | Value 32 |
 | Zvlt Stamp | 8 bytes | Time stamp this block was encrypted |
 | File Stamp | 8 bytes | Time stamp of source file |
 | File size | 8 bytes | Size of the file (as 64 bit integer) |

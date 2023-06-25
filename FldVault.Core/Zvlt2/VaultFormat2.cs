@@ -22,4 +22,9 @@ public static class VaultFormat2
   /// </summary>
   public const int VaultFileVersion2 = 0x00020000;
 
+  /// <summary>
+  /// The chunk size used for chopping up files to be encrypted
+  /// into a vault (256 kb)
+  /// </summary>
+  public const int VaultChunkSize = 0x00040000;
 }

@@ -312,18 +312,8 @@ public class VaultCryptoTests
   [Fact]
   public void CanCreateNewZvlt2File()
   {
-    ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
-    const string passphraseText = "HelloWorld";
     var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
-    PassphraseKeyInfoFile pkif;
-    using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
-    {
-      using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
-      {
-        pkif = new PassphraseKeyInfoFile(pk, stamp);
-      }
-    }
-    _outputHelper.WriteLine($"Key ID is {pkif.KeyId}");
+    PassphraseKeyInfoFile pkif = CreateTestKeyInfo(stamp);
 
     const string fileName = "HelloWorld.zvlt";
     if(File.Exists(fileName))
@@ -353,6 +343,22 @@ public class VaultCryptoTests
     {
       _outputHelper.WriteLine($"'{BlockType.ToText(block.Kind)}' @{block.Offset:X6} ({block.Size,6} bytes)");
     }
+  }
+
+  private PassphraseKeyInfoFile CreateTestKeyInfo(DateTime stamp)
+  {
+    ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
+    const string passphraseText = "HelloWorld";
+    PassphraseKeyInfoFile pkif;
+    using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
+    {
+      using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
+      {
+        pkif = new PassphraseKeyInfoFile(pk, stamp);
+      }
+    }
+    _outputHelper.WriteLine($"Key ID is {pkif.KeyId}");
+    return pkif;
   }
 
   /// <summary>

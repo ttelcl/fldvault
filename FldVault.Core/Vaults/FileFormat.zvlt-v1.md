@@ -1,8 +1,9 @@
 ﻿# Vault files (*.zvlt) Version 1.1 
 
-## (deprecated / historical)
+## (DEPRECATED / historical)
 
-_Information in this document describes an earlier design of *.zvlt files_
+:warning: _Information in this document describes an earlier design
+of *.zvlt files and is no longer used_ :warning:
 
 <hr>
 

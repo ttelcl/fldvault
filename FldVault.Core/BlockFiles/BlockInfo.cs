@@ -105,10 +105,22 @@ public class BlockInfo
     Size = content.Length + 8;
     Offset = target.Position;
     Span<byte> header = stackalloc byte[8];
-    BinaryPrimitives.WriteInt32LittleEndian(header.Slice(0, 4), Kind);
-    BinaryPrimitives.WriteInt32LittleEndian(header.Slice(4, 4), Size);
+    FormatBlockHeader(header);
     target.Write(header);
     target.Write(content);
+  }
+
+  /// <summary>
+  /// Write the formatted header into the given 8-byte span
+  /// </summary>
+  public void FormatBlockHeader(Span<byte> header)
+  {
+    if(header.Length != 8)
+    {
+      throw new ArgumentOutOfRangeException(nameof(header), "Expecting an 8 byte buffer");
+    }
+    BinaryPrimitives.WriteInt32LittleEndian(header.Slice(0, 4), Kind);
+    BinaryPrimitives.WriteInt32LittleEndian(header.Slice(4, 4), Size);
   }
 
   /// <summary>

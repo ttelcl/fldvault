@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
+using FldVault.Core.Utilities;
 using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Zvlt2;
@@ -210,23 +211,64 @@ public class VaultFile
     DateTime fileStamp,
     string logicalName)
   {
+    if(cryptor.KeyId != KeyId)
+    {
+      throw new ArgumentException("Incorrect key", nameof(cryptor));
+    }
     if(fileStamp.Kind != DateTimeKind.Utc)
     {
       throw new ArgumentOutOfRangeException(
         nameof(fileStamp), "Expecting a time stamp in UTC");
     }
     var length = content.Length;
-    if(length > Int32.MaxValue)
-    {
-      throw new ArgumentOutOfRangeException(
-        nameof(content), "This file is too large for storing in a *.zvlt file");
-    }
-    var remaining = (int)length;
+    var remaining = length;
     CheckFileNameValidity(logicalName);
     var encryptionStamp = DateTime.UtcNow;
     using(var stream = File.OpenWrite(FileName))
     {
-      throw new NotImplementedException();
+      stream.Position = stream.Length;
+      Span<byte> headerContent = stackalloc byte[24];
+      var headerBlock = AppendFileHeaderBlock(
+        stream, encryptionStamp, fileStamp, length, headerContent);
+      var nameBlock = AppendFileNameBlock(
+        stream, cryptor, logicalName, headerContent);
+      headerBlock.AddChild(nameBlock);
+      using(var chunkBuffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+      using(var cipherBuffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+      {
+        bool first = true;
+        Span<byte> tagOld = stackalloc byte[16];
+        Span<byte> tagNew = stackalloc byte[16];
+        Span<byte> aux = stackalloc byte[32];
+        while(remaining > 0L)
+        {
+          var n = content.Read(chunkBuffer.Span());
+          remaining -= n;
+          if(n == 0)
+          {
+            throw new EndOfStreamException("Unexpected end of file");
+          }
+          var plaintext = chunkBuffer.Span(0, n);
+          var cipher = cipherBuffer.Span(0, n);
+          BlockElement be;
+          if(first)
+          {
+            be = AppendFirstFileBlock(
+              stream, cryptor, plaintext, cipher, headerContent, tagNew);
+          }
+          else
+          {
+            be = AppendNextFileBlock(
+              stream, cryptor, plaintext, cipher, tagOld, tagNew);
+          }
+          tagNew.CopyTo(tagOld);
+          headerBlock.AddChild(be);
+          first = false;
+        }
+      }
+      var terminatorBlock = AppendTerminator(stream);
+      headerBlock.AddChild(terminatorBlock);
+      return headerBlock;
     }
   }
 
@@ -296,7 +338,27 @@ public class VaultFile
   /// </param>
   public static void CheckFileNameValidity(string logicalName)
   {
-    throw new NotImplementedException();
+    if(String.IsNullOrEmpty(logicalName))
+    {
+      throw new ArgumentException("The logical file name cannot be empty");
+    }
+    if(logicalName.IndexOfAny(new[] { ':', '\\'} ) >= 0)
+    {
+      throw new ArgumentException("The logical file name cannot contain the characters ':' or '\\'");
+    }
+    if(logicalName.StartsWith("/"))
+    {
+      throw new ArgumentException("The logical name must be relative");
+    }
+    var segments = logicalName.Split('/');
+    if(segments.Any(s => s == "." || s == ".."))
+    {
+      throw new ArgumentException("The logical name path cannot contain any '.' or '..' segments");
+    }
+    if(segments.Any(s => s.EndsWith('.')))
+    {
+      throw new ArgumentException("The logical name path cannot contain any segments ending in '.'");
+    }
   }
 
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)
@@ -333,6 +395,114 @@ public class VaultFile
       }
     }
     return _pkifCache;
+  }
+
+  private BlockElement AppendFileHeaderBlock(
+    Stream destination,
+    DateTime utcEncryptionStamp,
+    DateTime utcFileStamp,
+    long fileSize,
+    Span<byte> content)
+  {
+    var sw = new SpanWriter();
+    sw
+      .WriteEpochTicks(content, utcEncryptionStamp)
+      .WriteEpochTicks(content, utcFileStamp)
+      .WriteI64(content, fileSize)
+      .CheckFull(content);
+    var bi = BlockInfo.WriteSync(destination, Zvlt2BlockType.FileHeader, content);
+    Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendFileNameBlock(
+    Stream destination,
+    VaultCryptor cryptor,
+    string logicalName,
+    ReadOnlySpan<byte> headerContent)
+  {
+    // at this point we assume the name has already been validated
+    var plainText = Encoding.UTF8.GetBytes(logicalName);
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> authtag = stackalloc byte[16];
+    Span<byte> aux = stackalloc byte[32];
+    var size = 36 + plainText.Length;
+    destination.Position = destination.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileName, size, destination.Position);
+    new SpanWriter()
+      .WriteI32(aux, bi.Kind)
+      .WriteI32(aux, bi.Size)
+      .WriteSpan(aux, headerContent)
+      .CheckFull(aux);
+    var cipherText = new byte[plainText.Length];
+    cryptor.Encrypt(aux, plainText, cipherText, nonce, authtag);
+    Span<byte> header = aux.Slice(0, 8);
+    destination.Write(header);
+    destination.Write(nonce);
+    destination.Write(authtag);
+    destination.Write(cipherText);
+    Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendFirstFileBlock(
+    Stream destination,
+    VaultCryptor cryptor,
+    ReadOnlySpan<byte> plainText,
+    Span<byte> cipherText,
+    ReadOnlySpan<byte> headerContent,
+    Span<byte> tagOut)
+  {
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> aux = stackalloc byte[32];
+    var size = 36 + plainText.Length;
+    destination.Position = destination.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileContent1, size, destination.Position);
+    new SpanWriter()
+      .WriteI32(aux, bi.Kind)
+      .WriteI32(aux, bi.Size)
+      .WriteSpan(aux, headerContent)
+      .CheckFull(aux);
+    cryptor.Encrypt(aux, plainText, cipherText, nonce, tagOut);
+    Span<byte> header = aux.Slice(0, 8);
+    destination.Write(header);
+    destination.Write(nonce);
+    destination.Write(tagOut);
+    destination.Write(cipherText);
+    Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendNextFileBlock(
+    Stream destination,
+    VaultCryptor cryptor,
+    ReadOnlySpan<byte> plainText,
+    Span<byte> cipherText,
+    ReadOnlySpan<byte> tagIn,
+    Span<byte> tagOut)
+  {
+    Span<byte> nonce = stackalloc byte[12];
+    var size = 36 + plainText.Length;
+    destination.Position = destination.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileContent1, size, destination.Position);
+    cryptor.Encrypt(tagIn, plainText, cipherText, nonce, tagOut);
+    Span<byte> header = stackalloc byte[8];
+    bi.FormatBlockHeader(header);
+    destination.Write(header);
+    destination.Write(nonce);
+    destination.Write(tagOut);
+    destination.Write(cipherText);
+    Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendTerminator(
+    Stream destination)
+  {
+    var bi = new BlockInfo(BlockType.GenericTerminator);
+    bi.WriteSync(destination, Span<byte>.Empty);
+    Blocks.Add(bi);
+    return new BlockElement(bi);
   }
 
 }

@@ -134,6 +134,15 @@ public class VaultFile
   }
 
   /// <summary>
+  /// Open an existing vault file. This method exists for symmetry with the 
+  /// OpenOrCreate() factory methods but is just an alias for the constructor.
+  /// </summary>
+  public static VaultFile Open(string fileName)
+  {
+    return new VaultFile(fileName);
+  }
+
+  /// <summary>
   /// The full path to the file
   /// </summary>
   public string FileName { get; init; }
@@ -499,7 +508,7 @@ public class VaultFile
   private BlockElement AppendTerminator(
     Stream destination)
   {
-    var bi = new BlockInfo(BlockType.GenericTerminator);
+    var bi = new BlockInfo(BlockType.ImpliedGroupEnd);
     bi.WriteSync(destination, Span<byte>.Empty);
     Blocks.Add(bi);
     return new BlockElement(bi);

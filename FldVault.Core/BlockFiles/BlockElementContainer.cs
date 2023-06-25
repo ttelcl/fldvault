@@ -31,7 +31,7 @@ public class BlockElementContainer
   /// <summary>
   /// A read-only view on the child elements
   /// </summary>
-  public IReadOnlyCollection<BlockElement> Children { get; init; }
+  public IReadOnlyList<BlockElement> Children { get; init; }
 
   /// <summary>
   /// Add a child BlockElement

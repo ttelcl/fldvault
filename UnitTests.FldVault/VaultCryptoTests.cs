@@ -22,7 +22,7 @@ public class VaultCryptoTests
   private readonly ITestOutputHelper _outputHelper;
 
   public VaultCryptoTests(
-    ITestOutputHelper testOutputHelper) 
+    ITestOutputHelper testOutputHelper)
   {
     _outputHelper = testOutputHelper;
   }
@@ -38,7 +38,7 @@ public class VaultCryptoTests
       {
         bytes[i] = i;
       }
-      for(var i=1; i < bytes.Length; i++)
+      for(var i = 1; i < bytes.Length; i++)
       {
         Assert.NotEqual(0, bytes[i]);
       }
@@ -128,7 +128,7 @@ public class VaultCryptoTests
       nonceGenerator.Next(span.Slice(i*12, 12));
       // var s = DumpHex(span.Slice(i*12, 12));
     }
-    
+
     var hexes =
       Enumerable.Range(0, repetitions)
       .Select(i => DumpHex(buffer.AsSpan(i*12, 12)))
@@ -313,7 +313,8 @@ public class VaultCryptoTests
   public void CanCreateNewZvlt2File()
   {
     var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
-    PassphraseKeyInfoFile pkif = CreateTestKeyInfo(stamp);
+    const string passphraseText = "HelloWorld";
+    var pkif = CreateTestKeyInfo(passphraseText, stamp, null);
 
     const string fileName = "HelloWorld.zvlt";
     if(File.Exists(fileName))
@@ -345,16 +346,79 @@ public class VaultCryptoTests
     }
   }
 
-  private PassphraseKeyInfoFile CreateTestKeyInfo(DateTime stamp)
+  [Fact]
+  public void CanEncryptFile()
+  {
+    var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
+    const string passphraseText = "HelloWorld";
+    const string testname1 = "testfile.xxx";
+    const string testfileOriginalName = "xunit.abstractions.dll";
+    const string vaultName = "HelloWorld2.zvlt";
+    using(var keyChain = new KeyChain())
+    {
+      var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
+      if(File.Exists(testname1))
+      {
+        File.Delete(testname1);
+      }
+      File.Copy(testfileOriginalName, testname1);
+      Assert.True(File.Exists(testname1));
+      File.SetLastWriteTimeUtc(testname1, stamp);
+
+      if(File.Exists(vaultName))
+      {
+        File.Delete(vaultName);
+      }
+      Assert.False(File.Exists(vaultName));
+
+      var vaultFile = VaultFile.OpenOrCreate(vaultName, pkif, stamp);
+      BlockElement be;
+      Assert.NotNull(vaultFile);
+      Assert.True(File.Exists(vaultName));
+
+      var nonceGenerator = new NonceGenerator();
+      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      {
+        be = vaultFile.AppendFile(cryptor, testname1);
+      }
+
+      Assert.NotNull(be);
+      Assert.Equal(3, be.Children.Count);
+      Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileName, be.Children[0].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent1, be.Children[1].Block.Kind);
+      Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[2].Block.Kind);
+
+      var readVault = VaultFile.Open(vaultName);
+      Assert.NotNull(readVault);
+      foreach(var block in readVault.Blocks.Blocks)
+      {
+        _outputHelper.WriteLine($"'{BlockType.ToText(block.Kind)}' @{block.Offset:X6} ({block.Size,6} bytes)");
+      }
+      Assert.Equal(6, readVault.Blocks.Blocks.Count);
+
+      var elemTree2 = readVault.Blocks.BuildElementTree();
+      Assert.NotNull(elemTree2);
+      Assert.Equal(3, elemTree2.Children.Count);
+      Assert.Equal(0, elemTree2.Children[0].Children.Count);
+      Assert.Equal(0, elemTree2.Children[1].Children.Count);
+      Assert.Equal(3, elemTree2.Children[2].Children.Count);
+    }
+  }
+
+  private PassphraseKeyInfoFile CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)
   {
     ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
-    const string passphraseText = "HelloWorld";
     PassphraseKeyInfoFile pkif;
     using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
     {
       using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
       {
         pkif = new PassphraseKeyInfoFile(pk, stamp);
+        if(keyChain != null)
+        {
+          keyChain.PutCopy(pk);
+        }
       }
     }
     _outputHelper.WriteLine($"Key ID is {pkif.KeyId}");
@@ -385,7 +449,7 @@ public class VaultCryptoTests
   private string DumpHex(ReadOnlySpan<byte> bytes)
   {
     var sb = new StringBuilder();
-    for(var i=0; i<bytes.Length; i++)
+    for(var i = 0; i<bytes.Length; i++)
     {
       var b = bytes[i];
       if(i > 0 && (i%8)==0)

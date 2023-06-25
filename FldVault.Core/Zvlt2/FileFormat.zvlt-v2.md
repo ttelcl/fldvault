@@ -137,7 +137,7 @@ The file name cannot have path segments that are '..' or '.'.
 | CipherText | (Size) bytes | The ciphertext |
 
 The "associated data" for the name is constructed as the following
-28 bytes:
+32 bytes:
 
 * `<block header>` (8 bytes, 'FNAM' + size)
 * `<element header past block header>` (24 bytes)
@@ -153,11 +153,10 @@ The "associated data" for the name is constructed as the following
 | CipherText | (Size) bytes | The ciphertext |
 
 The "associated data" for the content is constructed as the following
-24 bytes:
+32 bytes:
 
 * `<block header>` (8 bytes, 'FCT1' + block size)
-* `<ZVLT stamp>` (8 bytes, from element header)
-* `<File stamp>` (8 bytes, from element header)
+* `<element header past block header>` (24 bytes)
 
 ### File subsequent content blocks
 

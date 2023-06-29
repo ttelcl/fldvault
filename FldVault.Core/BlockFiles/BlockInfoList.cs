@@ -26,6 +26,7 @@ public class BlockInfoList
   {
     _blocks = new List<BlockInfo>();
     Blocks = _blocks.AsReadOnly();
+    ChangeCounter = 0;
     if(source != null)
     {
       Reload(source);
@@ -38,10 +39,16 @@ public class BlockInfoList
   public IReadOnlyList<BlockInfo> Blocks { get; init; }
 
   /// <summary>
+  /// Counter for changes, used to detect if there were any changes
+  /// </summary>
+  public int ChangeCounter { get; private set; }
+
+  /// <summary>
   /// Clear the existing list and load it from the specified stream
   /// </summary>
   public void Reload(Stream source)
   {
+    ChangeCounter++;
     _blocks.Clear();
     BlockInfo? bi;
     while((bi = BlockInfo.TryReadHeaderSync(source, true)) != null)
@@ -71,11 +78,12 @@ public class BlockInfoList
       throw new ArgumentException(
         "Incorrect offset for the block being added");
     }
+    ChangeCounter++;
     _blocks.Add(block);
   }
 
   /// <summary>
-  /// Build an element tree wrapping the blocks in the list
+  /// Build a new element tree wrapping the blocks in the list
   /// </summary>
   public BlockElementContainer BuildElementTree()
   {
@@ -108,6 +116,5 @@ public class BlockInfoList
     }
     return root;
   }
-
 
 }

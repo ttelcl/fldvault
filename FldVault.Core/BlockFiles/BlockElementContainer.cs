@@ -15,7 +15,7 @@ namespace FldVault.Core.BlockFiles;
 /// An object that holds zero or more BlockElements.
 /// BlockElement is a subclass of this.
 /// </summary>
-public class BlockElementContainer
+public class BlockElementContainer: IBlockElementContainer
 {
   private readonly List<BlockElement> _children;
 
@@ -32,6 +32,8 @@ public class BlockElementContainer
   /// A read-only view on the child elements
   /// </summary>
   public IReadOnlyList<BlockElement> Children { get; init; }
+
+  IReadOnlyList<IBlockElement> IBlockElementContainer.Children { get => Children; }
 
   /// <summary>
   /// Add a child BlockElement

@@ -14,7 +14,7 @@ namespace FldVault.Core.BlockFiles;
 /// <summary>
 /// A node in a hierarchy of BlockInfo wrappers
 /// </summary>
-public class BlockElement: BlockElementContainer
+public class BlockElement: BlockElementContainer, IBlockElement
 {
   /// <summary>
   /// Create a new BlockElement and register it as child of its owner
@@ -28,5 +28,6 @@ public class BlockElement: BlockElementContainer
   /// The block wrapped by this element
   /// </summary>
   public BlockInfo Block { get; init; }
-
+  
+  IBlockInfo IBlockElement.Block { get => Block; }
 }

@@ -23,10 +23,12 @@ namespace FldVault.Core.Zvlt2;
 /// an open file handle. Requires the file to exist and have at least
 /// the file header block.
 /// </summary>
-public class VaultFile
+public class VaultFile: IBlockElementContainer
 {
   private PassphraseKeyInfoFile? _pkifCache;
   private bool _pkifSearched;
+  private int _elementCheckCount = -1;
+  private BlockElementContainer? _elementContainerCache;
 
   /// <summary>
   /// Create a new VaultFile object for an existing *.zvlt file
@@ -161,6 +163,21 @@ public class VaultFile
   /// The key id for the encryption key used in this vault
   /// </summary>
   public Guid KeyId { get => Header.KeyId; }
+
+  /// <summary>
+  /// Implements <see cref="IBlockElementContainer"/>, returning a cached copy,
+  /// or a newly generated instance if the block list has changed.
+  /// </summary>
+  public IReadOnlyList<IBlockElement> Children {
+    get {
+      if(_elementContainerCache == null || _elementCheckCount != Blocks.ChangeCounter)
+      {
+        _elementContainerCache = Blocks.BuildElementTree();
+        _elementCheckCount = Blocks.ChangeCounter;
+      }
+      return _elementContainerCache.Children;
+    }
+  }
 
   /// <summary>
   /// Retrieve the <see cref="PassphraseKeyInfoFile"/> from the
@@ -351,7 +368,7 @@ public class VaultFile
     {
       throw new ArgumentException("The logical file name cannot be empty");
     }
-    if(logicalName.IndexOfAny(new[] { ':', '\\'} ) >= 0)
+    if(logicalName.IndexOfAny(new[] { ':', '\\' }) >= 0)
     {
       throw new ArgumentException("The logical file name cannot contain the characters ':' or '\\'");
     }

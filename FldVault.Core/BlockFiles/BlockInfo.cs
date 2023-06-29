@@ -18,7 +18,7 @@ namespace FldVault.Core.BlockFiles;
 /// <summary>
 /// Describes a block in a block file
 /// </summary>
-public class BlockInfo
+public class BlockInfo: IBlockInfo
 {
   /// <summary>
   /// Create a new BlockInfo

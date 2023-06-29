@@ -356,6 +356,57 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
+  /// Enumerate block elements in the vault that represent a contained file
+  /// </summary>
+  /// <param name="kind">
+  /// The top level element type to look for (normally <see cref="Zvlt2BlockType.FileHeader"/>;
+  /// that is also the default)
+  /// </param>
+  /// <returns></returns>
+  public IEnumerable<IBlockElement> FileElements(int kind = Zvlt2BlockType.FileHeader)
+  {
+    return Children.Where(ibe => ibe.Block.Kind == kind);
+  }
+
+  /// <summary>
+  /// Given a File Header element or a File Name element, decrypt the file name if present.
+  /// Returns null if the name is missing or the element is not recognized
+  /// </summary>
+  /// <param name="cryptor">
+  /// Provides the decryption key.
+  /// </param>
+  /// <param name="vaultStream">
+  /// The already opened file stream on the vault file. The current position in the file
+  /// will be changed by this method.
+  /// </param>
+  /// <param name="fileOrNameElement">
+  /// The BlockElement used to locate the name: either the file name element itself,
+  /// or the parent file header element.
+  /// </param>
+  /// <returns>
+  /// The logical file name if found, or null if not found.
+  /// </returns>
+  public string? FindName(VaultCryptor cryptor, Stream vaultStream, IBlockElement fileOrNameElement)
+  {
+    if(fileOrNameElement.Block.Kind == Zvlt2BlockType.FileHeader)
+    {
+      var nameElement = fileOrNameElement.Children.FirstOrDefault(ibe => ibe.Block.Kind == Zvlt2BlockType.FileName);
+      return nameElement == null ? null : FindName(cryptor, vaultStream, nameElement.Block);
+    }
+    if(fileOrNameElement.Block.Kind == Zvlt2BlockType.FileName)
+    {
+      return FindName(cryptor, vaultStream, fileOrNameElement.Block);
+    }
+    return null;
+  }
+
+  public string FindName(VaultCryptor cryptor, Stream vaultStream, IBlockInfo nameBlock)
+  {
+    //
+    throw new NotImplementedException("Missing abstraction for an opened vault file");
+  }
+
+  /// <summary>
   /// Check if the name is valid for use as the logical name
   /// of a file in a z-vault, throwing an exception if it isn't.
   /// </summary>

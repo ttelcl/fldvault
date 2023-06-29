@@ -437,7 +437,7 @@ public class VaultCryptoTests
     }
   }
 
-  [Fact(Skip = "Functionality NYI")]
+  [Fact(/* Skip = "Functionality NYI" */)]
   public void CanDecryptFile()
   {
     var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
@@ -450,16 +450,25 @@ public class VaultCryptoTests
     {
       var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
       CloneSource(testfileOriginalName, testname1, stamp);
-      var vaultFile = ResetVault(pkif, vaultName, stamp);
+      var vaultFile0 = ResetVault(pkif, vaultName, stamp);
       BlockElement be;
-      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      using(var cryptor = new VaultCryptor(keyChain, vaultFile0.KeyId, stamp, nonceGenerator))
       {
-        be = vaultFile.AppendFile(cryptor, testname1);
+        _outputHelper.WriteLine($"Appending {Path.GetFileName(testname1)} to {Path.GetFileName(vaultName)}");
+        be = vaultFile0.AppendFile(cryptor, testname1);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);
 
-      
+      var vf = VaultFile.Open(vaultName);
+      Assert.NotNull(vf);
+      var elements = vf.Children;
+      Assert.NotNull(elements);
+      Assert.Equal(3, elements.Count);
+
+
+
+      throw new NotImplementedException();
     }
   }
 
@@ -529,10 +538,12 @@ public class VaultCryptoTests
   {
     if(File.Exists(vaultName))
     {
+      _outputHelper.WriteLine($"Deleting existing {Path.GetFileName(vaultName)}");
       File.Delete(vaultName);
     }
     Assert.False(File.Exists(vaultName));
 
+    _outputHelper.WriteLine($"Creating new {Path.GetFileName(vaultName)}");
     var vaultFile = VaultFile.OpenOrCreate(vaultName, pkif, stamp);
     Assert.NotNull(vaultFile);
     Assert.True(File.Exists(vaultName));
@@ -543,8 +554,10 @@ public class VaultCryptoTests
   {
     if(File.Exists(copy))
     {
+      _outputHelper.WriteLine($"Deleting existing {Path.GetFileName(copy)}");
       File.Delete(copy);
     }
+    _outputHelper.WriteLine($"Copying {Path.GetFileName(original)} to {Path.GetFileName(copy)}");
     File.Copy(original, copy);
     Assert.True(File.Exists(copy));
     File.SetLastWriteTimeUtc(copy, stamp);

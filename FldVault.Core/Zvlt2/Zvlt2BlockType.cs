@@ -30,6 +30,7 @@ public static class Zvlt2BlockType
   /// <summary>
   /// File name block ('FNAM')
   /// </summary>
+  [Obsolete]
   public const int FileName = 0x4D414E46;
 
   /// <summary>
@@ -38,13 +39,25 @@ public static class Zvlt2BlockType
   public const int FileHeader = 0x28584C46;
 
   /// <summary>
+  /// File metadata
+  /// </summary>
+  public const int FileMetadata = 0x54454D46;
+
+  /// <summary>
+  /// File Content block
+  /// </summary>
+  public const int FileContent = 0x544E4346;
+
+  /// <summary>
   /// Large file first content block ('FCT1')
   /// </summary>
+  [Obsolete]
   public const int FileContent1 = 0x31544346;
 
   /// <summary>
   /// Large file later content block ('FCTn')
   /// </summary>
+  [Obsolete]
   public const int FileContentN = 0x6E544346;
 
 }

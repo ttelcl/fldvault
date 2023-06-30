@@ -49,11 +49,13 @@ The file header of a ZVLT file is a block of kind 'Zvlt'
 | --- | 
 | Kind | 'Zvlt' | 0x746C665A |
 | Size | 4 bytes | value is 48 |
-| Version | 1 int (2 shorts) | 0x00020000 |
+| Version | 1 int (2 shorts) | 0x00020001 |
 | Reserved | 1 int | 0x00000000 |
 | Key ID | Guid (16 bytes) | |
-| Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
+| ZVLT Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
 | Reserved | 8 bytes | 0x0000000000000000L |
+
+:warning: Transitioning  to version 2.1 from 2.0
 
 ### Encrypted content sub-blocks
 
@@ -113,24 +115,41 @@ the last contains 256kb of content
 | Name | Format | Notes |
 | --- |
 | Kind | 'FLX(' | 0x28584C46 |
-| Block Size | 4 bytes | Value 32 |
-| Zvlt Stamp | 8 bytes | Time stamp this block was encrypted |
-| File Stamp | 8 bytes | Time stamp of source file |
-| File size | 8 bytes | Size of the file (as 64 bit integer) |
+| Block Size | 4 bytes | Value ~~32~~ 16 |
+| Encryption Stamp | 8 bytes | Time stamp this block was encrypted |
+| ~~File Stamp~~ | ~~8 bytes~~ | ~~Time stamp of source file~~ |
+| ~~File size~~ | ~~8 bytes~~ | ~~Size of the file (as 64 bit integer)~~ |
 
-The number of content blocks can be predicted from the file size, but
-can also be determined by the terminator block.
+The number of content blocks ~~can be predicted from the file size, but
+can also be~~ is determined by the terminator block.
 
 ### File name block
 
-This carries the file name in encrypted form. The file name must
-be relative. Typically without any path components, but if there are path
-components they must use '/' as separator. The character '\' is forbidden.
-The file name cannot have path segments that are '..' or '.'.
+_removed_
+
+### File metadata block
+
+_This block is added in version 2.1. It replaces functionality that
+was previously in the file name block plus part of the header._
+
+This block contains an UTF8 encoded JSON string representing an
+object with metadata. The format is intended to be extensible, but
+should have the following fields:
+
+| Field | Description |
+| --- |
+| name | the name of the file (*) |
+| size | size in bytes (if known in advance) |
+| stamp | the last write time stamp as a UTC ISO string | 
+
+(*) The file name can optionally include a `/` separated relative
+path (none of the path segments are allowed to be `.` nor `..`)
+
+#### Binary encoding of the metadata block
 
 | Name | Format | Notes |
 | --- |
-| Kind | 'FNAM' | 0x4D414E46 |
+| Kind | 'FMET' | 0x54454D46 |
 | Block Size | 4 bytes | |
 | Nonce | 12 bytes | AES-GCM nonce |
 | Auth Tag | 16 bytes | The resulting authentication tag |
@@ -139,37 +158,23 @@ The file name cannot have path segments that are '..' or '.'.
 The "associated data" for the name is constructed as the following
 32 bytes:
 
-* `<block header>` (8 bytes, 'FNAM' + size)
-* `<element header past block header>` (24 bytes)
+* `<block header>` (8 bytes, 'FMET' + size)
+* `<encryption stamp from the FLX header>` (8 bytes)
+* `<ZVLT stamp from the ZVLT header>` (8 bytes)
 
-### File first content block
+### File content blocks
 
 | Name | Format | Notes |
 | --- |
-| Kind | 'FCT1' | 0x31544346 |
+| Kind | 'FCNT' | 0x544E4346 |
 | Block Size | 4 bytes | |
 | Nonce | 12 bytes | AES-GCM nonce |
 | Auth Tag | 16 bytes | The resulting authentication tag |
 | CipherText | (Size) bytes | The ciphertext |
 
-The "associated data" for the content is constructed as the following
-32 bytes:
-
-* `<block header>` (8 bytes, 'FCT1' + block size)
-* `<element header past block header>` (24 bytes)
-
-### File subsequent content blocks
-
-| Name | Format | Notes |
-| --- |
-| Kind | 'FCTn' | 0x6E544346 |
-| Block Size | 4 bytes | |
-| Nonce | 12 bytes | AES-GCM nonce |
-| Auth Tag | 16 bytes | The resulting authentication tag |
-| CipherText | (Size) bytes | The ciphertext |
-
-The "associated data" is now calculated differently: it is
-the Auth Tag of the previous block (16 bytes)
+The "associated data" is the Auth Tag of the previous block
+(16 bytes), using the Auth tag of the metadata block for the
+first content block.
 
 ### File terminator
 
@@ -177,5 +182,5 @@ This is just the generic "implied group terminator"
 
 | Name | Format | Notes |
 | --- |
-| Kind | ')   ' | 0x20202029 |
+| Kind | '`)   `' (3 spaces) | 0x20202029 |
 | Block Size | 4 bytes | 8 |

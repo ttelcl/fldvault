@@ -18,5 +18,4 @@ public interface IBlockElement: IBlockElementContainer
   /// The block wrapped by this element
   /// </summary>
   IBlockInfo Block { get; }
-
 }

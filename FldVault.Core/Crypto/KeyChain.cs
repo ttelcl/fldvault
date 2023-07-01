@@ -32,7 +32,7 @@ public class KeyChain: IDisposable
   /// Find a key by its identifier, returning null if not found.
   /// </summary>
   public KeyBuffer? this[Guid guid] {
-    get {
+    get { // DESIGN BUG! SHOULD THIS RETURN THE KEY OR A COPY?
       return _store.TryGetValue(guid, out var key) ? key : null;
     }
   }

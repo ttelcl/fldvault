@@ -24,7 +24,8 @@ public static class VaultFormat2
 
   /// <summary>
   /// The chunk size used for chopping up files to be encrypted
-  /// into a vault (256 kb)
+  /// into a vault (256 kb). That is: the maximum number of bytes
+  /// to be encrypted or decrypted at omce.
   /// </summary>
   public const int VaultChunkSize = 0x00040000;
 }

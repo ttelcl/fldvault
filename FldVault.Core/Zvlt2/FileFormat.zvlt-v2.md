@@ -106,26 +106,19 @@ stand-alone.
 
 ## File element
 
-Files are written as a variable number of blocks: header, name, one or
-more content blocks. Each content block except possibly
-the last contains 256kb of content
+Files are written as a variable number of blocks: header, metadata,
+one or more content blocks. Each content block contains up to 256kb
+of content.
 
 ### Content file header block
 
 | Name | Format | Notes |
 | --- |
 | Kind | 'FLX(' | 0x28584C46 |
-| Block Size | 4 bytes | Value ~~32~~ 16 |
-| Encryption Stamp | 8 bytes | Time stamp this block was encrypted |
-| ~~File Stamp~~ | ~~8 bytes~~ | ~~Time stamp of source file~~ |
-| ~~File size~~ | ~~8 bytes~~ | ~~Size of the file (as 64 bit integer)~~ |
+| Block Size | 4 bytes | Value 16 |
+| Encryption Stamp | 8 bytes | Time stamp this element was encrypted |
 
-The number of content blocks ~~can be predicted from the file size, but
-can also be~~ is determined by the terminator block.
-
-### File name block
-
-_removed_
+The number of content blocks is determined by the terminator block.
 
 ### File metadata block
 
@@ -134,16 +127,21 @@ was previously in the file name block plus part of the header._
 
 This block contains an UTF8 encoded JSON string representing an
 object with metadata. The format is intended to be extensible, but
-should have the following fields:
+should have the fields below. Note that the fields are in principle
+optional: they are not guaranteed to be present.
 
 | Field | Description |
 | --- |
-| name | the name of the file (*) |
+| name | the name of the file (*). |
 | size | size in bytes (if known in advance) |
-| stamp | the last write time stamp as a UTC ISO string | 
+| stamp | the last write time stamp in epoch ticks | 
 
 (*) The file name can optionally include a `/` separated relative
 path (none of the path segments are allowed to be `.` nor `..`)
+
+The metadata can have any additional fields you want. Note that these
+all will be included in the "additional data" that is chained through
+the encrypted blocks, supporting a form of non-repudiation.
 
 #### Binary encoding of the metadata block
 
@@ -155,8 +153,8 @@ path (none of the path segments are allowed to be `.` nor `..`)
 | Auth Tag | 16 bytes | The resulting authentication tag |
 | CipherText | (Size) bytes | The ciphertext |
 
-The "associated data" for the name is constructed as the following
-32 bytes:
+The "associated data" for the metadata is constructed as the following
+24 bytes:
 
 * `<block header>` (8 bytes, 'FMET' + size)
 * `<encryption stamp from the FLX header>` (8 bytes)

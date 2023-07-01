@@ -10,6 +10,10 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Crypto;
+using FldVault.Core.Utilities;
+
+using Newtonsoft.Json;
 
 namespace FldVault.Core.Zvlt2
 {
@@ -35,12 +39,14 @@ namespace FldVault.Core.Zvlt2
           "Unrecognized file element structure: missing element group terminator");
       }
       RootElement = rootElement;
-      var nameElement = RootElement.Children.FirstOrDefault(b => b.Block.Kind == Zvlt2BlockType.FileName);
-      NameBlock = nameElement?.Block ?? throw new InvalidOperationException(
-        "Missing file name block");
-      var firstContentElement = RootElement.Children.FirstOrDefault(b => b.Block.Kind == Zvlt2BlockType.FileContent1);
-      FirstContentBlock = firstContentElement?.Block ?? throw new InvalidOperationException(
-        "No file content in file element??");
+      var metaElement = RootElement.Children.FirstOrDefault(e => e.Block.Kind == Zvlt2BlockType.FileMetadata);
+      MetadataBlock = metaElement?.Block ?? throw new InvalidOperationException(
+        "Missing file metadata block");
+      ContentBlocks =
+        RootElement.Children
+          .Where(e => e.Block.Kind == Zvlt2BlockType.FileContent)
+          .Select(e => e.Block)
+          .ToList();
     }
 
     /// <summary>
@@ -54,12 +60,73 @@ namespace FldVault.Core.Zvlt2
     public IBlockInfo HeaderBlock { get => RootElement.Block; }
 
     /// <summary>
-    /// The file element name block
+    /// The file element metadata block
     /// </summary>
-    public IBlockInfo NameBlock { get; init; }
+    public IBlockInfo MetadataBlock { get; init; }
 
-    public IBlockInfo FirstContentBlock { get; init; }
+    /// <summary>
+    /// The content blocks
+    /// </summary>
+    public IReadOnlyList<IBlockInfo> ContentBlocks { get; init; }
 
-    public IReadOnlyList<IBlockInfo> RemainingContentBlocks { get; init; }
+    /// <summary>
+    /// Read the content of the file header block
+    /// </summary>
+    public FileHeader ReadHeader(VaultFileReader reader)
+    {
+      reader.SeekBlock(HeaderBlock);
+      Span<byte> span = stackalloc byte[8];
+      reader.ReadSpan(span);
+      new SpanReader()
+        .ReadI64(span, out var encryptionTicks)
+        .CheckEmpty(span);
+      return new FileHeader(encryptionTicks);
+    }
+
+    /// <summary>
+    /// Read the metadata record for this FileElement
+    /// </summary>
+    /// <param name="reader">
+    /// The vault reader (including the vault key)
+    /// </param>
+    /// <param name="fileHeader">
+    /// The vault header information (which is taken into account in the AES-GCM
+    /// authentication tag)
+    /// </param>
+    /// <param name="authTagOut">
+    /// The buffer to receive the authentication tag (for chaining as associated data
+    /// into the content block decryptions)
+    /// </param>
+    /// <returns>
+    /// The FileMetadata deserialized from the JSON decrypted from the block
+    /// </returns>
+    public FileMetadata ReadMetadata(
+      VaultFileReader reader,
+      FileHeader fileHeader,
+      Span<byte> authTagOut)
+    {
+      reader.SeekBlock(MetadataBlock);
+      Span<byte> aux = stackalloc byte[24];
+      new SpanWriter()
+        .WriteI32(aux, MetadataBlock.Kind)
+        .WriteI32(aux, MetadataBlock.Size)
+        .WriteI64(aux, fileHeader.EncryptionStamp)
+        .WriteI64(aux, EpochTicks.FromUtc(reader.Vault.Header.TimeStamp))
+        .CheckFull(aux);
+      var size = MetadataBlock.Size - 8 - 12 - 16;
+      using(var buffer = new CryptoBuffer<byte>(size))
+      {
+        var plaintext = buffer.Span();
+        reader.DecryptFragment(aux, authTagOut, plaintext);
+        var json = Encoding.UTF8.GetString(plaintext);
+        var meta = JsonConvert.DeserializeObject<FileMetadata>(json);
+        if(meta == null)
+        {
+          throw new InvalidOperationException(
+            "Invalid file metadata entry");
+        }
+        return meta;
+      }
+    }
   }
 }

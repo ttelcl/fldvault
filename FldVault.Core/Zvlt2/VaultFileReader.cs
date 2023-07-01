@@ -23,6 +23,7 @@ namespace FldVault.Core.Zvlt2;
 public class VaultFileReader: IDisposable
 {
   private readonly VaultCryptor _cryptor;
+  private readonly CryptoBuffer<byte> _buffer;
   private readonly Stream _stream;
   private bool _disposed = false;
 
@@ -45,6 +46,7 @@ public class VaultFileReader: IDisposable
     {
       throw new ArgumentException("The key does not match the vault file");
     }
+    _buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize);
     _stream = File.OpenRead(Vault.FileName);
   }
 
@@ -85,6 +87,55 @@ public class VaultFileReader: IDisposable
     }
   }
 
+  /// <summary>
+  /// Read bytes from the current position of the stream, completely filling
+  /// the given span (and throwing an <see cref="EndOfStreamException"/> if
+  /// the read failed).
+  /// </summary>
+  public void ReadSpan(Span<byte> span)
+  {
+    CheckDisposed();
+    var n = _stream.Read(span);
+    if(n != span.Length)
+    {
+      throw new EndOfStreamException(
+        "Unexpected end of stream");
+    }
+  }
+
+  /// <summary>
+  /// Assuming the stream is pointing to a nonce-authenticationtag-ciphertext
+  /// sub-block, read those parts and decrypt them.
+  /// </summary>
+  /// <param name="associatedData">
+  /// The associated data. This must exactly match the associated data provided
+  /// during encryption.
+  /// </param>
+  /// <param name="authTagOut">
+  /// The buffer to receive the authentication tag
+  /// </param>
+  /// <param name="plaintext">
+  /// The buffer to receive the decrypted content. The size of this also
+  /// determines the number of ciphertext bytes to read from the stream.
+  /// </param>
+  public void DecryptFragment(
+    ReadOnlySpan<byte> associatedData,
+    Span<byte> authTagOut,
+    Span<byte> plaintext)
+  {
+    if(plaintext.Length > _buffer.Length)
+    {
+      throw new ArgumentException(
+        "plaintext buffer size is larger than supported");
+    }
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> ciphertext = _buffer.Span(0, plaintext.Length);
+    ReadSpan(nonce);
+    ReadSpan(authTagOut);
+    ReadSpan(ciphertext);
+    _cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
+  }
+
   private void CheckDisposed()
   {
     if(_disposed)
@@ -101,7 +152,8 @@ public class VaultFileReader: IDisposable
     if(!_disposed)
     {
       _disposed = true;
-      _stream.Dispose();
+      _buffer?.Dispose();
+      _stream?.Dispose();
     }
   }
 }

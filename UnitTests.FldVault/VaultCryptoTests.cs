@@ -14,6 +14,8 @@ using FldVault.Core.Vaults;
 using System.IO;
 using FldVault.Core.Zvlt2;
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Utilities;
+using Newtonsoft.Json;
 
 namespace UnitTests.FldVault;
 
@@ -363,15 +365,16 @@ public class VaultCryptoTests
       BlockElement be;
       var nonceGenerator = new NonceGenerator();
       using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
-        be = vaultFile.AppendFile(cryptor, testname1);
+        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
       }
 
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);
       Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileName, be.Children[0].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent1, be.Children[1].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileMetadata, be.Children[0].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[1].Block.Kind);
       Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[2].Block.Kind);
 
       var readVault = VaultFile.Open(vaultName);
@@ -408,17 +411,19 @@ public class VaultCryptoTests
       BlockElement be;
       var nonceGenerator = new NonceGenerator();
       using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
-        be = vaultFile.AppendFile(cryptor, testname1);
+        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
       }
 
       Assert.NotNull(be);
-      Assert.Equal(4, be.Children.Count);
+      Assert.Equal(5, be.Children.Count);
       Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileName, be.Children[0].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent1, be.Children[1].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContentN, be.Children[2].Block.Kind);
-      Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[3].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileMetadata, be.Children[0].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[1].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[2].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[3].Block.Kind);
+      Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[4].Block.Kind);
 
       var readVault = VaultFile.Open(vaultName);
       Assert.NotNull(readVault);
@@ -426,14 +431,14 @@ public class VaultCryptoTests
       {
         _outputHelper.WriteLine($"'{BlockType.ToText(block.Kind)}' @{block.Offset:X6} ({block.Size,6} bytes)");
       }
-      Assert.Equal(7, readVault.Blocks.Blocks.Count);
+      Assert.Equal(8, readVault.Blocks.Blocks.Count);
 
       var elemTree2 = readVault.Blocks.BuildElementTree();
       Assert.NotNull(elemTree2);
       Assert.Equal(3, elemTree2.Children.Count);
       Assert.Equal(0, elemTree2.Children[0].Children.Count);
       Assert.Equal(0, elemTree2.Children[1].Children.Count);
-      Assert.Equal(4, elemTree2.Children[2].Children.Count);
+      Assert.Equal(5, elemTree2.Children[2].Children.Count);
     }
   }
 
@@ -452,10 +457,11 @@ public class VaultCryptoTests
       CloneSource(testfileOriginalName, testname1, stamp);
       var vaultFile0 = ResetVault(pkif, vaultName, stamp);
       BlockElement be;
-      using(var cryptor = new VaultCryptor(keyChain, vaultFile0.KeyId, stamp, nonceGenerator))
+      using(var cryptor = new VaultCryptor(keyChain, pkif.KeyId, stamp, nonceGenerator))
+      using(var vaultWriter = new VaultFileWriter(vaultFile0, cryptor))
       {
         _outputHelper.WriteLine($"Appending {Path.GetFileName(testname1)} to {Path.GetFileName(vaultName)}");
-        be = vaultFile0.AppendFile(cryptor, testname1);
+        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);
@@ -466,6 +472,23 @@ public class VaultCryptoTests
       Assert.NotNull(elements);
       Assert.Equal(3, elements.Count);
 
+      using(var cryptor = new VaultCryptor(keyChain, pkif.KeyId, stamp, nonceGenerator))
+      using(var vaultReader = new VaultFileReader(vf, cryptor))
+      {
+        var fileElements = elements.Where(e => e.Block.Kind == Zvlt2BlockType.FileHeader).ToList();
+        Assert.Single(fileElements);
+        var fe = new FileElement(fileElements[0]);
+        var header = fe.ReadHeader(vaultReader);
+        Assert.NotNull(header);
+        var encryptionStamp = EpochTicks.ToUtc(header.EncryptionStamp);
+        Assert.Equal(stamp, encryptionStamp);
+        var tagBytes = new byte[16];
+        var metadata = fe.ReadMetadata(vaultReader, header, tagBytes);
+        Assert.NotNull(metadata);
+        Assert.Equal(testname1, metadata.Name);
+        var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
+        _outputHelper.WriteLine(json);
+      }
 
 
       throw new NotImplementedException();

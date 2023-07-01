@@ -123,6 +123,7 @@ public class VaultFileReader: IDisposable
     Span<byte> authTagOut,
     Span<byte> plaintext)
   {
+    CheckDisposed();
     if(plaintext.Length > _buffer.Length)
     {
       throw new ArgumentException(

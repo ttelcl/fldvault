@@ -1,0 +1,301 @@
+﻿/*
+ * (c) 2023  ttelcl / ttelcl
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using FldVault.Core.BlockFiles;
+using FldVault.Core.Crypto;
+using FldVault.Core.Utilities;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
+using static System.Reflection.Metadata.BlobBuilder;
+
+namespace FldVault.Core.Zvlt2;
+
+/// <summary>
+/// Wraps a vault file, an open writable stream for it, and a vault cryptor.
+/// The stream is opened in the constructor, and closed when disposed
+/// </summary>
+public class VaultFileWriter: IDisposable
+{
+  private readonly VaultCryptor _cryptor;
+  private readonly CryptoBuffer<byte> _buffer;
+  private readonly Stream _stream;
+  private bool _disposed = false;
+
+  /// <summary>
+  /// Create a new VaultFileWriter
+  /// </summary>
+  public VaultFileWriter(
+    VaultFile vault,
+    VaultCryptor cryptor)
+  {
+    Vault = vault;
+    _cryptor = cryptor;
+    if(Vault.KeyId != _cryptor.KeyId)
+    {
+      throw new ArgumentException("The key does not match the vault file");
+    }
+    _buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize);
+    // We can assume the file exists: VaultFile already takes care of that
+    _stream = File.OpenWrite(Vault.FileName);
+    _stream.Position = _stream.Length;
+  }
+
+  /// <summary>
+  /// The vault file descriptor
+  /// </summary>
+  public VaultFile Vault { get; init; }
+
+  /// <summary>
+  /// Append an unauthenticated comment block
+  /// </summary>
+  /// <param name="comment">
+  /// The comment to add
+  /// </param>
+  public BlockInfo AppendComment(string comment)
+  {
+    CheckDisposed();
+    var bytes = Encoding.UTF8.GetBytes(comment);
+    var bi = new BlockInfo(BlockType.UnauthenticatedComment);
+    // Writing the block will take care of setting the size and offset fields
+    _stream.Position = _stream.Length;
+    bi.WriteSync(_stream, bytes);
+    Vault.Blocks.Add(bi);
+    return bi;
+  }
+
+  /// <summary>
+  /// Append an encrypted version of the "file" (provided here as a stream)
+  /// to the vault.
+  /// </summary>
+  /// <param name="source">
+  /// The stream providing the file content
+  /// </param>
+  /// <param name="metadata">
+  /// The metadata object describing the file (name, size, timestamp and
+  /// possibly custom properties)
+  /// </param>
+  /// <param name="utcStampOverride">
+  /// Default null. If not null, this is a UTC timestamp used as the time
+  /// recorded as encryption time. If null, the current time is used.
+  /// </param>
+  /// <returns>
+  /// A block element tree containing the file header as root element and
+  /// the other elements as children
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown when the metadata specifies a file size that does not match
+  /// the actual length.
+  /// </exception>
+  public BlockElement AppendFile(
+    Stream source,
+    FileMetadata metadata,
+    DateTime? utcStampOverride = null)
+  {
+    CheckDisposed();
+    var stamp = EpochTicks.FromUtc(utcStampOverride ?? DateTime.UtcNow);
+    var fh = new FileHeader(stamp);
+    var rootElement = AppendFileHeaderBlock(fh);
+    Span<byte> tagOut = stackalloc byte[16];
+    var metaElement = AppendFileMetaBlock(fh, metadata, tagOut);
+    rootElement.AddChild(metaElement);
+    // We need a second buffer, because _buffer is already in use by the
+    // private methods we will call
+    using(var sourceBuffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+    {
+      long written = 0L;
+      int n;
+      Span<byte> tagIn = stackalloc byte[16];
+      while((n = source.Read(sourceBuffer.Span())) > 0)
+      {
+        written += n;
+        tagOut.CopyTo(tagIn);
+        var plaintext = sourceBuffer.Span(0, n);
+        var contentElement = AppendFileContentBlock(plaintext, tagIn, tagOut);
+        rootElement.AddChild(contentElement);
+      }
+      var terminatorElement = AppendTerminator();
+      rootElement.AddChild(terminatorElement);
+      if(metadata.Size.HasValue && metadata.Size.Value != written)
+      {
+        throw new InvalidOperationException(
+          $"The number of bytes from the source file ({written}) did not match the specified amount ({metadata.Size.Value})");
+      }
+    }
+    return rootElement;
+  }
+
+  /// <summary>
+  /// Append the specified file
+  /// </summary>
+  /// <param name="filename">
+  /// The name of the file
+  /// </param>
+  /// <param name="additionalMetadata">
+  /// If not null: additional key-value pairs recorded as metadata.
+  /// Note that the keys 'name', 'stamp' and 'size' are reserved and not allowed.
+  /// </param>
+  /// <param name="utcStampOverride">
+  /// Default null. If not null, this is a UTC timestamp used as the time
+  /// recorded as encryption time. If null, the current time is used.
+  /// </param>
+  /// <returns>
+  /// A block element tree containing the file header as root element and
+  /// the other elements as children
+  /// </returns>
+  /// <remarks>
+  /// <para>
+  /// The "name" recorded in the metadata is the plain name of the file, without
+  /// any path components.
+  /// </para>
+  /// </remarks>
+  public BlockElement AppendFile(
+    string filename,
+    IDictionary<string, JToken>? additionalMetadata = null,
+    DateTime? utcStampOverride = null)
+  {
+    CheckDisposed();
+    if(additionalMetadata != null)
+    {
+      if(additionalMetadata.ContainsKey("name"))
+      {
+        throw new InvalidOperationException("The additional metadata must not contain the reserved key 'name'");
+      }
+      if(additionalMetadata.ContainsKey("stamp"))
+      {
+        throw new InvalidOperationException("The additional metadata must not contain the reserved key 'stamp'");
+      }
+      if(additionalMetadata.ContainsKey("size"))
+      {
+        throw new InvalidOperationException("The additional metadata must not contain the reserved key 'size'");
+      }
+    }
+    if(!File.Exists(filename))
+    {
+      throw new FileNotFoundException("File to add was not found", filename);
+    }
+    var fileInfo = new FileInfo(filename);
+    var metadata = new FileMetadata(
+      fileInfo.Name,
+      EpochTicks.FromUtc(fileInfo.LastWriteTimeUtc),
+      fileInfo.Length);
+    if(additionalMetadata != null)
+    {
+      foreach(var kvp in additionalMetadata)
+      {
+        metadata.OtherFields[kvp.Key] = kvp.Value;
+      }
+    }
+    using(var stream = File.OpenRead(filename))
+    {
+      return AppendFile(stream, metadata, utcStampOverride);
+    }
+  }
+
+  /// <summary>
+  /// Clean up
+  /// </summary>
+  public void Dispose()
+  {
+    if(!_disposed)
+    {
+      _disposed = true;
+      _buffer?.Dispose();
+      _stream?.Dispose();
+    }
+  }
+
+  private void CheckDisposed()
+  {
+    if(_disposed)
+    {
+      throw new ObjectDisposedException(nameof(VaultFileWriter));
+    }
+  }
+
+  private BlockElement AppendFileHeaderBlock(
+    FileHeader fileHeader)
+  {
+    _stream.Position = _stream.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileHeader, 16, _stream.Position);
+    Span<byte> span = stackalloc byte[16];
+    new SpanWriter()
+      .WriteI32(span, bi.Kind)
+      .WriteI32(span, bi.Size)
+      .WriteI64(span, fileHeader.EncryptionStamp)
+      .CheckFull(span);
+    _stream.Write(span);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendFileMetaBlock(
+    FileHeader fileHeader,
+    FileMetadata metadata,
+    Span<byte> tagOut)
+  {
+    var json = JsonConvert.SerializeObject(metadata);
+    var plaintext = Encoding.UTF8.GetBytes(json); // not much point in wrapping it in a CryptoBuffer
+    var ciphertext = _buffer.Span(0, plaintext.Length);
+    var size = 36 + plaintext.Length;
+    _stream.Position = _stream.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileMetadata, size, _stream.Position);
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> aux = stackalloc byte[24];
+    new SpanWriter()
+      .WriteI32(aux, bi.Kind)
+      .WriteI32(aux, bi.Size)
+      .WriteI64(aux, fileHeader.EncryptionStamp)
+      .WriteI64(aux, EpochTicks.FromUtc(Vault.Header.TimeStamp))
+      .CheckFull(aux);
+    _cryptor.Encrypt(aux, plaintext, ciphertext, nonce, tagOut);
+    Span<byte> header = stackalloc byte[8];
+    bi.FormatBlockHeader(header);
+    _stream.Write(header);
+    _stream.Write(nonce);
+    _stream.Write(tagOut);
+    _stream.Write(ciphertext);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendFileContentBlock(
+    ReadOnlySpan<byte> plainText,
+    ReadOnlySpan<byte> tagIn,
+    Span<byte> tagOut)
+  {
+    var size = 36 + plainText.Length;
+    _stream.Position = _stream.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.FileContent, size, _stream.Position);
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> cipherText = _buffer.Span(0, plainText.Length);
+    _cryptor.Encrypt(tagIn, plainText, cipherText, nonce, tagOut);
+    Span<byte> header = stackalloc byte[8];
+    bi.FormatBlockHeader(header);
+    _stream.Write(header);
+    _stream.Write(nonce);
+    _stream.Write(tagOut);
+    _stream.Write(cipherText);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  private BlockElement AppendTerminator()
+  {
+    var bi = new BlockInfo(BlockType.ImpliedGroupEnd);
+    bi.WriteSync(_stream, Span<byte>.Empty);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+}

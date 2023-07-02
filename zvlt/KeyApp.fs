@@ -24,6 +24,9 @@ let runNewKey args =
     | "-v" :: rest ->
       verbose <- true
       rest |> parsemore o
+    | "-h" :: _ ->
+      Usage.usage "key-new"
+      exit 0
     | "-p" :: rest ->
       rest |> parsemore {o with KeyKind = Some(KeyKind.Passphrase)}
     | "-dv" :: folder :: rest ->

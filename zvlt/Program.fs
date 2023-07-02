@@ -8,16 +8,23 @@ open Usage
 open ColorPrint
 
 let rec run arglist =
-  // For subcommand based apps, split based on subcommand here
   match arglist with
   | "-v" :: rest ->
     verbose <- true
     rest |> run
   | "--help" :: _
-  | "-h" :: _
+  | "-h" :: _  ->
+    usage "all"
+    0 
   | [] ->
-    usage verbose
+    usage (if verbose then "all" else "")
     0  // program return status code to the operating system; 0 == "OK"
+  | "help" :: command :: rest ->
+    usage command
+    0
+  | "help" :: [] ->
+    usage "all"
+    0
   | "key" :: "new" :: rest
   | "key-new" :: rest ->
     rest |> KeyApp.runNewKey

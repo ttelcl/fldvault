@@ -71,6 +71,7 @@ namespace FldVault.Core.Zvlt2
     /// Contains fields from the JSON representation that are not
     /// explicitly handled otherwise
     /// </summary>
+    [JsonExtensionData]
     public Dictionary<string, JToken> OtherFields { get; init; }
 
     /// <summary>

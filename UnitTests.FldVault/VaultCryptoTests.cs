@@ -488,16 +488,16 @@ public class VaultCryptoTests
         var fileElements = elements.Where(e => e.Block.Kind == Zvlt2BlockType.FileHeader).ToList();
         Assert.Single(fileElements);
         var fe = new FileElement(fileElements[0]);
-        var header = fe.ReadHeader(vaultReader);
-        Assert.NotNull(header);
-        var encryptionStamp = EpochTicks.ToUtc(header.EncryptionStamp);
-        Assert.Equal(stamp, encryptionStamp);
         var tagBytes = new byte[16];
-        var metadata = fe.ReadMetadata(vaultReader, header, tagBytes);
+        var metadata = fe.GetMetadata(vaultReader, tagBytes);
         Assert.NotNull(metadata);
         Assert.Equal(testname1, metadata.Name);
         var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
         _outputHelper.WriteLine(json);
+        var header = fe.GetHeader(vaultReader); // this is already cached
+        Assert.NotNull(header);
+        var encryptionStamp = EpochTicks.ToUtc(header.EncryptionStamp);
+        Assert.Equal(stamp, encryptionStamp);
       }
 
 

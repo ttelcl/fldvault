@@ -22,6 +22,10 @@ namespace FldVault.Core.Zvlt2
   /// </summary>
   public class FileElement
   {
+    private FileHeader? _cachedHeader = null;
+    private FileMetadata? _cachedMetadata = null;
+    private byte[]? _cachedMetaAuthtag = null;
+
     /// <summary>
     /// Create a new FileElement
     /// </summary>
@@ -70,9 +74,56 @@ namespace FldVault.Core.Zvlt2
     public IReadOnlyList<IBlockInfo> ContentBlocks { get; init; }
 
     /// <summary>
-    /// Read the content of the file header block
+    /// Get the cached <see cref="FileHeader"/> instance,
+    /// reading and caching it first if not already done so
     /// </summary>
-    public FileHeader ReadHeader(VaultFileReader reader)
+    /// <param name="reader">
+    /// The reader to read from if not yet cached.
+    /// </param>
+    /// <param name="reload">
+    /// If true, the cached copy is re-read even if already available
+    /// </param>
+    public FileHeader GetHeader(VaultFileReader reader, bool reload = false)
+    {
+      if(_cachedHeader == null || reload)
+      {
+        _cachedHeader = ReadHeader(reader);
+      }
+      return _cachedHeader;
+    }
+
+    /// <summary>
+    /// Get the cached <see cref="FileMetadata"/> instance and
+    /// its authentication tag, reading it from the file if not already
+    /// done so.
+    /// </summary>
+    /// <param name="reader">
+    /// The reader to read from if not yet cached.
+    /// </param>
+    /// <param name="metaAuthTagOut">
+    /// The 16 byte buffer to receive the authentication tag
+    /// </param>
+    /// <param name="reload">
+    /// If true, the cached copy is re-read even if already available
+    /// </param>
+    public FileMetadata GetMetadata(VaultFileReader reader,
+      Span<byte> metaAuthTagOut,
+      bool reload = false)
+    {
+      if(_cachedMetadata == null || reload)
+      {
+        _cachedMetaAuthtag = new byte[16];
+        _cachedMetadata = ReadMetadata(reader, GetHeader(reader, reload), _cachedMetaAuthtag);
+      }
+      _cachedMetaAuthtag.CopyTo(metaAuthTagOut);
+      return _cachedMetadata;
+    }
+
+    /// <summary>
+    /// Read the content of the file header block.
+    /// Normally invoked indirectly via <see cref="GetHeader(VaultFileReader)"/>
+    /// </summary>
+    private FileHeader ReadHeader(VaultFileReader reader)
     {
       reader.SeekBlock(HeaderBlock);
       Span<byte> span = stackalloc byte[8];
@@ -85,6 +136,7 @@ namespace FldVault.Core.Zvlt2
 
     /// <summary>
     /// Read the metadata record for this FileElement
+    /// Normally invoked indirectly via <see cref="GetMetadata(VaultFileReader, Span{byte})"/>
     /// </summary>
     /// <param name="reader">
     /// The vault reader (including the vault key)
@@ -100,7 +152,7 @@ namespace FldVault.Core.Zvlt2
     /// <returns>
     /// The FileMetadata deserialized from the JSON decrypted from the block
     /// </returns>
-    public FileMetadata ReadMetadata(
+    private FileMetadata ReadMetadata(
       VaultFileReader reader,
       FileHeader fileHeader,
       Span<byte> authTagOut)

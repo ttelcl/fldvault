@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -106,7 +107,8 @@ namespace FldVault.Core.Zvlt2
     /// <param name="reload">
     /// If true, the cached copy is re-read even if already available
     /// </param>
-    public FileMetadata GetMetadata(VaultFileReader reader,
+    public FileMetadata GetMetadata(
+      VaultFileReader reader,
       Span<byte> metaAuthTagOut,
       bool reload = false)
     {
@@ -120,8 +122,47 @@ namespace FldVault.Core.Zvlt2
     }
 
     /// <summary>
+    /// Decode the content of this file element and save it to the
+    /// specified stream.
+    /// </summary>
+    /// <param name="reader">
+    /// The vault reader for the vault this element is part of
+    /// </param>
+    /// <param name="destination">
+    /// The destination stream
+    /// </param>
+    public void SaveContentToStream(
+      VaultFileReader reader,
+      Stream destination)
+    {
+      using(var buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+      {
+        Span<byte> authTagOut = stackalloc byte[16];
+        Span<byte> authTagIn = stackalloc byte[16];
+        _ = GetMetadata(reader, authTagOut);
+        foreach(var ibi in ContentBlocks)
+        {
+          authTagOut.CopyTo(authTagIn);
+          reader.SeekBlock(ibi);
+          var plaintext = buffer.Span(0, ibi.Size - 36);
+          reader.DecryptFragment(authTagIn, authTagOut, plaintext);
+          destination.Write(plaintext);
+        }
+      }
+    }
+
+    /// <summary>
+    /// Get the total length of the encrypted content (summing
+    /// the lengths of the content in all content blocks)
+    /// </summary>
+    public long GetContentLength()
+    {
+      return ContentBlocks.Sum(ibi => (ibi.Size - 36L));
+    }
+
+    /// <summary>
     /// Read the content of the file header block.
-    /// Normally invoked indirectly via <see cref="GetHeader(VaultFileReader)"/>
+    /// Normally invoked indirectly via <see cref="GetHeader(VaultFileReader, bool)"/>
     /// </summary>
     private FileHeader ReadHeader(VaultFileReader reader)
     {
@@ -136,7 +177,7 @@ namespace FldVault.Core.Zvlt2
 
     /// <summary>
     /// Read the metadata record for this FileElement
-    /// Normally invoked indirectly via <see cref="GetMetadata(VaultFileReader, Span{byte})"/>
+    /// Normally invoked indirectly via <see cref="GetMetadata(VaultFileReader, Span{byte}, bool)"/>
     /// </summary>
     /// <param name="reader">
     /// The vault reader (including the vault key)

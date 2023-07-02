@@ -449,20 +449,21 @@ public class VaultCryptoTests
   {
     var stamp = new DateTime(2023, 5, 19, 1, 2, 3, 4, DateTimeKind.Utc);
     const string passphraseText = "HelloWorld";
-    const string testname1 = "testfile-decryption.xxx";
+    const string testnameIn = "testfile-decryption.xxx";
+    const string testnameOut1 = "out.testfile-decryption.xxx";
     const string testfileOriginalName = "xunit.abstractions.dll";
     const string vaultName = "HelloWorld-decrypt.zvlt";
     var nonceGenerator = new NonceGenerator();
     using(var keyChain = new KeyChain())
     {
       var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
-      CloneSource(testfileOriginalName, testname1, stamp);
+      CloneSource(testfileOriginalName, testnameIn, stamp);
       var vaultFile0 = ResetVault(pkif, vaultName, stamp);
       BlockElement be;
       using(var cryptor = new VaultCryptor(keyChain, pkif.KeyId, stamp, nonceGenerator))
       using(var vaultWriter = new VaultFileWriter(vaultFile0, cryptor))
       {
-        _outputHelper.WriteLine($"Appending {Path.GetFileName(testname1)} to {Path.GetFileName(vaultName)}");
+        _outputHelper.WriteLine($"Appending {Path.GetFileName(testnameIn)} to {Path.GetFileName(vaultName)}");
         var metaAdditions = new JObject {
           ["null"] = null,
           ["text"] = "text",
@@ -471,7 +472,7 @@ public class VaultCryptoTests
           ["object"] = new JObject { ["hello"] = "world" },
           ["list"] = new JArray { 1, 2, "many"},
         };
-        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp, additionalMetadata: metaAdditions);
+        be = vaultWriter.AppendFile(testnameIn, utcStampOverride: stamp, additionalMetadata: metaAdditions);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);
@@ -491,17 +492,30 @@ public class VaultCryptoTests
         var tagBytes = new byte[16];
         var metadata = fe.GetMetadata(vaultReader, tagBytes);
         Assert.NotNull(metadata);
-        Assert.Equal(testname1, metadata.Name);
-        var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
-        _outputHelper.WriteLine(json);
+        Assert.Equal(testnameIn, metadata.Name);
+        var json = JsonConvert.SerializeObject(metadata, Formatting.None);
+        _outputHelper.WriteLine($"Metadata: {json}");
         var header = fe.GetHeader(vaultReader); // this is already cached
         Assert.NotNull(header);
         var encryptionStamp = EpochTicks.ToUtc(header.EncryptionStamp);
         Assert.Equal(stamp, encryptionStamp);
+        _outputHelper.WriteLine($"Total length: {fe.GetContentLength()}");
+
+        if(File.Exists(testnameOut1))
+        {
+          File.Delete(testnameOut1);
+        }
+        Assert.False(File.Exists(testnameOut1));
+
+        using(var outstream = File.Create(testnameOut1))
+        {
+          fe.SaveContentToStream(vaultReader, outstream);
+        }
+        Assert.True(File.Exists(testnameOut1));
+        var fiIn = new FileInfo(testnameIn);
+        var fiOut = new FileInfo(testnameOut1);
+        Assert.Equal(fiIn.Length, fiOut.Length);
       }
-
-
-      throw new NotImplementedException();
     }
   }
 

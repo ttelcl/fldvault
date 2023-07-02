@@ -1,7 +1,6 @@
 using System;
 using System.Text;
 using System.Security;
-using System.Text.Unicode;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
@@ -451,6 +450,8 @@ public class VaultCryptoTests
     const string passphraseText = "HelloWorld";
     const string testnameIn = "testfile-decryption.xxx";
     const string testnameOut1 = "out.testfile-decryption.xxx";
+    const string testnameOut2 = "out-2.testfile-decryption.xxx";
+    const string testnameOut3 = "dump/out-3.testfile-decryption.xxx";
     const string testfileOriginalName = "xunit.abstractions.dll";
     const string vaultName = "HelloWorld-decrypt.zvlt";
     var nonceGenerator = new NonceGenerator();
@@ -505,12 +506,12 @@ public class VaultCryptoTests
         _outputHelper.WriteLine($"File ID: {header.FileId}");
         _outputHelper.WriteLine($"Total length: {fe.GetContentLength()}");
 
+        // extract as stream
         if(File.Exists(testnameOut1))
         {
           File.Delete(testnameOut1);
         }
         Assert.False(File.Exists(testnameOut1));
-
         using(var outstream = File.Create(testnameOut1))
         {
           fe.SaveContentToStream(vaultReader, outstream);
@@ -519,6 +520,28 @@ public class VaultCryptoTests
         var fiIn = new FileInfo(testnameIn);
         var fiOut = new FileInfo(testnameOut1);
         Assert.Equal(fiIn.Length, fiOut.Length);
+
+        // extract to named file
+        if(File.Exists(testnameOut2))
+        {
+          File.Delete(testnameOut2);
+        }
+        Assert.False(File.Exists(testnameOut2));
+        Assert.Throws<InvalidOperationException>(() => {
+          fe.SaveContentToFile(vaultReader, rootFolder: ".", fileName: testnameOut2, checkFolder: true);
+        });
+        Assert.False(File.Exists(testnameOut2));
+        fe.SaveContentToFile(vaultReader, rootFolder: ".", fileName: testnameOut2, checkFolder: false);
+        Assert.True(File.Exists(testnameOut2));
+
+        // extract to named in other folder
+        if(File.Exists(testnameOut3))
+        {
+          File.Delete(testnameOut3);
+        }
+        Assert.False(File.Exists(testnameOut3));
+        fe.SaveContentToFile(vaultReader, rootFolder: ".", fileName: testnameOut3, checkFolder: true);
+        Assert.True(File.Exists(testnameOut3));
       }
     }
   }

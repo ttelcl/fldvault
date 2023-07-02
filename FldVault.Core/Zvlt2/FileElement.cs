@@ -152,6 +152,89 @@ namespace FldVault.Core.Zvlt2
     }
 
     /// <summary>
+    /// Decode the content of this file element and save it to a file.
+    /// </summary>
+    /// <param name="reader">
+    /// The vault reader wrapping the vault file and the key
+    /// </param>
+    /// <param name="rootFolder">
+    /// The folder used to resolve a relative filename (default ".", 
+    /// i.e. the current directory)
+    /// </param>
+    /// <param name="fileName">
+    /// The file name to save to. If null, the file name in the metadata
+    /// is used instead. In either case, a relative file name is resolved
+    /// relative to <paramref name="rootFolder"/>. It is an error if both
+    /// this is null and the metadata does not specify a name.
+    /// </param>
+    /// <param name="setStamp">
+    /// When true (default) and the metadata provides a last write stamp:
+    /// restore that last modified timestamp.
+    /// </param>
+    /// <param name="checkFolder">
+    /// When true (default) this method refuses to save files in the same
+    /// folder as the vault file. Set to false to disable this feature.
+    /// See remarks section.
+    /// </param>
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <remarks>
+    /// <para>
+    /// In case you wonder why decrypting content to the same folder as
+    /// the vault file is discouraged: it is assumed that the vault folder
+    /// is not necessarily as secure as the folder where you would want to
+    /// put the decrypted file. Whether it is or not is ultimately something
+    /// the user has to consciously decide.
+    /// </para>
+    /// </remarks>
+    public void SaveContentToFile(
+      VaultFileReader reader,
+      string rootFolder = ".",
+      string? fileName = null,
+      bool setStamp = true,
+      bool checkFolder = true)
+    {
+      rootFolder = Path.GetFullPath(rootFolder);
+      Span<byte> authTagOut = stackalloc byte[16];
+      var meta = GetMetadata(reader, authTagOut);
+      fileName = fileName ?? meta.Name;
+      if(String.IsNullOrEmpty(fileName))
+      {
+        throw new InvalidOperationException(
+          "No filename provided and no default filename is available.");
+      }
+      fileName = Path.Combine(rootFolder, fileName);
+      var folder = Path.GetDirectoryName(fileName)!;
+      if(!Directory.Exists(folder))
+      {
+        Directory.CreateDirectory(folder);
+      }
+      else if(checkFolder) // we can skip this check if the folder did not exist
+      {
+        var vaultFolder = Path.GetDirectoryName(reader.Vault.FileName)!;
+        var probeName = $"{Guid.NewGuid()}.probe";
+        var vaultProbe = Path.Combine(vaultFolder, probeName);
+        var destinationProbe = Path.Combine(folder, probeName);
+        File.Create(destinationProbe).Dispose();
+        var failed = File.Exists(vaultProbe);
+        File.Delete(destinationProbe);
+        if(failed)
+        {
+          throw new InvalidOperationException(
+            "Denied for security reasons: attempt to extract vault content into the same folder as the *.zvlt vault itself.");
+        }
+      }
+      using(var stream = File.Create(fileName))
+      {
+        SaveContentToStream(reader, stream);
+      }
+      if(setStamp && meta.Stamp.HasValue)
+      {
+        var utcStamp = EpochTicks.ToUtc(meta.Stamp.Value);
+        File.SetLastWriteTimeUtc(fileName, utcStamp);
+      }
+    }
+
+    /// <summary>
     /// Get the total length of the encrypted content (summing
     /// the lengths of the content in all content blocks)
     /// </summary>

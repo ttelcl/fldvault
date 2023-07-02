@@ -14,11 +14,30 @@ let usage detail =
   cp ""
   if showSummary "key-new" then
     cp "\fozvlt key-new \fg-p\f0 [\fg-dv \fc<directory>\f0]"
-    cp "  Create a new directory key in the given directory using a passphrase"
+    cp "  Create a new key (\fb*.key-info\f0) in the given directory."
+    cp "  \fkCurrently only passphrase based keys are supported\f0."
   if matchDetail "key-new" then
     cp "  \fg-p\fx\f0               Indicates the new key uses a passphrase"
     cp "  \fx  \fx\fx               (other methods may be implemented in the future)"
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
+    cp ""
+  if showSummary "create" then
+    cp "\fozvlt create \fg-vf \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0]"
+    cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"
+    cp "  or \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
+  if matchDetail "create" then
+    cp "  \fg-vf \fc<file.zvlt>\f0  The name of the new vault file"
+    cp "  \fg-key \fc<id>\f0        The first few characters of the name of an existing \fb*.key-info\f0"
+    cp "  \fx     \fx    \fx        file in the same folder as the new vault file."
+    cp "  \fg-kf \fc<other.zvlt>\f0 The existing vault file providing the key for the new vault."
+    cp "  [neither \fg-key\f0 nor \fg-kf\f0]  Take the key from the one existing \fb*.key-info\f0 file."
+    cp ""
+  if showSummary "append" then
+    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 \fg-f \fc<file>\f0"
+    cp "  Append a file to a vault (encrypting it)"
+  if matchDetail "append" then
+    cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
+    cp "  \fg-f \fc<file>\f0        The name of the file to append. \fkCurrently the path is ignored\f0."
     cp ""
   if showSummary "check" then
     cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"
@@ -45,14 +64,14 @@ let usage detail =
     cp ""
   if showSummary "put" then
     cp "\fozvlt put [\fg-kf \fc<file.key-info>\f0] \fg-f \fc<file>\f0"
-    cp "  Store a file in the vault folder as a new vault file"
+    cp "  Store a file in the vault folder as a new vault file. \frdeprecated\f0"
   if matchDetail "put" then
     cp "  \fg-kf \fc<file.key-info>\f0  The descriptor file of the key to use."
     cp "  \fx    \fx               \fx  Also determines the destination folder."
     cp ""
   if showSummary "extract" then
     cp "\fozvlt extract \fg-f \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0]"
-    cp "  Extract a file from a new vault file into the \fcout-dir\f0"
+    cp "  Extract a file from a new vault file into the \fcout-dir\f0 \frdeprecated\f0"
   if matchDetail "extract" then
     cp "  \fg-f \fc<file.zvlt>\f0   The vault file to extract the content of"
     cp "  \fg-od \fc<out-dir>\f0    The directory to extract to (preserving the original file name)"

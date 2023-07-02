@@ -29,12 +29,22 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
-  /// Find a key by its identifier, returning null if not found.
+  /// Look up and return the key identified by the key. Do NOT dispose
+  /// the returned value (if any), this KeyChain takes care of that.
   /// </summary>
-  public KeyBuffer? this[Guid guid] {
-    get { // DESIGN BUG! SHOULD THIS RETURN THE KEY OR A COPY?
-      return _store.TryGetValue(guid, out var key) ? key : null;
-    }
+  public KeyBuffer? FindDirect(Guid guid)
+  {
+    return _store.TryGetValue(guid, out var key) ? key : null;
+  }
+
+  /// <summary>
+  /// Look up the key identified by the key and return a copy if found.
+  /// DO dispose the returned value after use (if any).
+  /// </summary>
+  public KeyBuffer? FindCopy(Guid guid)
+  {
+    var raw = FindDirect(guid);
+    return (raw != null) ? new KeyBuffer(raw.Bytes) : null;
   }
 
   /// <summary>
@@ -210,6 +220,8 @@ public class KeyChain: IDisposable
   /// If the key with the given ID is in this chain, return it.
   /// Otherwise try to import it from the key source, returning
   /// the imported copy on success, or null on failure.
+  /// The lifecycle of the returned key is controlled by this KeyChain:
+  /// do NOT dispose the returned key.
   /// </summary>
   /// <param name="keyId">
   /// The id of the key to look up
@@ -217,10 +229,13 @@ public class KeyChain: IDisposable
   /// <param name="source">
   /// The source for cached keys, or null to skip the import attempt.
   /// </param>
-  /// <returns></returns>
+  /// <returns>
+  /// The key in this chain, if found or imported, null otherwise.
+  /// Do NOT dispose the returned key.
+  /// </returns>
   public KeyBuffer? FindOrImportKey(Guid keyId, IKeyCacheStore? source)
   {
-    var kb = this[keyId];
+    var kb = FindDirect(keyId);
     if(kb != null)
     {
       return kb;
@@ -232,7 +247,7 @@ public class KeyChain: IDisposable
         if(key!=null)
         {
           PutCopy(key);
-          return this[keyId];
+          return FindDirect(keyId);
         }
       }
     }

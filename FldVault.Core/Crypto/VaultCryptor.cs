@@ -39,14 +39,12 @@ public class VaultCryptor: IDisposable
     KeyId = keyId;
     VaultStamp = vaultStamp;
     NonceGenerator = nonceGenerator;
-    using(var key = keySource[keyId])
+    var key = keySource.FindDirect(keyId);
+    if(key == null)
     {
-      if(key == null)
-      {
-        throw new ArgumentException("The key was not found in the chain");
-      }
-      _aesgcm = new AesGcm(key.Bytes);
+      throw new ArgumentException("The key was not found in the chain");
     }
+    _aesgcm = new AesGcm(key.Bytes);
   }
 
   /// <summary>

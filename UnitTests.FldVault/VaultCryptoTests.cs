@@ -203,7 +203,7 @@ public class VaultCryptoTests
     // Verify we can get the key out despite clearing the passphrase buffer
     using(var keychain = new KeyChain())
     {
-      Assert.Null(keychain[id1]);
+      Assert.Null(keychain.FindDirect(id1));
       using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
       {
         using(var pk = PassphraseKey.TryPassphrase(passphraseBuffer, pkif2))
@@ -215,8 +215,8 @@ public class VaultCryptoTests
           keychain.PutCopy(pk);
         }
       }
-      Assert.NotNull(keychain[id1]);
-      byte[] key4 = keychain[id1]!.Bytes.ToArray();
+      Assert.NotNull(keychain.FindDirect(id1));
+      byte[] key4 = keychain.FindDirect(id1)!.Bytes.ToArray();
       Assert.Equal(key1, key4);
     }
   }

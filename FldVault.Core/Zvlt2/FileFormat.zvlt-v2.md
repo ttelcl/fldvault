@@ -49,13 +49,11 @@ The file header of a ZVLT file is a block of kind 'Zvlt'
 | --- | 
 | Kind | 'Zvlt' | 0x746C665A |
 | Size | 4 bytes | value is 48 |
-| Version | 1 int (2 shorts) | 0x00020001 |
+| Version | 1 int (2 shorts) | 0x00020002 |
 | Reserved | 1 int | 0x00000000 |
 | Key ID | Guid (16 bytes) | |
 | ZVLT Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
 | Reserved | 8 bytes | 0x0000000000000000L |
-
-:warning: Transitioning  to version 2.1 from 2.0
 
 ### Encrypted content sub-blocks
 
@@ -91,7 +89,7 @@ info.
 
 Used as an embedded version of an external *.pass.key-info file. The
 content is almost the same as the *.pass.key-info file content, except
-that the signature is replaced by a block header.
+that the file signature is replaced by a block header.
 
 Presence of this block is optional, but enables the ZVLT file to be used
 stand-alone.
@@ -115,15 +113,13 @@ of content.
 | Name | Format | Notes |
 | --- |
 | Kind | 'FLX(' | 0x28584C46 |
-| Block Size | 4 bytes | Value 16 |
+| Block Size | 4 bytes | Value 32 |
 | Encryption Stamp | 8 bytes | Time stamp this element was encrypted |
+| File Id | Guid (16 bytes) | Randomly assigned GUID |
 
 The number of content blocks is determined by the terminator block.
 
 ### File metadata block
-
-_This block is added in version 2.1. It replaces functionality that
-was previously in the file name block plus part of the header._
 
 This block contains an UTF8 encoded JSON string representing an
 object with metadata. The format is intended to be extensible, but
@@ -136,12 +132,12 @@ optional: they are not guaranteed to be present.
 | size | size in bytes (if known in advance) |
 | stamp | the last write time stamp in epoch ticks | 
 
-(*) The file name can optionally include a `/` separated relative
-path (none of the path segments are allowed to be `.` nor `..`)
+(*) The file name can optionally include a `/` separated _relative_
+path. None of the path segments are allowed to be `.` nor `..`.
 
 The metadata can have any additional fields you want. Note that these
 all will be included in the "additional data" that is chained through
-the encrypted blocks, supporting a form of non-repudiation.
+the encrypted blocks; this mechanism acts as a form of non-repudiation.
 
 #### Binary encoding of the metadata block
 

@@ -89,6 +89,11 @@ public class VaultFileWriter: IDisposable
   /// Default null. If not null, this is a UTC timestamp used as the time
   /// recorded as encryption time. If null, the current time is used.
   /// </param>
+  /// <param name="fileIdOverride">
+  /// Default null. If not null this will be used as file element
+  /// identifier (it is your responsibility to ensure it is unique).
+  /// If null a random GUID is generated instead.
+  /// </param>
   /// <returns>
   /// A block element tree containing the file header as root element and
   /// the other elements as children
@@ -100,11 +105,12 @@ public class VaultFileWriter: IDisposable
   public BlockElement AppendFile(
     Stream source,
     FileMetadata metadata,
-    DateTime? utcStampOverride = null)
+    DateTime? utcStampOverride = null,
+    Guid? fileIdOverride = null)
   {
     CheckDisposed();
     var stamp = EpochTicks.FromUtc(utcStampOverride ?? DateTime.UtcNow);
-    var fh = new FileHeader(stamp);
+    var fh = new FileHeader(stamp, fileIdOverride ?? Guid.NewGuid());
     var rootElement = AppendFileHeaderBlock(fh);
     Span<byte> tagOut = stackalloc byte[16];
     var metaElement = AppendFileMetaBlock(fh, metadata, tagOut);
@@ -149,6 +155,11 @@ public class VaultFileWriter: IDisposable
   /// Default null. If not null, this is a UTC timestamp used as the time
   /// recorded as encryption time. If null, the current time is used.
   /// </param>
+  /// <param name="fileIdOverride">
+  /// Default null. If not null this will be used as file element
+  /// identifier (it is your responsibility to ensure it is unique).
+  /// If null a random GUID is generated instead.
+  /// </param>
   /// <returns>
   /// A block element tree containing the file header as root element and
   /// the other elements as children
@@ -162,7 +173,8 @@ public class VaultFileWriter: IDisposable
   public BlockElement AppendFile(
     string filename,
     IDictionary<string, JToken?>? additionalMetadata = null,
-    DateTime? utcStampOverride = null)
+    DateTime? utcStampOverride = null,
+    Guid? fileIdOverride = null)
   {
     CheckDisposed();
     if(additionalMetadata != null)
@@ -198,7 +210,7 @@ public class VaultFileWriter: IDisposable
     }
     using(var stream = File.OpenRead(filename))
     {
-      return AppendFile(stream, metadata, utcStampOverride);
+      return AppendFile(stream, metadata, utcStampOverride, fileIdOverride);
     }
   }
 
@@ -227,12 +239,13 @@ public class VaultFileWriter: IDisposable
     FileHeader fileHeader)
   {
     _stream.Position = _stream.Length;
-    var bi = new BlockInfo(Zvlt2BlockType.FileHeader, 16, _stream.Position);
-    Span<byte> span = stackalloc byte[16];
+    var bi = new BlockInfo(Zvlt2BlockType.FileHeader, 32, _stream.Position);
+    Span<byte> span = stackalloc byte[bi.Size];
     new SpanWriter()
       .WriteI32(span, bi.Kind)
       .WriteI32(span, bi.Size)
       .WriteI64(span, fileHeader.EncryptionStamp)
+      .WriteGuid(span, fileHeader.FileId)
       .CheckFull(span);
     _stream.Write(span);
     Vault.Blocks.Add(bi);

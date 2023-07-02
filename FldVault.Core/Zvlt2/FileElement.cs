@@ -43,7 +43,7 @@ namespace FldVault.Core.Zvlt2
         throw new ArgumentOutOfRangeException(nameof(rootElement), 
           "Unrecognized file element structure: missing element group terminator");
       }
-      RootElement = rootElement;
+      RootElement = rootElement.ExpectContentLength(24);
       var metaElement = RootElement.Children.FirstOrDefault(e => e.Block.Kind == Zvlt2BlockType.FileMetadata);
       MetadataBlock = metaElement?.Block ?? throw new InvalidOperationException(
         "Missing file metadata block");
@@ -167,12 +167,13 @@ namespace FldVault.Core.Zvlt2
     private FileHeader ReadHeader(VaultFileReader reader)
     {
       reader.SeekBlock(HeaderBlock);
-      Span<byte> span = stackalloc byte[8];
+      Span<byte> span = stackalloc byte[HeaderBlock.ContentLength(24)];
       reader.ReadSpan(span);
       new SpanReader()
         .ReadI64(span, out var encryptionTicks)
+        .ReadGuid(span, out var fileId)
         .CheckEmpty(span);
-      return new FileHeader(encryptionTicks);
+      return new FileHeader(encryptionTicks, fileId);
     }
 
     /// <summary>

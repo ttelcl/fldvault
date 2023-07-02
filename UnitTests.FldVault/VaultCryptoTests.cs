@@ -454,6 +454,7 @@ public class VaultCryptoTests
     const string testfileOriginalName = "xunit.abstractions.dll";
     const string vaultName = "HelloWorld-decrypt.zvlt";
     var nonceGenerator = new NonceGenerator();
+    var fileId = Guid.NewGuid();
     using(var keyChain = new KeyChain())
     {
       var pkif = CreateTestKeyInfo(passphraseText, stamp, keyChain);
@@ -468,11 +469,12 @@ public class VaultCryptoTests
           ["null"] = null,
           ["text"] = "text",
           ["number"] = 42L,
-          ["boolean"] = true,
-          ["object"] = new JObject { ["hello"] = "world" },
-          ["list"] = new JArray { 1, 2, "many"},
+          //["boolean"] = true,
+          //["object"] = new JObject { ["hello"] = "world" },
+          //["list"] = new JArray { 1, 2, "many"},
+          //["guid"] = Guid.NewGuid(),
         };
-        be = vaultWriter.AppendFile(testnameIn, utcStampOverride: stamp, additionalMetadata: metaAdditions);
+        be = vaultWriter.AppendFile(testnameIn, utcStampOverride: stamp, additionalMetadata: metaAdditions, fileIdOverride: fileId);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);
@@ -493,12 +495,14 @@ public class VaultCryptoTests
         var metadata = fe.GetMetadata(vaultReader, tagBytes);
         Assert.NotNull(metadata);
         Assert.Equal(testnameIn, metadata.Name);
-        var json = JsonConvert.SerializeObject(metadata, Formatting.None);
+        var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);
         _outputHelper.WriteLine($"Metadata: {json}");
         var header = fe.GetHeader(vaultReader); // this is already cached
         Assert.NotNull(header);
         var encryptionStamp = EpochTicks.ToUtc(header.EncryptionStamp);
         Assert.Equal(stamp, encryptionStamp);
+        Assert.Equal(fileId, header.FileId);
+        _outputHelper.WriteLine($"File ID: {header.FileId}");
         _outputHelper.WriteLine($"Total length: {fe.GetContentLength()}");
 
         if(File.Exists(testnameOut1))

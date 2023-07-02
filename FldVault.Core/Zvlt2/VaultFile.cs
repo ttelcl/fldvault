@@ -289,6 +289,7 @@ public class VaultFile: IBlockElementContainer
       PassphraseKeyInfoFile pkif;
       if(passBlock != null)
       {
+        passBlock.ExpectBlockLength(96);
         //_pkifCache = PassphraseKeyInfoFile.ReadFromBlock
         if(stream != null)
         {

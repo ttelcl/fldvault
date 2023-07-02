@@ -161,7 +161,7 @@ public class VaultFileWriter: IDisposable
   /// </remarks>
   public BlockElement AppendFile(
     string filename,
-    IDictionary<string, JToken>? additionalMetadata = null,
+    IDictionary<string, JToken?>? additionalMetadata = null,
     DateTime? utcStampOverride = null)
   {
     CheckDisposed();

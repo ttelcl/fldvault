@@ -1,21 +1,23 @@
 using System;
 using System.Text;
+using System.Security;
+using System.Text.Unicode;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 using Xunit;
 using Xunit.Abstractions;
 
 using FldVault.Core;
 using FldVault.Core.Crypto;
-using System.Security;
-using System.Text.Unicode;
-using System.Linq;
-using System.Collections.Generic;
 using FldVault.Core.Vaults;
-using System.IO;
 using FldVault.Core.Zvlt2;
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Utilities;
-using Newtonsoft.Json;
 
 namespace UnitTests.FldVault;
 
@@ -461,7 +463,15 @@ public class VaultCryptoTests
       using(var vaultWriter = new VaultFileWriter(vaultFile0, cryptor))
       {
         _outputHelper.WriteLine($"Appending {Path.GetFileName(testname1)} to {Path.GetFileName(vaultName)}");
-        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
+        var metaAdditions = new JObject {
+          ["null"] = null,
+          ["text"] = "text",
+          ["number"] = 42L,
+          ["boolean"] = true,
+          ["object"] = new JObject { ["hello"] = "world" },
+          ["list"] = new JArray { 1, 2, "many"},
+        };
+        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp, additionalMetadata: metaAdditions);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);

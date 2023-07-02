@@ -29,7 +29,7 @@ namespace FldVault.Core.Zvlt2
       long? stamp = null,
       long? size = null)
     {
-      OtherFields = new Dictionary<string, JToken>();
+      OtherFields = new Dictionary<string, JToken?>();
       Name = name;
       Stamp = stamp;
       Size = size;
@@ -72,7 +72,7 @@ namespace FldVault.Core.Zvlt2
     /// explicitly handled otherwise
     /// </summary>
     [JsonExtensionData]
-    public Dictionary<string, JToken> OtherFields { get; init; }
+    public Dictionary<string, JToken?> OtherFields { get; init; }
 
     /// <summary>
     /// Check if a non-null "file name" meets the requirements for

@@ -22,15 +22,17 @@ let usage detail =
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
     cp ""
   if showSummary "create" then
-    cp "\fozvlt create \fg-vf \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0]"
+    cp "\fozvlt create \fg-vf \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0]"
     cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"
     cp "  or \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
   if matchDetail "create" then
-    cp "  \fg-vf \fc<file.zvlt>\f0  The name of the new vault file"
+    cp "  \fg-vf \fc<file.zvlt>\f0  The name of the new vault file. Created in the same folder as the"
+    cp "                            key file, unless you include a path."
     cp "  \fg-key \fc<id>\f0        The first few characters of the name of an existing \fb*.key-info\f0"
     cp "  \fx     \fx    \fx        file in the same folder as the new vault file."
     cp "  \fg-kf \fc<other.zvlt>\f0 The existing vault file providing the key for the new vault."
-    cp "  [neither \fg-key\f0 nor \fg-kf\f0]  Take the key from the one existing \fb*.key-info\f0 file."
+    cp "  \fg-p\f0\fx               Create a new key from a passphrase (combining \fokey-new\f0 and \focreate\f0)."
+    cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0]  Take the key from the one existing \fb*.key-info\f0 file."
     cp ""
   if showSummary "append" then
     cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 \fg-f \fc<file>\f0"

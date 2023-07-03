@@ -18,6 +18,7 @@
     <Compile Include="Usage.fs" />
     <Compile Include="KeyEntry.fs" />
     <Compile Include="KeyApp.fs" />
+    <Compile Include="CreateApp.fs" />
     <Compile Include="EncryptApp.fs" />
     <Compile Include="DecryptApp.fs" />
     <Compile Include="Program.fs" />

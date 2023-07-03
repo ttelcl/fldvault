@@ -4,6 +4,7 @@ open System
 open System.Security
 
 open FldVault.Core.Crypto
+open FldVault.Core.Vaults
 
 open ColorPrint
 open CommonTools
@@ -33,6 +34,13 @@ let enterKey prompt (salt: ReadOnlySpan<byte>) =
   if ss.Length < 4 then
     failwith "Expecting at least 4 characters"
   PassphraseKey.FromSecureString(ss, salt)
+
+let enterKeyFor (pkif:PassphraseKeyInfoFile) =
+  cp $"\fyEnter passphrase for key \fo{pkif.KeyId}\f0:"
+  let pk = enterKey null pkif.Salt
+  if pk.GetId() <> pkif.KeyId then
+    failwith "Incorrect passphrase"
+  pk
 
 let enterNewKey prompt =
   let saltBytes = PassphraseKey.GenerateSalt()

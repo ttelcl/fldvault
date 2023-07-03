@@ -178,6 +178,15 @@ namespace FldVault.Core.Vaults
     }
 
     /// <summary>
+    /// Return the suffix of the file name (without path or key id)
+    /// </summary>
+    public string FileSuffix {
+      get => String.IsNullOrEmpty(Tag)
+        ? $"{Kind}.key-info"
+        : $"{Tag}.{Kind}.key-info";
+    }
+
+    /// <summary>
     /// Convert this KeyInfoName to a plain file name (without directory information)
     /// </summary>
     /// <returns></returns>

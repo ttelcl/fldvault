@@ -42,12 +42,12 @@ let usage detail =
     cp "  \fg-f \fc<file>\f0        The name of the file to append. \fkCurrently the path is ignored\f0."
     cp ""
   if showSummary "check" then
-    cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"
+    cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0|\fg-kf \fc<file.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
     cp "  Check the passphrase of a key"
   if matchDetail "check" then
     cp "  \fg-dv \fc<directory>\f0  The vault folder."
     cp "  \fg-key \fc<id>\f0        The first few characters of the key id"
-    cp "  \fg-kf \fc<file>\f0       The full name of the key file"
+    cp "  \fg-kf \fc<file>\f0       The full name of the key file or a vault file"
     cp ""
   if showSummary "status" then
     cp "\fozvlt status [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"

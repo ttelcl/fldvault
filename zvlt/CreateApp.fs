@@ -22,18 +22,6 @@ type private CreateOptions = {
   Source: KeySource
 }
 
-let getPassKeyInfoFromFile (fileName: string) =
-  if fileName.EndsWith(".pass.key-info", StringComparison.InvariantCultureIgnoreCase) then
-    PassphraseKeyInfoFile.ReadFrom(fileName)
-  elif fileName.EndsWith(".zvlt", StringComparison.InvariantCultureIgnoreCase) then
-    let vf = VaultFile.Open(fileName)
-    let pkif = vf.GetPassphraseInfo()
-    if pkif = null then
-      failwith $"Vault '{Path.GetFileName(fileName)}' does not contain its own key-info block."
-    pkif
-  else
-    failwith $"Unrecognized key provider file '{Path.GetFileName(fileName)}'"
-
 let formatStampLocal (t: DateTime) =
   t.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
 
@@ -195,7 +183,7 @@ let runCreate args =
     let vaultFile = Path.Combine(vaultFolder, o.VaultName)
     if File.Exists(vaultFile) then
       failwith $"The output file already exists: {vaultFile}"
-    let pkif = keyFile |> getPassKeyInfoFromFile
+    let pkif = keyFile |> KeyUtilities.getPassKeyInfoFromFile
     cp $"Key folder:   \fc{keyDirectory}\f0"
     cp $"Key file:     \fg{Path.GetFileName(keyFile)}\f0"
     cp $"Vault folder: \fc{vaultFolder}\f0"

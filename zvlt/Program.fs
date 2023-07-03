@@ -30,6 +30,8 @@ let rec run arglist =
     rest |> KeyApp.runNewKey
   | "create" :: rest ->
     rest |> CreateApp.runCreate
+  | "list" :: rest ->
+    rest |> ListApp.runList
   | "check" :: rest ->
     rest |> KeyApp.runCheckKey
   | "status" :: rest ->

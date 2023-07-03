@@ -34,6 +34,13 @@ let usage detail =
     cp "  \fg-p\f0\fx               Create a new key from a passphrase (combining \fokey-new\f0 and \focreate\f0)."
     cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0]  Take the key from the one existing \fb*.key-info\f0 file."
     cp ""
+  if showSummary "list" then
+    cp "\fozvlt list \fg-vf \fc<file.zvlt>\f0 \fg-public\f0"
+    cp "  List files stored in the vault"
+  if matchDetail "list" then
+    cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to list the contents of."
+    cp "  \fg-public\fx\f0          Only provide public information."
+    cp ""
   if showSummary "append" then
     cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 \fg-f \fc<file>\f0"
     cp "  Append a file to a vault (encrypting it)"
@@ -85,6 +92,7 @@ let usage detail =
   
   cp "Common options:"
   cp "\fg-v               \f0Verbose mode"
-
+  cp "\fg-h               \f0Show help for the current command (and abort processing the command line)"
+  
 
 

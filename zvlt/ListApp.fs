@@ -70,8 +70,7 @@ let runList args =
       vaultFile.FileElements()
       |> Seq.map(fun fe -> new FileElement(fe))
       |> Seq.toArray
-    let nonceGenerator = new NonceGenerator()
-    use cryptor = if rawKey = null then null else new VaultCryptor(keyChain, pkif.KeyId, vaultFile.Header.TimeStamp, nonceGenerator)
+    use cryptor = if rawKey = null then null else vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)
     for fe in fileElements do
       cp $"File id {fe.GetHeader(reader)}"

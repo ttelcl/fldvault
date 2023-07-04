@@ -364,8 +364,7 @@ public class VaultCryptoTests
       var vaultFile = ResetVault(pkif, vaultName, stamp);
 
       BlockElement be;
-      var nonceGenerator = new NonceGenerator();
-      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      using(var cryptor = vaultFile.CreateCryptor(keyChain))
       using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
         be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
@@ -410,8 +409,7 @@ public class VaultCryptoTests
       var vaultFile = ResetVault(pkif, vaultName, stamp);
 
       BlockElement be;
-      var nonceGenerator = new NonceGenerator();
-      using(var cryptor = new VaultCryptor(keyChain, vaultFile.KeyId, stamp, nonceGenerator))
+      using(var cryptor = vaultFile.CreateCryptor(keyChain))
       using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
         be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
@@ -462,7 +460,7 @@ public class VaultCryptoTests
       CloneSource(testfileOriginalName, testnameIn, stamp);
       var vaultFile0 = ResetVault(pkif, vaultName, stamp);
       BlockElement be;
-      using(var cryptor = new VaultCryptor(keyChain, pkif.KeyId, stamp, nonceGenerator))
+      using(var cryptor = vaultFile0.CreateCryptor(keyChain, nonceGenerator))
       using(var vaultWriter = new VaultFileWriter(vaultFile0, cryptor))
       {
         _outputHelper.WriteLine($"Appending {Path.GetFileName(testnameIn)} to {Path.GetFileName(vaultName)}");
@@ -486,7 +484,7 @@ public class VaultCryptoTests
       Assert.NotNull(elements);
       Assert.Equal(3, elements.Count);
 
-      using(var cryptor = new VaultCryptor(keyChain, pkif.KeyId, stamp, nonceGenerator))
+      using(var cryptor = vf.CreateCryptor(keyChain, nonceGenerator))
       using(var vaultReader = new VaultFileReader(vf, cryptor))
       {
         var fileElements = elements.Where(e => e.Block.Kind == Zvlt2BlockType.FileHeader).ToList();

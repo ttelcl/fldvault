@@ -24,13 +24,27 @@ public class VaultCryptor: IDisposable
   private AesGcm? _aesgcm;
 
   /// <summary>
-  /// Create a new VaultEncryptor
+  /// Create a new VaultEncryptor. Normally invoked by
+  /// <see cref="FldVault.Core.Zvlt2.VaultFile.CreateCryptor(KeyChain, NonceGenerator?)"/>
   /// </summary>
-  public VaultCryptor(
+  /// <param name="keySource">
+  /// The key chain providing the encryption key
+  /// </param>
+  /// <param name="keyId">
+  /// The ID of the encryption key
+  /// </param>
+  /// <param name="vaultStamp">
+  /// The time stamp of the vault
+  /// </param>
+  /// <param name="nonceGenerator">
+  /// The nonce generator. If null, a new nonce generator instance is created.
+  /// </param>
+  /// <exception cref="ArgumentException"></exception>
+  internal VaultCryptor(
     KeyChain keySource,
     Guid keyId,
     DateTime vaultStamp,
-    NonceGenerator nonceGenerator)
+    NonceGenerator? nonceGenerator = null)
   {
     if(vaultStamp.Kind != DateTimeKind.Utc)
     {
@@ -38,7 +52,7 @@ public class VaultCryptor: IDisposable
     }
     KeyId = keyId;
     VaultStamp = vaultStamp;
-    NonceGenerator = nonceGenerator;
+    NonceGenerator = nonceGenerator ?? new NonceGenerator();
     var key = keySource.FindDirect(keyId);
     if(key == null)
     {

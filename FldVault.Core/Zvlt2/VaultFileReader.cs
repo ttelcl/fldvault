@@ -22,7 +22,7 @@ namespace FldVault.Core.Zvlt2;
 /// </summary>
 public class VaultFileReader: IDisposable
 {
-  private readonly VaultCryptor _cryptor;
+  private readonly VaultCryptor? _cryptor;
   private readonly CryptoBuffer<byte> _buffer;
   private readonly Stream _stream;
   private bool _disposed = false;
@@ -34,15 +34,16 @@ public class VaultFileReader: IDisposable
   /// The vault descriptor describing the vault file to open
   /// </param>
   /// <param name="cryptor">
-  /// The encryption key for the vault
+  /// The encryption key for the vault. This can be null, but the resulting
+  /// VaultFileReader cannot handle encrypted content in that case.
   /// </param>
   public VaultFileReader(
     VaultFile vault,
-    VaultCryptor cryptor)
+    VaultCryptor? cryptor)
   {
     Vault = vault;
     _cryptor = cryptor;
-    if(Vault.KeyId != _cryptor.KeyId)
+    if(_cryptor!=null && Vault.KeyId != _cryptor.KeyId)
     {
       throw new ArgumentException("The key does not match the vault file");
     }
@@ -124,6 +125,7 @@ public class VaultFileReader: IDisposable
     Span<byte> plaintext)
   {
     CheckDisposed();
+    var cryptor = CheckCryptor();
     if(plaintext.Length > _buffer.Length)
     {
       throw new ArgumentException(
@@ -134,7 +136,7 @@ public class VaultFileReader: IDisposable
     ReadSpan(nonce);
     ReadSpan(authTagOut);
     ReadSpan(ciphertext);
-    _cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
+    cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
   }
 
   private void CheckDisposed()
@@ -143,6 +145,16 @@ public class VaultFileReader: IDisposable
     {
       throw new ObjectDisposedException(nameof(VaultFileReader));
     }
+  }
+
+  private VaultCryptor CheckCryptor()
+  {
+    if(_cryptor == null)
+    {
+      throw new InvalidOperationException(
+        "No encryption key provided");
+    }
+    return _cryptor;
   }
 
   /// <summary>

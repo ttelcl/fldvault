@@ -165,6 +165,22 @@ public class VaultFile: IBlockElementContainer
   public Guid KeyId { get => Header.KeyId; }
 
   /// <summary>
+  /// Create a matching <see cref="VaultCryptor"/>
+  /// </summary>
+  /// <param name="keyChain">
+  /// The key chain that holds the key for this vault
+  /// </param>
+  /// <param name="nonceGenerator">
+  /// The nonce generator to use for encryption, or null to create
+  /// a new nonce generator instance.
+  /// </param>
+  /// <returns></returns>
+  public VaultCryptor CreateCryptor(KeyChain keyChain, NonceGenerator? nonceGenerator = null)
+  {
+    return new VaultCryptor(keyChain, KeyId, Header.TimeStamp, nonceGenerator);
+  }
+
+  /// <summary>
   /// Implements <see cref="IBlockElementContainer"/>, returning a cached copy,
   /// or a newly generated instance if the block list has changed.
   /// </summary>

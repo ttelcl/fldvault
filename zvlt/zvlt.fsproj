@@ -21,6 +21,7 @@
     <Compile Include="KeyApp.fs" />
     <Compile Include="CreateApp.fs" />
     <Compile Include="ListApp.fs" />
+    <Compile Include="DumpApp.fs" />
     <Compile Include="EncryptApp.fs" />
     <Compile Include="DecryptApp.fs" />
     <Compile Include="Program.fs" />

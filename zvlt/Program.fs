@@ -32,6 +32,8 @@ let rec run arglist =
     rest |> CreateApp.runCreate
   | "list" :: rest ->
     rest |> ListApp.runList
+  | "dump" :: rest ->
+    rest |> DumpApp.runDump
   | "check" :: rest ->
     rest |> KeyApp.runCheckKey
   | "status" :: rest ->

@@ -71,6 +71,12 @@ let usage detail =
     cp "  Lock a key, deleting the temporary raw key copy created by \fozvlt unlock\f0."
   if matchDetail "lock" then
     cp ""
+  if showSummary "dump" then
+    cp "\fozvlt dump \fg-vf \fc<file.zvlt>\f0"
+    cp "  Dump technical details of a *.szvlt file"
+  if matchDetail "dump" then
+    cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to analyze."
+    cp ""
   if showSummary "put" then
     cp "\fozvlt put [\fg-kf \fc<file.key-info>\f0] \fg-f \fc<file>\f0"
     cp "  Store a file in the vault folder as a new vault file. \frdeprecated\f0"

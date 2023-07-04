@@ -78,20 +78,19 @@ let usage detail =
   if matchDetail "dump" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to analyze."
     cp ""
-  if showSummary "put" then
-    cp "\fozvlt put [\fg-kf \fc<file.key-info>\f0] \fg-f \fc<file>\f0"
-    cp "  Store a file in the vault folder as a new vault file. \frdeprecated\f0"
-  if matchDetail "put" then
-    cp "  \fg-kf \fc<file.key-info>\f0  The descriptor file of the key to use."
-    cp "  \fx    \fx               \fx  Also determines the destination folder."
-    cp ""
   if showSummary "extract" then
-    cp "\fozvlt extract \fg-f \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0]"
-    cp "  Extract a file from a new vault file into the \fcout-dir\f0 \frdeprecated\f0"
+    cpx "\fozvlt extract \fg-vf \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0]"
+    cp " {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0] [\fg-all\f0]"
+    cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
-    cp "  \fg-f \fc<file.zvlt>\f0   The vault file to extract the content of"
-    cp "  \fg-od \fc<out-dir>\f0    The directory to extract to (preserving the original file name)"
-    cp "  \fx    \fx         \fx    Default: current directory"
+    cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to extract content from"
+    cp "  \fg-od \fc<out-dir>\f0    The directory to extract to. File names with paths are resolved"
+    cp "  \fx    \fx         \fx    relative to this. Default: current directory"
+    cp "  \fg-same\f0\fx            Skip the check that prevents extracting to the vault folder"
+    cp "  \fg-f \fc<file>\f0        The name of a file to extract (repeatable)"
+    cp "  \fg-id \fc<id>\f0         The start of a file ID (use \folist\f0 to discover file IDs)"
+    cp "  \fg-n \fc<name>\f0        Overide the name for the preceding file (\fg-f\f0 or \fg-id\f0)"
+    cp "  \fg-all\f0\fx             Extract all files. You can use \fg-f\f0 or \fg-id\f0 with \fg-n\f0 to adjust names."
     cp ""
   // show always:
   cp "\fozvlt help \f0[\fc<command>\f0]"

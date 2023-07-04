@@ -42,11 +42,12 @@ let usage detail =
     cp "  \fg-public\fx\f0          Only provide public information."
     cp ""
   if showSummary "append" then
-    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 \fg-f \fc<file>\f0"
+    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] \fg-f \fc<file>\f0}"
     cp "  Append a file to a vault (encrypting it)"
   if matchDetail "append" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
-    cp "  \fg-f \fc<file>\f0        The name of the file to append. \fkCurrently the path is ignored\f0."
+    cp "  \fg-f \fc<file>\f0        The name of the file to append. Repeatable. \fkThe original path is ignored\f0."
+    cp "  \fg-p \fc<path>\f0        The path to store with subsequent files. Use \fg-p \fc.\f0 to reset."
     cp ""
   if showSummary "check" then
     cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0|\fg-kf \fc<file.zvlt>\f0] [\fg-dv \fc<directory>\f0]"

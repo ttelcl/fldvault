@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
+using FldVault.Core.Utilities;
 
 namespace FldVault.Core.Zvlt2;
 
@@ -30,9 +31,14 @@ public class FileHeader
   }
 
   /// <summary>
-  /// The time stamp that the file was added to the vault
+  /// The time stamp that the file was added to the vault in EpochTicks
   /// </summary>
   public long EncryptionStamp { get; init; }
+
+  /// <summary>
+  /// The time stamp that the file was added to the vault as an UTC DateTime
+  /// </summary>
+  public DateTime EncryptionStampUtc { get => EpochTicks.ToUtc(EncryptionStamp); }
 
   /// <summary>
   /// The file identifier. This is assigned a random GUID

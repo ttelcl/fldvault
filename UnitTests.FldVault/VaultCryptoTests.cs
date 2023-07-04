@@ -490,8 +490,7 @@ public class VaultCryptoTests
         var fileElements = elements.Where(e => e.Block.Kind == Zvlt2BlockType.FileHeader).ToList();
         Assert.Single(fileElements);
         var fe = new FileElement(fileElements[0]);
-        var tagBytes = new byte[16];
-        var metadata = fe.GetMetadata(vaultReader, tagBytes);
+        var metadata = fe.GetMetadata(vaultReader);
         Assert.NotNull(metadata);
         Assert.Equal(testnameIn, metadata.Name);
         var json = JsonConvert.SerializeObject(metadata, Formatting.Indented);

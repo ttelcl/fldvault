@@ -122,6 +122,24 @@ namespace FldVault.Core.Zvlt2
     }
 
     /// <summary>
+    /// Get the cached <see cref="FileMetadata"/> instance, reading it
+    /// from the file if not already done so.
+    /// </summary>
+    /// <param name="reader">
+    /// The reader to read from if not yet cached.
+    /// </param>
+    /// <param name="reload">
+    /// If true, the cached copy is re-read even if already available
+    /// </param>
+    public FileMetadata GetMetadata(
+      VaultFileReader reader,
+      bool reload = false)
+    {
+      Span<byte> authTagBuffer = stackalloc byte[16];
+      return GetMetadata(reader, authTagBuffer, reload);
+    }
+
+    /// <summary>
     /// Decode the content of this file element and save it to the
     /// specified stream.
     /// </summary>

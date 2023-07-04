@@ -22,12 +22,245 @@ type private ExtractFile = {
   NameOverride: string
 }
 
+type private ExistsHandling =
+  | Fail
+  | Overwrite
+  | Skip
+
 type private ExtractOptions = {
   VaultName: string
   OutDir: string
   AllowSame: bool
   ExtractAll: bool
+  Backdate: bool
+  ExistPolicy: ExistsHandling
+  Files: ExtractFile list
+}
+
+type private VaultContentFile = {
+  Element: FileElement
+  Meta: FileMetadata
+  Name: string
+  Id: string
+}
+
+type private ExtractionTask = {
+  mutable Selector: ExtractFile option // can be none when '-all' was given
+  Target: VaultContentFile
+}
+
+type private NamedExtractionTask = {
+  OutputName: string
+  Reason: ExtractFile option
+  TargetVcf: VaultContentFile
 }
 
 let runExtract args =
-  0
+  let rec parseMore o args =
+    match args with
+    | "-v" :: rest ->
+      verbose <- true
+      rest |> parseMore o
+    | "-h" :: _ ->
+      None
+    | "-vf" :: vault :: rest ->
+      rest |> parseMore {o with VaultName = Path.GetFullPath(vault)}
+    | "-same" :: rest ->
+      rest |> parseMore {o with AllowSame = true}
+    | "-all" :: rest ->
+      rest |> parseMore {o with ExtractAll = true}
+    | "-od" :: dir :: rest ->
+      rest |> parseMore {o with OutDir = Path.GetFullPath(dir)}
+    | "-f" :: fnm :: rest ->
+      let ef = {
+        Key = FileKey.FileName(fnm)
+        NameOverride = null
+      }
+      rest |> parseMore {o with Files = ef :: o.Files}
+    | "-id" :: fid :: rest ->
+      let ef = {
+        Key = FileKey.FileId(fid)
+        NameOverride = null
+      }
+      rest |> parseMore {o with Files = ef :: o.Files}
+    | "-n" :: name :: rest ->
+      match o.Files with
+      | ef :: tail ->
+        let ef = {ef with NameOverride = name}
+        rest |> parseMore {o with Files = ef :: tail}
+      | [] ->
+        failwith "'-n' requires at least one '-f' or '-id' option before"
+    | "-notime" :: rest ->
+      rest |> parseMore {o with Backdate = false}
+    | "-x-overwrite" :: rest ->
+      rest |> parseMore {o with ExistPolicy = ExistsHandling.Overwrite}
+    | "-x-skip" :: rest ->
+      rest |> parseMore {o with ExistPolicy = ExistsHandling.Skip}
+    | [] ->
+      if o.VaultName |> String.IsNullOrEmpty then
+        failwith "No vault name specified"
+      if o.VaultName |> File.Exists |> not then
+        failwith $"No such file: {o.VaultName}"
+      Some({o with Files = o.Files |> List.rev})
+    | x :: _ ->
+      failwith $"Unrecognized argument '{x}'"
+  let oo = args |> parseMore {
+    VaultName = null
+    OutDir = Environment.CurrentDirectory
+    AllowSame = false
+    ExtractAll = false
+    Backdate = true
+    ExistPolicy = ExistsHandling.Fail
+    Files = []
+  }
+  match oo with
+  | Some(o) ->
+    let vaultFile = VaultFile.Open(o.VaultName)
+    let pkif = vaultFile.GetPassphraseInfo()
+    if pkif = null then
+      failwith "No key information found in the vault"
+    let vaultFolder = Path.GetDirectoryName(o.VaultName)
+    if o.OutDir |> Directory.Exists |> not then
+      cp $"Creating output directory \fg{o.OutDir}\f0."
+      o.OutDir |> Directory.CreateDirectory |> ignore
+    if o.AllowSame |> not then
+      let probeName = Guid.NewGuid().ToString() + ".probe"
+      let vaultProbe = Path.Combine(vaultFolder, probeName)
+      let outProbe = Path.Combine(o.OutDir, probeName)
+      File.Create(outProbe).Dispose()
+      if File.Exists(vaultProbe) then
+        File.Delete(outProbe)
+        cp "\foYou are trying to extract content to the vault file's folder\f0. For security"
+        cp "reasons this is \frdenied\f0 by default. Extract to a different folder or pass the"
+        cp "\fg-same\f0 option to skip this check."
+        failwith $"Folder distinctness check failed"
+      else
+        File.Delete(outProbe)
+    let unlockCache = new UnlockStore()
+    use keyChain = new KeyChain()
+    use cryptor =
+      let _ = // the resulting key is not used directly but via the key chain
+        let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
+        if rawKey = null then
+          cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
+          use k = pkif |> KeyEntry.enterKeyFor :> KeyBuffer
+          k |> keyChain.PutCopy
+        else
+          cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."
+          rawKey
+      vaultFile.CreateCryptor(keyChain)
+    use reader = new VaultFileReader(vaultFile, cryptor)
+    let makeVcf ibe =
+      let fe = new FileElement(ibe)
+      let header = fe.GetHeader(reader)
+      let meta = fe.GetMetadata(reader)
+      {
+        Element = fe
+        Meta = meta
+        Name = meta.Name
+        Id = header.FileId.ToString()
+      }
+    let vaultContents =
+      vaultFile.FileElements()
+      |> Seq.map makeVcf
+      |> Seq.toArray
+    let tasks =
+      vaultContents
+      |> Array.map (fun vc -> {Selector = None; Target = vc})
+    let efMatchesTask extractionTask extractFile =
+      let vcf = extractionTask.Target
+      match extractFile.Key with
+      | FileName(fn) ->
+        fn.Equals(vcf.Name, StringComparison.InvariantCultureIgnoreCase)
+      | FileId(fid) ->
+        vcf.Id.StartsWith(fid, StringComparison.InvariantCultureIgnoreCase)
+    for ef in o.Files do
+      let efLabel =
+        match ef.Key with
+        | FileName(fn) -> $"'-f {fn}'"
+        | FileId(fid) -> $"'-id {fid}'"
+      let matchingTasks = tasks |> Array.where (fun extractionTask -> efMatchesTask extractionTask ef)
+      let matchingTask =
+        match matchingTasks.Length with
+        | 0 -> failwith $"No content files match ${efLabel}."
+        | 1 -> matchingTasks[0]
+        | _ -> failwith $"Ambiguous key. Multiple content files match ${efLabel}"
+      if matchingTask.Selector.IsSome then
+        let taskLabel =
+          if matchingTask.Target.Name |> String.IsNullOrEmpty then
+            $"File ID {matchingTask.Target.Id}"
+          else
+            $"File name {matchingTask.Target.Name}"
+        failwith $"Ambiguous content file. Multiple '-f' / 'id' options match content:  {taskLabel}"
+      matchingTask.Selector <- Some(ef)
+    let tasks = // implement '-all'
+      if o.ExtractAll then
+        tasks
+      else
+        tasks |> Array.where (fun task -> task.Selector.IsSome)
+    let resolveName extractionTask =
+      let nameOverride =
+        match extractionTask.Selector with
+        | Some(et) -> et.NameOverride
+        | None -> null
+      let name =
+        if nameOverride |> String.IsNullOrEmpty then
+          extractionTask.Target.Name
+        else
+          nameOverride
+      if name |> String.IsNullOrEmpty then
+        null
+      else
+        Path.Combine(o.OutDir, name)
+    let namedTasks =
+      tasks
+      |> Array.map (fun et -> {
+        OutputName = et |> resolveName
+        Reason = et.Selector
+        TargetVcf = et.Target
+      })
+    let namedTasks =
+      namedTasks
+      |> Array.where (fun nt ->
+        if nt.OutputName |> String.IsNullOrEmpty then
+          cp $"\foSkipping\f0 Entry ID \fy{nt.TargetVcf.Id}\f0 has no name assigned"
+          false
+        else
+          true
+      )
+    
+    if namedTasks.Length = 0 then
+      failwith "No matching entries to extract"
+    
+    // Before extracting anything, make sure none of the targets exist if fail-if-exists is set
+    if o.ExistPolicy = ExistsHandling.Fail then
+      for nt in namedTasks do
+        if nt.OutputName |> File.Exists then
+          failwith $"Output {nt.OutputName} already exists"
+    
+    for nt in namedTasks do
+      let fe = nt.TargetVcf.Element
+      let stampText =
+        let stamp = nt.TargetVcf.Meta.UtcStamp
+        if stamp.HasValue && o.Backdate then
+          let txt = stamp.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss zzz")
+          $"(\fc{txt}\f0)"
+        else
+          ""
+      if nt.OutputName |> File.Exists then
+        match o.ExistPolicy with
+        | ExistsHandling.Fail ->
+          // should never happen, because this was checked above
+          failwith $"Output {nt.OutputName} already exists"
+        | ExistsHandling.Skip ->
+          cp $"\foSkipping existing \fy{nt.OutputName}\f0 {stampText}"
+        | ExistsHandling.Overwrite ->
+          cp $"Extracting (\foOverwriting!\f0) \fg{nt.OutputName}\f0 {stampText}"
+          fe.SaveContentToFile(reader, o.OutDir, nt.OutputName, o.Backdate, false)
+      else
+        cp $"Extracting \fg{nt.OutputName}\f0 {stampText}"
+        fe.SaveContentToFile(reader, o.OutDir, nt.OutputName, o.Backdate, false)
+    0
+  | None ->
+    Usage.usage "extract"
+    0

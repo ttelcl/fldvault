@@ -10,7 +10,6 @@ let usage detail =
   let showSummary key =
     matchDetail key || detail = ""
   cp "\foZVLT file encryption / decryption CLI\f0"
-  cp "\frunder development \foCurrently the concept of a 'vault' is in flux.\f0"
   cp ""
   if showSummary "key-new" then
     cp "\fozvlt key-new \fg-p\f0 [\fg-dv \fc<directory>\f0]"
@@ -80,13 +79,16 @@ let usage detail =
     cp ""
   if showSummary "extract" then
     cpx "\fozvlt extract \fg-vf \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0]"
-    cp " {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0] [\fg-all\f0]"
+    cp " [\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
     cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to extract content from"
     cp "  \fg-od \fc<out-dir>\f0    The directory to extract to. File names with paths are resolved"
     cp "  \fx    \fx         \fx    relative to this. Default: current directory"
     cp "  \fg-same\f0\fx            Skip the check that prevents extracting to the vault folder"
+    cp "  \fg-notime\f0             Do not backdate the extract files to their original time"
+    cp "  \fg-x-overwrite\f0        If the target exists, overwrite it"
+    cp "  \fg-x-skip\f0             If the target exists, skip it"
     cp "  \fg-f \fc<file>\f0        The name of a file to extract (repeatable)"
     cp "  \fg-id \fc<id>\f0         The start of a file ID (use \folist\f0 to discover file IDs)"
     cp "  \fg-n \fc<name>\f0        Overide the name for the preceding file (\fg-f\f0 or \fg-id\f0)"

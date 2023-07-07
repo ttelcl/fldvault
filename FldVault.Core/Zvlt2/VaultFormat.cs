@@ -14,7 +14,7 @@ namespace FldVault.Core.Zvlt2;
 /// <summary>
 /// Constants used in ZVLT v2 file blocks (other than block types)
 /// </summary>
-public static class VaultFormat2
+public static class VaultFormat
 {
 
   /// <summary>

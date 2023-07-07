@@ -45,7 +45,7 @@ public class VaultFileWriter: IDisposable
     {
       throw new ArgumentException("The key does not match the vault file");
     }
-    _buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize);
+    _buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize);
     // We can assume the file exists: VaultFile already takes care of that
     _stream = File.OpenWrite(Vault.FileName);
     _stream.Position = _stream.Length;
@@ -117,7 +117,7 @@ public class VaultFileWriter: IDisposable
     rootElement.AddChild(metaElement);
     // We need a second buffer, because _buffer is already in use by the
     // private methods we will call
-    using(var sourceBuffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+    using(var sourceBuffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize))
     {
       long written = 0L;
       int n;

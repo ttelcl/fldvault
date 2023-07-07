@@ -47,7 +47,7 @@ public class VaultFileReader: IDisposable
     {
       throw new ArgumentException("The key does not match the vault file");
     }
-    _buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize);
+    _buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize);
     _stream = File.OpenRead(Vault.FileName);
   }
 

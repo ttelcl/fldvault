@@ -153,7 +153,7 @@ namespace FldVault.Core.Zvlt2
       VaultFileReader reader,
       Stream destination)
     {
-      using(var buffer = new CryptoBuffer<byte>(VaultFormat2.VaultChunkSize))
+      using(var buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize))
       {
         Span<byte> authTagOut = stackalloc byte[16];
         Span<byte> authTagIn = stackalloc byte[16];

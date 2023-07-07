@@ -1,4 +1,4 @@
-﻿# *.zvlt files, redesigned (v2)
+﻿# *.zvlt files, redesigned (v3)
 
 ## Block files
 
@@ -22,10 +22,10 @@ There are a small number of predefined kinds that have a standardized meaning.
 
 | Kind | Hex | Size | Notes |
 | --- |
-| '    ' | 0x20202020 | 8 | Generic terminator |
-| '((((' | 0x28282828 | 8 | Group start |
-| '))))' | 0x29292929 | 8 | Group end |
-| ')   ' | 0x20202029 | 8 | Implied group terminator |
+| '`    `' | 0x20202020 | 8 | Generic terminator |
+| '`((((`' | 0x28282828 | 8 | Group start |
+| '`))))`' | 0x29292929 | 8 | Group end |
+| '`)   `' | 0x20202029 | 8 | Implied group terminator |
 
 * The null kind can be used to indicate the end of a sequence of blocks.
 * The Group Start and Group End are empty marker blocks that indicate that
@@ -41,6 +41,13 @@ appear in a *.zvlt file. Each ZVLT file must start with a ZVLT file
 header block, and may subsequently contain 0 or more content elements,
 each of which contain 1 or more blocks.
 
+Blocks in a ZVLT v3 file have are bound in size: they carry a maximum
+of 0xD0000 (851926) content bytes plus a small block kind dependent
+overhead.	In ZVLT v2 that maximum was 0x40000 = 256k bytes. The new
+maximum was introduced to better support compression: it is derived
+from the maximum BZ2 compression block size (900000 bytes, compression
+level 9).
+
 ## ZVLT File Header Block
 
 The file header of a ZVLT file is a block of kind 'Zvlt'
@@ -49,7 +56,7 @@ The file header of a ZVLT file is a block of kind 'Zvlt'
 | --- | 
 | Kind | 'Zvlt' | 0x746C665A |
 | Size | 4 bytes | value is 48 |
-| Version | 1 int (2 shorts) | 0x00020002 |
+| Version | 1 int (2 shorts) | 0x00030000 |
 | Reserved | 1 int | 0x00000000 |
 | Key ID | Guid (16 bytes) | |
 | ZVLT Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
@@ -70,7 +77,7 @@ serialized as part of the block's content as the following sub-block:
 
 ### Time stamps
 
-Any time stamps are expressed Epoch Ticks: the number of 100 nanosecond
+Time stamps are expressed Epoch Ticks: the number of 100 nanosecond
 intervals since the Unix epoch (UTC implied). That is the number of 
 .net ticks minus 0x089F7FF5F7B58000L
 
@@ -92,7 +99,7 @@ content is almost the same as the *.pass.key-info file content, except
 that the file signature is replaced by a block header.
 
 Presence of this block is optional, but enables the ZVLT file to be used
-stand-alone.
+stand-alone, without an external *.pass.key-info file.
 
 | Name | Format | Notes |
 | --- |
@@ -105,8 +112,9 @@ stand-alone.
 ## File element
 
 Files are written as a variable number of blocks: header, metadata,
-one or more content blocks. Each content block contains up to 256kb
-of content.
+one or more content blocks and a terminator. Each content block
+contains up to 832kb of content (0x0D0000 bytes), which may be
+uncompressed or BZ2 compressed.
 
 ### Content file header block
 
@@ -119,11 +127,16 @@ of content.
 
 The number of content blocks is determined by the terminator block.
 
+Logically this block starts an element, terminated by an "Implied
+group terminator" (0x20202029) block. In addition to the terminator,
+the element contains one File Metadata block (`FMET`) and zero or
+more File Content blocks (`FCNZ`).
+
 ### File metadata block
 
 This block contains an UTF8 encoded JSON string representing an
 object with metadata. The format is intended to be extensible, but
-should have the fields below. Note that the fields are in principle
+should have the fields below. Note that the fields are
 optional: they are not guaranteed to be present.
 
 | Field | Description |
@@ -153,10 +166,35 @@ The "associated data" for the metadata is constructed as the following
 24 bytes:
 
 * `<block header>` (8 bytes, 'FMET' + size)
-* `<encryption stamp from the FLX header>` (8 bytes)
+* `<encryption stamp from the content file header>` (8 bytes)
 * `<ZVLT stamp from the ZVLT header>` (8 bytes)
 
-### File content blocks
+### File content blocks (FCNZ)
+
+_Introduced in ZVLT 3.0 to replace FCNT blocks_
+
+| Name | Format | Notes |
+| --- |
+| Kind | 'FCNZ' | 0x5A4E4346 |
+| Block Size | 4 bytes | |
+| Content size | 4 bytes | (*) |
+| Nonce | 12 bytes | AES-GCM nonce |
+| Auth Tag | 16 bytes | The resulting authentication tag |
+| CipherText | (Size) bytes | The ciphertext |
+
+(*) The `Content Size` field contains the original data block size. For
+uncompressed content that is equal to `BlockSize - 40`. For
+compressed content it is less. This also works the other way around:
+if `ContentSize == BlockSize-40` then the content is not compressed,
+else it is BZ2 compressed.
+
+The "associated data" is the Auth Tag of the previous block
+(16 bytes), using the Auth tag of the metadata block for the
+first content block.
+
+### Legacy File content blocks (FCNT)
+
+:warning: deprecated. This was the format used in ZVLT 2.x.
 
 | Name | Format | Notes |
 | --- |

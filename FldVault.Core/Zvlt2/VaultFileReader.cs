@@ -23,7 +23,7 @@ namespace FldVault.Core.Zvlt2;
 public class VaultFileReader: IDisposable
 {
   private readonly VaultCryptor? _cryptor;
-  private readonly CryptoBuffer<byte> _buffer;
+  private readonly ByteCryptoBuffer _buffer;
   private readonly Stream _stream;
   private bool _disposed = false;
 
@@ -47,7 +47,7 @@ public class VaultFileReader: IDisposable
     {
       throw new ArgumentException("The key does not match the vault file");
     }
-    _buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize);
+    _buffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize);
     _stream = File.OpenRead(Vault.FileName);
   }
 
@@ -141,10 +141,7 @@ public class VaultFileReader: IDisposable
     ReadSpan(nonce);
     ReadSpan(authTagOut);
     ReadSpan(ciphertext);
-    if(verifyEndBlock != null)
-    {
-      verifyEndBlock.VerifyBlockEnd(_stream);
-    }
+    verifyEndBlock?.VerifyBlockEnd(_stream);
     cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
   }
 

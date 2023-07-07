@@ -28,7 +28,7 @@ namespace FldVault.Core.Zvlt2;
 public class VaultFileWriter: IDisposable
 {
   private readonly VaultCryptor _cryptor;
-  private readonly CryptoBuffer<byte> _buffer;
+  private readonly ByteCryptoBuffer _buffer;
   private readonly Stream _stream;
   private bool _disposed = false;
 
@@ -45,7 +45,7 @@ public class VaultFileWriter: IDisposable
     {
       throw new ArgumentException("The key does not match the vault file");
     }
-    _buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize);
+    _buffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize);
     // We can assume the file exists: VaultFile already takes care of that
     _stream = File.OpenWrite(Vault.FileName);
     _stream.Position = _stream.Length;

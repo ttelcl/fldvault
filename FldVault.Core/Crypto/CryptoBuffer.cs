@@ -3,11 +3,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FldVault.Core.Crypto;
 
@@ -27,7 +22,6 @@ public class CryptoBuffer<T>: IDisposable where T : struct
     _buffer = new T[size];
     _disposed = false;
   }
-
   
   /// <summary>
   /// Create a new CryptoBuffer and copy the source as its content
@@ -69,6 +63,11 @@ public class CryptoBuffer<T>: IDisposable where T : struct
     }
     return _buffer; 
   }
+
+  /// <summary>
+  /// Get the underlying buffer for use in subclasses
+  /// </summary>
+  protected T[] RawBuffer { get => _buffer; }
 
   /// <summary>
   /// The number of elements in the buffer

@@ -49,7 +49,7 @@ namespace FldVault.Core.Zvlt2
         "Missing file metadata block");
       ContentBlocks =
         RootElement.Children
-          .Where(e => e.Block.Kind == Zvlt2BlockType.FileContent)
+          .Where(e => e.Block.Kind == Zvlt2BlockType.FileContentV3)
           .Select(e => e.Block)
           .ToList();
     }
@@ -161,9 +161,9 @@ namespace FldVault.Core.Zvlt2
         foreach(var ibi in ContentBlocks)
         {
           authTagOut.CopyTo(authTagIn);
-          reader.SeekBlock(ibi);
-          var plaintext = buffer.Span(0, ibi.Size - 36);
-          reader.DecryptFragment(authTagIn, authTagOut, plaintext);
+          var fch = FileContentHeader.Read(reader, ibi);
+          var plaintext = buffer.Span(0, ibi.Size - 40);
+          reader.DecryptFragment(authTagIn, authTagOut, plaintext, fch.BlockInfo);
           destination.Write(plaintext);
         }
       }
@@ -312,7 +312,7 @@ namespace FldVault.Core.Zvlt2
       using(var buffer = new CryptoBuffer<byte>(size))
       {
         var plaintext = buffer.Span();
-        reader.DecryptFragment(aux, authTagOut, plaintext);
+        reader.DecryptFragment(aux, authTagOut, plaintext, MetadataBlock);
         var json = Encoding.UTF8.GetString(plaintext);
         var meta = JsonConvert.DeserializeObject<FileMetadata>(json);
         if(meta == null)

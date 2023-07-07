@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -36,8 +37,9 @@ public interface IBlockInfo
 public static class BlockInfoExtensions
 {
   /// <summary>
-  /// Return the content length of the block. If <paramref name="expectedLength"/>
-  /// is provided, ensure it is equal.
+  /// Return the raw content length of the block. If <paramref name="expectedLength"/>
+  /// is provided, ensure it is equal. The raw content length is the number of bytes
+  /// in the block after the eight header bytes.
   /// </summary>
   /// <exception cref="InvalidOperationException">
   /// Thrown if <paramref name="expectedLength"/> was provided and it did not match
@@ -76,6 +78,20 @@ public static class BlockInfoExtensions
     {
       throw new InvalidOperationException(
         $"Unexpected content length in '{BlockType.ToText(info.Kind)}' block: {info.Size} instead of {expectedLength}");
+    }
+    return info;
+  }
+
+  /// <summary>
+  /// Verify that the current stream position exactly matches the end of the block
+  /// </summary>
+  public static IBlockInfo VerifyBlockEnd(this IBlockInfo info, Stream stream)
+  {
+    var written = (int)(stream.Position - info.Offset);
+    if(written != info.Size)
+    {
+      throw new InvalidOperationException(
+        $"Serialization error: expecting {info.Size} bytes but observed {written}");
     }
     return info;
   }

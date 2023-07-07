@@ -73,7 +73,7 @@ public class VaultHeader
     Stream destination,
     Guid keyId,
     DateTime? stamp = null,
-    int version = VaultFormat.VaultFileVersion2,
+    int version = VaultFormat.VaultFileVersion,
     int unused1 = 0,
     long unused2 = 0L)
   {
@@ -95,7 +95,7 @@ public class VaultHeader
 
   /// <summary>
   /// The format version of the file, expected to be 
-  /// <see cref="VaultFormat.VaultFileVersion2"/>
+  /// <see cref="VaultFormat.VaultFileVersion"/>
   /// </summary>
   public int Version { get; init; }
 
@@ -142,7 +142,7 @@ public class VaultHeader
   private static VaultHeader FromRaw(BlockInfo hdr, ReadOnlySpan<byte> data)
   {
     var version = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(0, 4));
-    if(version != VaultFormat.VaultFileVersion2)
+    if(version != VaultFormat.VaultFileVersion)
     {
       throw new InvalidOperationException(
         "Incompatible ZVLT version");

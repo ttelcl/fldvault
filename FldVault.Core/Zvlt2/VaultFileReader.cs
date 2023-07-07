@@ -119,10 +119,15 @@ public class VaultFileReader: IDisposable
   /// The buffer to receive the decrypted content. The size of this also
   /// determines the number of ciphertext bytes to read from the stream.
   /// </param>
+  /// <param name="verifyEndBlock">
+  /// If not null, it is verified that the stream points to the end of this block
+  /// after all components have been read.
+  /// </param>
   public void DecryptFragment(
     ReadOnlySpan<byte> associatedData,
     Span<byte> authTagOut,
-    Span<byte> plaintext)
+    Span<byte> plaintext,
+    IBlockInfo? verifyEndBlock = null)
   {
     CheckDisposed();
     var cryptor = CheckCryptor();
@@ -136,6 +141,10 @@ public class VaultFileReader: IDisposable
     ReadSpan(nonce);
     ReadSpan(authTagOut);
     ReadSpan(ciphertext);
+    if(verifyEndBlock != null)
+    {
+      verifyEndBlock.VerifyBlockEnd(_stream);
+    }
     cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
   }
 

@@ -94,6 +94,11 @@ public class VaultFileWriter: IDisposable
   /// identifier (it is your responsibility to ensure it is unique).
   /// If null a random GUID is generated instead.
   /// </param>
+  /// <param name="chunkSize">
+  /// The size of the chunks the input is split in; each chunk is
+  /// indepently processed and stored as one block.
+  /// Default value is <see cref="VaultFormat.VaultChunkSize"/>.
+  /// </param>
   /// <returns>
   /// A block element tree containing the file header as root element and
   /// the other elements as children
@@ -106,9 +111,22 @@ public class VaultFileWriter: IDisposable
     Stream source,
     FileMetadata metadata,
     DateTime? utcStampOverride = null,
-    Guid? fileIdOverride = null)
+    Guid? fileIdOverride = null,
+    int chunkSize = VaultFormat.VaultChunkSize)
   {
     CheckDisposed();
+    if(chunkSize > VaultFormat.VaultChunkSize)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(chunkSize),
+        $"The chunk size ({chunkSize}) is larger than the maximum ({VaultFormat.VaultChunkSize})");
+    }
+    if(chunkSize < 0x10000)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(chunkSize),
+        $"The chunk size ({chunkSize}) is smaller than the minimum ({0x10000})");
+    }
     var stamp = EpochTicks.FromUtc(utcStampOverride ?? DateTime.UtcNow);
     var fh = new FileHeader(stamp, fileIdOverride ?? Guid.NewGuid());
     var rootElement = AppendFileHeaderBlock(fh);
@@ -117,7 +135,7 @@ public class VaultFileWriter: IDisposable
     rootElement.AddChild(metaElement);
     // We need a second buffer, because _buffer is already in use by the
     // private methods we will call
-    using(var sourceBuffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize))
+    using(var sourceBuffer = new CryptoBuffer<byte>(chunkSize))
     {
       long written = 0L;
       int n;
@@ -160,6 +178,11 @@ public class VaultFileWriter: IDisposable
   /// identifier (it is your responsibility to ensure it is unique).
   /// If null a random GUID is generated instead.
   /// </param>
+  /// <param name="chunkSize">
+  /// The size of the chunks the input is split in; each chunk is
+  /// indepently processed and stored as one block.
+  /// Default value is the maximum, <see cref="VaultFormat.VaultChunkSize"/>.
+  /// </param>
   /// <returns>
   /// A block element tree containing the file header as root element and
   /// the other elements as children
@@ -174,7 +197,8 @@ public class VaultFileWriter: IDisposable
     string filename,
     IDictionary<string, JToken?>? additionalMetadata = null,
     DateTime? utcStampOverride = null,
-    Guid? fileIdOverride = null)
+    Guid? fileIdOverride = null,
+    int chunkSize = VaultFormat.VaultChunkSize)
   {
     CheckDisposed();
     if(additionalMetadata != null)
@@ -210,7 +234,7 @@ public class VaultFileWriter: IDisposable
     }
     using(var stream = File.OpenRead(filename))
     {
-      return AppendFile(stream, metadata, utcStampOverride, fileIdOverride);
+      return AppendFile(stream, metadata, utcStampOverride, fileIdOverride, chunkSize);
     }
   }
 
@@ -248,6 +272,7 @@ public class VaultFileWriter: IDisposable
       .WriteGuid(span, fileHeader.FileId)
       .CheckFull(span);
     _stream.Write(span);
+    bi.VerifyBlockEnd(_stream);
     Vault.Blocks.Add(bi);
     return new BlockElement(bi);
   }
@@ -278,6 +303,7 @@ public class VaultFileWriter: IDisposable
     _stream.Write(nonce);
     _stream.Write(tagOut);
     _stream.Write(ciphertext);
+    bi.VerifyBlockEnd(_stream);
     Vault.Blocks.Add(bi);
     return new BlockElement(bi);
   }
@@ -287,18 +313,16 @@ public class VaultFileWriter: IDisposable
     ReadOnlySpan<byte> tagIn,
     Span<byte> tagOut)
   {
-    var size = 36 + plainText.Length;
-    _stream.Position = _stream.Length;
-    var bi = new BlockInfo(Zvlt2BlockType.FileContent, size, _stream.Position);
+    // Compression is not yet implemented
+    var fch = FileContentHeader.Create(_stream, plainText.Length, plainText.Length + 40, out var bi);
     Span<byte> nonce = stackalloc byte[12];
     Span<byte> cipherText = _buffer.Span(0, plainText.Length);
     _cryptor.Encrypt(tagIn, plainText, cipherText, nonce, tagOut);
-    Span<byte> header = stackalloc byte[8];
-    bi.FormatBlockHeader(header);
-    _stream.Write(header);
+    fch.Write(_stream);
     _stream.Write(nonce);
     _stream.Write(tagOut);
     _stream.Write(cipherText);
+    bi.VerifyBlockEnd(_stream);
     Vault.Blocks.Add(bi);
     return new BlockElement(bi);
   }

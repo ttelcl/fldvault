@@ -374,7 +374,7 @@ public class VaultCryptoTests
       Assert.Equal(3, be.Children.Count);
       Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
       Assert.Equal(Zvlt2BlockType.FileMetadata, be.Children[0].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[1].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContentV3, be.Children[1].Block.Kind);
       Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[2].Block.Kind);
 
       var readVault = VaultFile.Open(vaultName);
@@ -409,19 +409,20 @@ public class VaultCryptoTests
       var vaultFile = ResetVault(pkif, vaultName, stamp);
 
       BlockElement be;
+      const int testChunkSize = 0x040000;
       using(var cryptor = vaultFile.CreateCryptor(keyChain))
       using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
-        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
+        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp, chunkSize: testChunkSize);
       }
 
       Assert.NotNull(be);
       Assert.Equal(5, be.Children.Count);
       Assert.Equal(Zvlt2BlockType.FileHeader, be.Block.Kind);
       Assert.Equal(Zvlt2BlockType.FileMetadata, be.Children[0].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[1].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[2].Block.Kind);
-      Assert.Equal(Zvlt2BlockType.FileContent, be.Children[3].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContentV3, be.Children[1].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContentV3, be.Children[2].Block.Kind);
+      Assert.Equal(Zvlt2BlockType.FileContentV3, be.Children[3].Block.Kind);
       Assert.Equal(BlockType.ImpliedGroupEnd, be.Children[4].Block.Kind);
 
       var readVault = VaultFile.Open(vaultName);

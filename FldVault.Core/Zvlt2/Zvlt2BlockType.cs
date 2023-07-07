@@ -44,8 +44,14 @@ public static class Zvlt2BlockType
   public const int FileMetadata = 0x54454D46;
 
   /// <summary>
-  /// File Content block
+  /// ZVLT v3 File Content block ('FCNZ')
   /// </summary>
+  public const int FileContentV3 = 0x5A4E4346;
+
+  /// <summary>
+  /// ZVLT v2 File Content block ('FCNT')
+  /// </summary>
+  [Obsolete]
   public const int FileContent = 0x544E4346;
 
   /// <summary>

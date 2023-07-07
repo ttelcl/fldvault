@@ -74,7 +74,7 @@ public class UnlockStore: IKeyCacheStore
           ReadOnlySpan<byte> span = buffer;
           var signature = BinaryPrimitives.ReadInt64LittleEndian(span.Slice(0, 8));
           var unused = BinaryPrimitives.ReadInt64LittleEndian(span.Slice(8, 8));
-          if(signature == VaultFormat.Unlock0Signature && unused == 0L)
+          if(signature == Unlock0Signature && unused == 0L)
           {
             var kb = new KeyBuffer(span.Slice(16, 32));
             if(kb.GetId() == keyId)
@@ -171,7 +171,7 @@ public class UnlockStore: IKeyCacheStore
     try
     {
       Span<byte> span = buffer;
-      BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), VaultFormat.Unlock0Signature);
+      BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), Unlock0Signature);
       BinaryPrimitives.WriteInt64LittleEndian(span.Slice(8, 8), 0L);
       keyBuffer.Bytes.CopyTo(span.Slice(16, 32));
       File.WriteAllBytes(fileName, buffer);
@@ -182,5 +182,10 @@ public class UnlockStore: IKeyCacheStore
     }
     return true;
   }
+
+  /// <summary>
+  /// *.unlock file signature
+  /// </summary>
+  public const long Unlock0Signature = 0x000059454B574152L; // "RAWKEY\0\0"
 
 }

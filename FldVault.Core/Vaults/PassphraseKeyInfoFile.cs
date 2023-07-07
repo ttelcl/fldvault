@@ -19,7 +19,7 @@ using FldVault.Core.Zvlt2;
 namespace FldVault.Core.Vaults;
 
 /// <summary>
-/// Content of *.pass.key-info files
+/// Content of *.pass.key-info files and PASS blocks in ZVLT files.
 /// </summary>
 public class PassphraseKeyInfoFile
 {
@@ -73,7 +73,7 @@ public class PassphraseKeyInfoFile
         "Incorrect *.pass.key-info content (expecting 96 bytes)");
     }
     var signature = BinaryPrimitives.ReadInt64LittleEndian(blob96.Slice(0, 8));
-    if(signature != VaultFormat.PassphraseKeyInfoSignature)
+    if(signature != PassphraseKeyInfoSignature)
     {
       throw new InvalidOperationException(
         "Unrecognized file format for *.pass.key-info file");
@@ -232,7 +232,7 @@ public class PassphraseKeyInfoFile
     {
       throw new ArgumentOutOfRangeException(nameof(span), "Expecting a 96 byte span");
     }
-    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), VaultFormat.PassphraseKeyInfoSignature);
+    BinaryPrimitives.WriteInt64LittleEndian(span.Slice(0, 8), PassphraseKeyInfoSignature);
     BinaryPrimitives.WriteInt64LittleEndian(span.Slice(8, 8), EpochTicks.FromUtc(UtcKeyStamp));
     KeyId.TryWriteBytes(span.Slice(16, 16));
     Salt.CopyTo(span.Slice(32, 64));
@@ -321,5 +321,10 @@ public class PassphraseKeyInfoFile
   /// The UTC time the key was created
   /// </summary>
   public DateTime UtcKeyStamp { get; init; }
+
+  /// <summary>
+  /// *.pass.key-inf file signature
+  /// </summary>
+  public const long PassphraseKeyInfoSignature = 0x00464E4953534150L; // "PASSINF\0"
 
 }

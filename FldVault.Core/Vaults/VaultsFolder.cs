@@ -20,6 +20,9 @@ namespace FldVault.Core.Vaults;
 /// </summary>
 public class VaultsFolder
 {
+  // While this class is not used elsewhere in this library, it is used directly
+  // in zvlt.exe. So: don't delete this file.
+
   private List<KeyInfoName>? _keyinfoCache = null;
 
   /// <summary>

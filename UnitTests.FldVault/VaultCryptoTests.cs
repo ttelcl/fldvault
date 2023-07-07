@@ -544,6 +544,79 @@ public class VaultCryptoTests
     }
   }
 
+  [Fact]
+  public void ByteCryptoBufferTest()
+  {
+    using(var bcb1 = new ByteCryptoBuffer(42))
+    using(var bcb2 = new ByteCryptoBuffer(128))
+    {
+      var span1 = bcb1.Span();
+      var span2 = bcb2.Span();
+      using(var s1 = bcb1.WriteableStream())
+      {
+        Assert.Equal(0, s1.Length);
+        Assert.Equal(0, s1.Position);
+        for(var i=0; i <bcb1.Length; i++)
+        {
+          s1.WriteByte((byte)i);
+        }
+        Assert.Equal(bcb1.Length, s1.Length);
+        Assert.Throws<NotSupportedException>(() => {
+          s1.WriteByte(66);
+        });
+        Assert.Equal(bcb1.Length, s1.Length);
+      }
+      Assert.Equal(41, span1[41]);
+      using(var s2 = bcb2.WriteableStream())
+      {
+        using(var s1b = bcb1.ReadableStream(16))
+        {
+          s1b.CopyTo(s2);
+        }
+        Assert.Equal(16, s2.Length);
+      }
+      Assert.Equal(15, span2[15]);
+      Assert.Equal(0, span2[16]);
+    }
+  }
+
+  [Fact]
+  public void CompressionTest()
+  {
+    var sampleString = @"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis
+scelerisque nisl eget erat scelerisque, quis bibendum magna tincidunt. Proin sagittis
+posuere eros, vel commodo diam feugiat vel. Sed eu arcu ante. Aliquam vulputate
+bibendum lacus et condimentum. Suspendisse posuere nunc magna, et ultricies elit
+vulputate dictum. Nunc eget leo vitae risus egestas suscipit. In sollicitudin
+dignissim maximus. Phasellus nulla tortor, laoreet nec dolor eu, porta bibendum
+tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis
+scelerisque nisl eget erat scelerisque, quis bibendum magna tincidunt. Proin sagittis
+posuere eros, vel commodo diam feugiat vel. Sed eu arcu ante. Aliquam vulputate
+bibendum lacus et condimentum. Suspendisse posuere nunc magna, et ultricies elit
+vulputate dictum. Nunc eget leo vitae risus egestas suscipit. In sollicitudin
+dignissim maximus. Phasellus nulla tortor, laoreet nec dolor eu, porta bibendum
+tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
+    var sampleBytes = Encoding.UTF8.GetBytes(sampleString);
+
+    using(var bcb1 = new ByteCryptoBuffer(sampleBytes.Length))
+    using(var bcb2 = new ByteCryptoBuffer(sampleBytes.Length))
+    using(var bcb3 = new ByteCryptoBuffer(sampleBytes.Length))
+    {
+      _outputHelper.WriteLine($"Sample length = {sampleBytes.Length}");
+      sampleBytes.CopyTo(bcb1.Span());
+      var compressedLength = VaultCompressor.Compress(bcb1, bcb1.Length, bcb2);
+      _outputHelper.WriteLine($"Compressed size is {compressedLength}");
+      Assert.True(compressedLength > 0);
+      Assert.True(compressedLength < sampleBytes.Length);
+      var decompressedLength = VaultCompressor.Decompress(bcb2, compressedLength, bcb3);
+      Assert.Equal(sampleBytes.Length, decompressedLength);
+      var sampleOut = Encoding.UTF8.GetString(bcb3.Span(0, decompressedLength));
+      Assert.Equal(sampleString, sampleOut);
+    }
+    throw new NotImplementedException("ToDo: testing overrun, underrun, etc.");
+  }
+
   private PassphraseKeyInfoFile CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)
   {
     ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"

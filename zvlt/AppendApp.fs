@@ -19,11 +19,13 @@ type private PathFile = {
   // command line parsing focused representation of a file to append
   Path: string
   File: string
+  Compression: ZvltCompression
 }
 
 type private AppendOptions = {
   VaultFile: string
-  Path: string
+  PathDefault: string
+  CompressionDefault: ZvltCompression
   Files: PathFile list
 }
 
@@ -31,6 +33,7 @@ type private FileTarget = {
   // execution focused representation of a file to append
   Label: string
   Source: string
+  Compression: ZvltCompression
 }
 
 let private pathFileToFileTarget pf = 
@@ -39,6 +42,7 @@ let private pathFileToFileTarget pf =
   {
     Label = prefix + shortName
     Source = Path.GetFullPath(pf.File)
+    Compression = pf.Compression
   }
 
 let runAppend args =
@@ -68,16 +72,26 @@ let runAppend args =
         |> Array.where (fun segment -> segment |> String.IsNullOrEmpty |> not)
       if segments |> Seq.contains ".." then
         failwith $"'{path}': virtual paths must not contain '..' segments"
-      rest |> parseMore {o with Path = String.Join("/", segments)}
+      rest |> parseMore {o with PathDefault = String.Join("/", segments)}
     | "-f" :: file :: rest ->
-      let pf = {Path = o.Path; File = file}
+      let pf = {Path = o.PathDefault; File = file; Compression = o.CompressionDefault}
       rest |> parseMore {o with Files = pf :: o.Files}
+    | "-z" :: compressionText :: rest ->
+      let compression =
+        match compressionText with
+        | "auto" -> ZvltCompression.Auto
+        | "off" -> ZvltCompression.Off
+        | "on" -> ZvltCompression.On
+        | x ->
+          failwith $"Unrecognized compression specifier '{x}'"
+      rest |> parseMore {o with CompressionDefault = compression}
     | x :: _ ->
       failwith $"Unrecognized argument '{x}'"
   let oo = args |> parseMore {
     VaultFile = null
-    Path = ""
+    PathDefault = ""
     Files = []
+    CompressionDefault = ZvltCompression.Auto
   }
   match oo with
   | Some(o) ->
@@ -126,9 +140,10 @@ let runAppend args =
       // Use the long form append here to have more control over the metadata (enable paths)
       let fi = new FileInfo(target.Source)
       let meta = new FileMetadata(target.Label, fi.LastWriteTimeUtc |> EpochTicks.FromUtc, fi.Length)
+      let compression = ZvltCompression.Auto
       let _ =
         use source = File.OpenRead(target.Source)
-        writer.AppendFile(source, meta)
+        writer.AppendFile(source, meta, compression)
       ()
     0
   | None ->

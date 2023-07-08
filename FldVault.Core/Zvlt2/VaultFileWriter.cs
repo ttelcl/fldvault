@@ -81,6 +81,9 @@ public class VaultFileWriter: IDisposable
   /// <param name="source">
   /// The stream providing the file content
   /// </param>
+  /// <param name="compression">
+  /// The compression option, default <see cref="ZvltCompression.Auto"/>.
+  /// </param>
   /// <param name="metadata">
   /// The metadata object describing the file (name, size, timestamp and
   /// possibly custom properties)
@@ -110,6 +113,7 @@ public class VaultFileWriter: IDisposable
   public BlockElement AppendFile(
     Stream source,
     FileMetadata metadata,
+    ZvltCompression compression = ZvltCompression.Auto,
     DateTime? utcStampOverride = null,
     Guid? fileIdOverride = null,
     int chunkSize = VaultFormat.VaultChunkSize)
@@ -165,6 +169,9 @@ public class VaultFileWriter: IDisposable
   /// <param name="filename">
   /// The name of the file
   /// </param>
+  /// <param name="compression">
+  /// The compression option, default <see cref="ZvltCompression.Auto"/>.
+  /// </param>
   /// <param name="additionalMetadata">
   /// If not null: additional key-value pairs recorded as metadata.
   /// Note that the keys 'name', 'stamp' and 'size' are reserved and not allowed.
@@ -195,6 +202,7 @@ public class VaultFileWriter: IDisposable
   /// </remarks>
   public BlockElement AppendFile(
     string filename,
+    ZvltCompression compression = ZvltCompression.Auto,
     IDictionary<string, JToken?>? additionalMetadata = null,
     DateTime? utcStampOverride = null,
     Guid? fileIdOverride = null,
@@ -234,7 +242,7 @@ public class VaultFileWriter: IDisposable
     }
     using(var stream = File.OpenRead(filename))
     {
-      return AppendFile(stream, metadata, utcStampOverride, fileIdOverride, chunkSize);
+      return AppendFile(stream, metadata, compression, utcStampOverride, fileIdOverride, chunkSize);
     }
   }
 

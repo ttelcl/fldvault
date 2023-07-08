@@ -367,7 +367,7 @@ public class VaultCryptoTests
       using(var cryptor = vaultFile.CreateCryptor(keyChain))
       using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
-        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp);
+        be = vaultWriter.AppendFile(testname1, ZvltCompression.Off, utcStampOverride: stamp);
       }
 
       Assert.NotNull(be);
@@ -413,7 +413,7 @@ public class VaultCryptoTests
       using(var cryptor = vaultFile.CreateCryptor(keyChain))
       using(var vaultWriter = new VaultFileWriter(vaultFile, cryptor))
       {
-        be = vaultWriter.AppendFile(testname1, utcStampOverride: stamp, chunkSize: testChunkSize);
+        be = vaultWriter.AppendFile(testname1, ZvltCompression.Off, utcStampOverride: stamp, chunkSize: testChunkSize);
       }
 
       Assert.NotNull(be);
@@ -474,7 +474,7 @@ public class VaultCryptoTests
           //["list"] = new JArray { 1, 2, "many"},
           //["guid"] = Guid.NewGuid(),
         };
-        be = vaultWriter.AppendFile(testnameIn, utcStampOverride: stamp, additionalMetadata: metaAdditions, fileIdOverride: fileId);
+        be = vaultWriter.AppendFile(testnameIn, ZvltCompression.Off, utcStampOverride: stamp, additionalMetadata: metaAdditions, fileIdOverride: fileId);
       }
       Assert.NotNull(be);
       Assert.Equal(3, be.Children.Count);

@@ -146,11 +146,11 @@ let runAppend args =
       failwith $"Adding this file would create an ambiguously named entry in the vault"
     use writer = new VaultFileWriter(vaultFile, cryptor)
     for target in targets do
-      cp $"Adding entry '\fg{target.Label}\f0' (\fk{target.Source}\f0)"
+      cp $"Adding entry '\fg{target.Label}\f0' (\fk{target.Source}\f0)."
       // Use the long form append here to have more control over the metadata (enable paths)
       let fi = new FileInfo(target.Source)
       let meta = new FileMetadata(target.Label, fi.LastWriteTimeUtc |> EpochTicks.FromUtc, fi.Length)
-      let compression = ZvltCompression.Auto
+      let compression = target.Compression
       let _ =
         use source = File.OpenRead(target.Source)
         writer.AppendFile(source, meta, compression)

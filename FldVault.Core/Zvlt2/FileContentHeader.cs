@@ -34,12 +34,6 @@ public class FileContentHeader
   {
     BlockInfo = bi;
     ContentLength = contentLength;
-
-    if(IsCompressed)
-    {
-      throw new NotImplementedException(
-        "Block compression is not yet implemented");
-    }
   }
 
   /// <summary>

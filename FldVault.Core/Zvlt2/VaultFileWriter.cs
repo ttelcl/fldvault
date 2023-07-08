@@ -29,6 +29,7 @@ public class VaultFileWriter: IDisposable
 {
   private readonly VaultCryptor _cryptor;
   private readonly ByteCryptoBuffer _buffer;
+  private readonly ByteCryptoBuffer _compressionBuffer;
   private readonly Stream _stream;
   private bool _disposed = false;
 
@@ -46,6 +47,7 @@ public class VaultFileWriter: IDisposable
       throw new ArgumentException("The key does not match the vault file");
     }
     _buffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize);
+    _compressionBuffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize);
     // We can assume the file exists: VaultFile already takes care of that
     _stream = File.OpenWrite(Vault.FileName);
     _stream.Position = _stream.Length;
@@ -139,17 +141,59 @@ public class VaultFileWriter: IDisposable
     rootElement.AddChild(metaElement);
     // We need a second buffer, because _buffer is already in use by the
     // private methods we will call
-    using(var sourceBuffer = new CryptoBuffer<byte>(chunkSize))
+    using(var sourceBuffer = new ByteCryptoBuffer(chunkSize))
     {
-      long written = 0L;
+      long written = 0L; // the number of *input* bytes written
       int n;
       Span<byte> tagIn = stackalloc byte[16];
       while((n = source.Read(sourceBuffer.Span())) > 0)
       {
-        written += n;
         tagOut.CopyTo(tagIn);
-        var plaintext = sourceBuffer.Span(0, n);
-        var contentElement = AppendFileContentBlock(plaintext, tagIn, tagOut);
+        written += n;
+        var plaintext = sourceBuffer.Span(0, n); // only correct if not compressing
+
+        if(compression == ZvltCompression.Auto || compression == ZvltCompression.On)
+        {
+          var compressedSize = VaultCompressor.Compress(sourceBuffer, n, _compressionBuffer);
+          switch(compression)
+          {
+            case ZvltCompression.Auto:
+              if(
+                compressedSize >= 0 
+                && compressedSize * 100 < n * 92) // require a compression to less than 92% to enable compression
+              {
+                plaintext = _compressionBuffer.Span(0, compressedSize);
+                compression = ZvltCompression.On;
+              }
+              else
+              {
+                compression = ZvltCompression.Off;
+              }
+              break;
+            case ZvltCompression.Off:
+              throw new InvalidOperationException(
+                "Unexpected compression mode");
+            case ZvltCompression.On:
+              if(compressedSize >= 0 && compressedSize < n)
+              {
+                plaintext = _compressionBuffer.Span(0, compressedSize);
+              } // else keep the uncompressed data as encryption plaintext
+              break;
+            default:
+              throw new InvalidOperationException(
+                "Unrecognized compression mode");
+          }
+          if(compressedSize < 0)
+          {
+            // Leave uncompressed. Remember this in case of ZvltCompression.Auto
+            if(compression == ZvltCompression.Auto)
+            {
+              compression = ZvltCompression.Off;
+            }
+          }
+        }
+
+        var contentElement = AppendFileContentBlock(plaintext, n, tagIn, tagOut);
         rootElement.AddChild(contentElement);
       }
       var terminatorElement = AppendTerminator();
@@ -318,11 +362,12 @@ public class VaultFileWriter: IDisposable
 
   private BlockElement AppendFileContentBlock(
     ReadOnlySpan<byte> plainText,
+    int contentLength,
     ReadOnlySpan<byte> tagIn,
     Span<byte> tagOut)
   {
     // Compression is not yet implemented
-    var fch = FileContentHeader.Create(_stream, plainText.Length, plainText.Length + 40, out var bi);
+    var fch = FileContentHeader.Create(_stream, contentLength, plainText.Length + 40, out var bi);
     Span<byte> nonce = stackalloc byte[12];
     Span<byte> cipherText = _buffer.Span(0, plainText.Length);
     _cryptor.Encrypt(tagIn, plainText, cipherText, nonce, tagOut);

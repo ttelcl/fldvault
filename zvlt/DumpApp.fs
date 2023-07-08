@@ -51,28 +51,39 @@ let runDump args =
   let oo = args |> parseMore {
     VaultFile = null
   }
-  let rec dumpBlocks prefixLength (blocks: IBlockElementContainer) =
-    let prefix = prefixLength |> spaces
-    let suffix = 6-prefixLength |> spaces
-    for block in blocks.Children do
-      let label = BlockType.ToText(block.Block.Kind)
-      let kind = block.Block.Kind.ToString("X8")
-      let offset = "@" + block.Block.Offset.ToString("X8")
-      let size = block.Block.Size
-      let childCount = block.Children.Count
-      let childText =
-        if childCount = 0 then
-          $"\fk0 children\f0"
-        else
-          $"\fc{childCount}\f0 children"
-      cp $"%s{prefix}\fy{offset}\f0 '\fg{label}\f0' (\fG0x{kind}\f0) {suffix}\fb%6d{size}\f0 bytes {childText}."
-      block |> dumpBlocks (prefixLength + 3)
   match oo with
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultFile)
+    use reader = new VaultFileReader(vaultFile, null)
     let major, minor =
       let version = vaultFile.Header.Version
       version >>> 16, version &&& 0x0FFFF
+    let rec dumpBlocks prefixLength (blocks: IBlockElementContainer) =
+      let prefix = prefixLength |> spaces
+      let suffix = 6-prefixLength |> spaces
+      for block in blocks.Children do
+        let label = BlockType.ToText(block.Block.Kind)
+        let kind = block.Block.Kind.ToString("X8")
+        let offset = "@" + block.Block.Offset.ToString("X8")
+        let size = block.Block.Size
+        let childCount = block.Children.Count
+        cpx $"%s{prefix}\fy{offset}\f0 '\fg{label}\f0' (\fG0x{kind}\f0) {suffix}\fb%6d{size}\f0 bytes "
+        if childCount = 0 then
+          if block.Block.Kind = Zvlt2BlockType.FileContentV3 then
+            let fch = FileContentHeader.Read(reader, block.Block)
+            let sourceSize = fch.ContentLength
+            let storedSize = block.Block.Size - 40
+            if sourceSize = storedSize then
+              cpx $"Not compressed: \fb{storedSize}\f0"
+            else
+              let percentage = (storedSize*100) / sourceSize
+              cpx $"Compressed: \fy{storedSize}\f0 : \fc{sourceSize}\f0 = \fg{percentage}\f0%%"
+          else
+            cpx $"\fk0 children\f0"
+        else
+          cpx $"\fc{childCount}\f0 children"
+        cp "."
+        block |> dumpBlocks (prefixLength + 3)
     cp $"Vault file created on \fc{vaultFile.Header.TimeStamp |> formatLocal}\f0 format \fyZVLT {major}.{minor}\f0."
     vaultFile |> dumpBlocks 0
     0

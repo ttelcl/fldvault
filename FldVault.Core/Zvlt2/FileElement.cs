@@ -153,7 +153,8 @@ namespace FldVault.Core.Zvlt2
       VaultFileReader reader,
       Stream destination)
     {
-      using(var buffer = new CryptoBuffer<byte>(VaultFormat.VaultChunkSize))
+      using(var buffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize))
+      using(var decompressBuffer = new ByteCryptoBuffer(VaultFormat.VaultChunkSize))
       {
         Span<byte> authTagOut = stackalloc byte[16];
         Span<byte> authTagIn = stackalloc byte[16];
@@ -164,7 +165,18 @@ namespace FldVault.Core.Zvlt2
           var fch = FileContentHeader.Read(reader, ibi);
           var plaintext = buffer.Span(0, ibi.Size - 40);
           reader.DecryptFragment(authTagIn, authTagOut, plaintext, fch.BlockInfo);
-          destination.Write(plaintext);
+          
+          // "plaintext" may still be compressed!
+          if(plaintext.Length < fch.ContentLength)
+          {
+            var decompressedSize = VaultCompressor.Decompress(buffer, plaintext.Length, decompressBuffer);
+            var decompressed = decompressBuffer.Span(0, decompressedSize);
+            destination.Write(decompressed);
+          }
+          else
+          {
+            destination.Write(plaintext);
+          }
         }
       }
     }

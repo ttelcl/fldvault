@@ -19,6 +19,7 @@ type private PathFile = {
   // command line parsing focused representation of a file to append
   Path: string
   File: string
+  Name: string
   Compression: ZvltCompression
 }
 
@@ -37,7 +38,7 @@ type private FileTarget = {
 }
 
 let private pathFileToFileTarget pf = 
-  let shortName = Path.GetFileName(pf.File)
+  let shortName = if pf.Name |> String.IsNullOrEmpty then Path.GetFileName(pf.File) else Path.GetFileName(pf.Name)
   let prefix = if pf.Path |> String.IsNullOrEmpty then "" else $"{pf.Path}/"
   {
     Label = prefix + shortName
@@ -74,7 +75,7 @@ let runAppend args =
         failwith $"'{path}': virtual paths must not contain '..' segments"
       rest |> parseMore {o with PathDefault = String.Join("/", segments)}
     | "-f" :: file :: rest ->
-      let pf = {Path = o.PathDefault; File = file; Compression = o.CompressionDefault}
+      let pf = {Path = o.PathDefault; File = file; Compression = o.CompressionDefault; Name = null}
       rest |> parseMore {o with Files = pf :: o.Files}
     | "-z" :: compressionText :: rest ->
       let compression =
@@ -85,6 +86,15 @@ let runAppend args =
         | x ->
           failwith $"Unrecognized compression specifier '{x}'"
       rest |> parseMore {o with CompressionDefault = compression}
+    | "-n" :: name :: rest ->
+      match o.Files with
+      | [] ->
+        failwith "'-n' expects a '-f'  before it"
+      | pf :: tail ->
+        if name.IndexOfAny([| '/'; '\\' |]) >= 0 then 
+          failwith "'-n' expecting a short file name with no path"
+        let pf = {pf with Name = name}
+        rest |> parseMore {o with Files = pf :: tail}
     | x :: _ ->
       failwith $"Unrecognized argument '{x}'"
   let oo = args |> parseMore {

@@ -41,7 +41,7 @@ let usage detail =
     cp "  \fg-public\fx\f0          Only provide public information."
     cp ""
   if showSummary "append" then
-    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0}"
+    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
     cp "  Append a file to a vault (encrypting it)"
   if matchDetail "append" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
@@ -50,6 +50,7 @@ let usage detail =
     cp "  \fg-z \fcoff\f0           Subsequent files will not be compressed"
     cp "  \fg-z \fcon\f0            Subsequent files will be compressed"
     cp "  \fg-z \fcauto\f0          Compression for subsequent files is chosen automatically"
+    cp "  \fg-n \fc<name>\f0        Override the name to use for the preceding file (\fg-f\f0)"
     cp ""
   if showSummary "check" then
     cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0|\fg-kf \fc<file.zvlt>\f0] [\fg-dv \fc<directory>\f0]"

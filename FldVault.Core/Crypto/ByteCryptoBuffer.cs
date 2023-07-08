@@ -10,10 +10,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using FldVault.Core.Utilities;
+
 namespace FldVault.Core.Crypto
 {
   /// <summary>
-  /// Description of ByteCryptoBuffer
+  /// A specialized CryptoBuffer{byte} that adds the functionality to
+  /// create a readable or writeable stream of the buffer
   /// </summary>
   public class ByteCryptoBuffer: CryptoBuffer<byte>
   {
@@ -30,12 +33,9 @@ namespace FldVault.Core.Crypto
     /// The initial position is 0. The initial length is 0.
     /// The capacity (maximum length) is the size of the buffer.
     /// </summary>
-    public Stream WriteableStream()
+    public ByteArrayStream WriteableStream()
     {
-      var stream = new MemoryStream(RawBuffer, true);
-      stream.Position = 0L;
-      stream.SetLength(0);
-      return stream;
+      return new ByteArrayStream(RawBuffer, true);
     }
 
     /// <summary>
@@ -44,16 +44,20 @@ namespace FldVault.Core.Crypto
     /// <param name="length">
     /// The length of the initial segment to expose in the returned stream
     /// </param>
-    public Stream ReadableStream(int length)
+    public ByteArrayStream ReadableStream(int length)
     {
-      var stream = new MemoryStream(RawBuffer, 0, length, false);
+      var stream = new ByteArrayStream(RawBuffer, false);
+      stream.SetLength(length);
       return stream;
     }
 
     /// <summary>
     /// Returns a read-only stream backed by the entire underlying buffer.
     /// </summary>
-    public Stream ReadableStream() => ReadableStream(Length);
+    public ByteArrayStream ReadableStream()
+    {
+      return new ByteArrayStream(RawBuffer, false);
+    }
 
   }
 }

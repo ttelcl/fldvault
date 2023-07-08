@@ -66,6 +66,14 @@ namespace FldVault.Core.Zvlt2
         using(var sOut = bcbOut.WriteableStream())
         {
           BZip2.Compress(sIn, sOut, false, 9);
+          if(sIn.Position != sIn.Length)
+          {
+            throw new InvalidOperationException("Internal error");
+          }
+          if(sOut.OverflowDetected)
+          {
+            return -1;
+          }
           var length = (int)sOut.Length;
           return length < count ? length : -1;
         }

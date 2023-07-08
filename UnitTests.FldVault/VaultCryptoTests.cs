@@ -561,9 +561,17 @@ public class VaultCryptoTests
           s1.WriteByte((byte)i);
         }
         Assert.Equal(bcb1.Length, s1.Length);
-        Assert.Throws<NotSupportedException>(() => {
+        Assert.False(s1.OverflowDetected);
+        Assert.Throws<InvalidOperationException>(() => {
           s1.WriteByte(66);
         });
+        Assert.True(s1.OverflowDetected);
+        s1.OverflowDetected = false;
+        var snippet = new byte[] { 1, 2, 3, 4 };
+        Assert.Throws<InvalidOperationException>(() => {
+          s1.Write(snippet, 0, snippet.Length);
+        });
+        Assert.True(s1.OverflowDetected);
         Assert.Equal(bcb1.Length, s1.Length);
       }
       Assert.Equal(41, span1[41]);
@@ -602,6 +610,7 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
     using(var bcb1 = new ByteCryptoBuffer(sampleBytes.Length))
     using(var bcb2 = new ByteCryptoBuffer(sampleBytes.Length))
     using(var bcb3 = new ByteCryptoBuffer(sampleBytes.Length))
+    using(var bcbTooSmall = new ByteCryptoBuffer(42))
     {
       _outputHelper.WriteLine($"Sample length = {sampleBytes.Length}");
       sampleBytes.CopyTo(bcb1.Span());
@@ -613,8 +622,11 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
       Assert.Equal(sampleBytes.Length, decompressedLength);
       var sampleOut = Encoding.UTF8.GetString(bcb3.Span(0, decompressedLength));
       Assert.Equal(sampleString, sampleOut);
+
+      _outputHelper.WriteLine($"small size is {bcbTooSmall.Length}");
+      var failCode = VaultCompressor.Compress(bcb1, bcb1.Length, bcbTooSmall);
+      Assert.Equal(-1, failCode);
     }
-    throw new NotImplementedException("ToDo: testing overrun, underrun, etc.");
   }
 
   private PassphraseKeyInfoFile CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)

@@ -253,12 +253,12 @@ namespace FldVault.Core.Zvlt2
     }
 
     /// <summary>
-    /// Get the total length of the encrypted content (summing
+    /// Get the total length of the encrypted and potentially compressed content (summing
     /// the lengths of the content in all content blocks)
     /// </summary>
     public long GetContentLength()
     {
-      return ContentBlocks.Sum(ibi => (ibi.Size - 36L));
+      return ContentBlocks.Sum(ibi => (ibi.Size - 40L));
     }
 
     /// <summary>

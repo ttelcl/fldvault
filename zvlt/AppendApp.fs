@@ -83,7 +83,7 @@ let runAppend args =
         let file = Path.GetFileName(file)
         let files = Directory.GetFiles(folder, file)
         if files.Length = 0 then
-          cp $"Pattern \fy{folder}\f0{Path.PathSeparator}\fo{file}\f0 did not match any files"
+          cp $"Pattern \fy{folder}\f0{Path.DirectorySeparatorChar}\fo{file}\f0 did not match any files"
           rest |> parseMore o
         else
           let files =

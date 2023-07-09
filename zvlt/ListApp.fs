@@ -33,6 +33,8 @@ let runList args =
       rest |> parseMore {o with PublicOnly = true}
     | "-vf" :: file :: rest ->
       rest |> parseMore {o with VaultFile = file}
+    | file :: rest when file.EndsWith(".zvlt") ->
+      rest |> parseMore {o with VaultFile = file}
     | [] ->
       if o.VaultFile |> String.IsNullOrEmpty then
         failwith "No vault file specified"

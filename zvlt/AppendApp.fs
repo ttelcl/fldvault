@@ -62,6 +62,8 @@ let runAppend args =
       Some({o with Files = o.Files |> List.rev})
     | "-vf" :: vault :: rest ->
       rest |> parseMore {o with VaultFile = vault}
+    | file :: rest when file.EndsWith(".zvlt") ->
+      rest |> parseMore {o with VaultFile = file}
     | "-p" :: path :: rest ->
       let path = if path = "." then "" else path
       let path = path.Replace('\\', '/')
@@ -75,8 +77,23 @@ let runAppend args =
         failwith $"'{path}': virtual paths must not contain '..' segments"
       rest |> parseMore {o with PathDefault = String.Join("/", segments)}
     | "-f" :: file :: rest ->
-      let pf = {Path = o.PathDefault; File = file; Compression = o.CompressionDefault; Name = null}
-      rest |> parseMore {o with Files = pf :: o.Files}
+      if file.IndexOfAny([| '*'; '?'|]) >= 0 then
+        let file = Path.GetFullPath(file)
+        let folder = Path.GetDirectoryName(file)
+        let file = Path.GetFileName(file)
+        let files = Directory.GetFiles(folder, file)
+        if files.Length = 0 then
+          cp $"Pattern \fy{folder}\f0{Path.PathSeparator}\fo{file}\f0 did not match any files"
+          rest |> parseMore o
+        else
+          let files =
+            files
+            |> Array.map (fun fnm -> {Path = o.PathDefault; File = fnm; Compression = o.CompressionDefault; Name = null})
+          let fileList = o.Files |> Array.foldBack (fun pf l -> pf :: l) files
+          rest |> parseMore {o with Files = fileList}
+      else
+        let pf = {Path = o.PathDefault; File = file; Compression = o.CompressionDefault; Name = null}
+        rest |> parseMore {o with Files = pf :: o.Files}
     | "-z" :: compressionText :: rest ->
       let compression =
         match compressionText with

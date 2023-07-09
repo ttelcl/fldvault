@@ -21,7 +21,7 @@ let usage detail =
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
     cp ""
   if showSummary "create" then
-    cp "\fozvlt create \fg-vf \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0]"
+    cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0]"
     cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"
     cp "  or \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
   if matchDetail "create" then
@@ -34,55 +34,27 @@ let usage detail =
     cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0]  Take the key from the one existing \fb*.key-info\f0 file."
     cp ""
   if showSummary "list" then
-    cp "\fozvlt list \fg-vf \fc<file.zvlt>\f0 \fg-public\f0"
+    cp "\fozvlt list \f0[\fg-vf\f0] \fc<file.zvlt>\f0 \fg-public\f0"
     cp "  List files stored in the vault"
   if matchDetail "list" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to list the contents of."
     cp "  \fg-public\fx\f0          Only provide public information."
     cp ""
   if showSummary "append" then
-    cp "\fozvlt append \fg-vf \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
+    cp "\fozvlt append \f0[\fg-vf\f0] \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
     cp "  Append a file to a vault (encrypting it)"
   if matchDetail "append" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
     cp "  \fg-f \fc<file>\f0        The name of the file to append. Repeatable. \fkThe original path is ignored\f0."
+    cp "                            The file (but not the folder) can include wildcards."
     cp "  \fg-p \fc<path>\f0        The path to store with subsequent files. Use \fg-p \fc.\f0 to reset."
     cp "  \fg-z \fcoff\f0           Subsequent files will not be compressed"
     cp "  \fg-z \fcon\f0            Subsequent files will be compressed"
     cp "  \fg-z \fcauto\f0          Compression for subsequent files is chosen automatically"
     cp "  \fg-n \fc<name>\f0        Override the name to use for the preceding file (\fg-f\f0)"
     cp ""
-  if showSummary "check" then
-    cp "\fozvlt check [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0|\fg-kf \fc<file.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Check the passphrase of a key"
-  if matchDetail "check" then
-    cp "  \fg-dv \fc<directory>\f0  The vault folder."
-    cp "  \fg-key \fc<id>\f0        The first few characters of the key id"
-    cp "  \fg-kf \fc<file>\f0       The full name of the key file or a vault file"
-    cp ""
-  if showSummary "status" then
-    cp "\fozvlt status [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Check the unlock status of a key (without otherwise checking it)"
-  if matchDetail "status" then
-    cp ""
-  if showSummary "unlock" then
-    cp "\fozvlt unlock [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Unlock a key, temporarily storing the raw key (until locked)"
-  if matchDetail "unlock" then
-    cp ""
-  if showSummary "lock" then
-    cp "\fozvlt lock [\fg-key \fc<id>\f0|\fg-kf \fc<file.key-info>\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Lock a key, deleting the temporary raw key copy created by \fozvlt unlock\f0."
-  if matchDetail "lock" then
-    cp ""
-  if showSummary "dump" then
-    cp "\fozvlt dump \fg-vf \fc<file.zvlt>\f0"
-    cp "  Dump technical details of a *.szvlt file"
-  if matchDetail "dump" then
-    cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to analyze."
-    cp ""
   if showSummary "extract" then
-    cpx "\fozvlt extract \fg-vf \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0]"
+    cpx "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0]"
     cp " [\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
     cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
@@ -97,6 +69,35 @@ let usage detail =
     cp "  \fg-id \fc<id>\f0         The start of a file ID (use \folist\f0 to discover file IDs)"
     cp "  \fg-n \fc<name>\f0        Overide the name for the preceding file (\fg-f\f0 or \fg-id\f0)"
     cp "  \fg-all\f0\fx             Extract all files. You can use \fg-f\f0 or \fg-id\f0 with \fg-n\f0 to adjust names."
+    cp ""
+  if showSummary "check" then
+    cp "\fozvlt check \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info\f0|\fcfile.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
+    cp "  Check the passphrase of a key"
+  if matchDetail "check" then
+    cp "  \fg-dv \fc<directory>\f0  The vault folder."
+    cp "  \fg-key \fc<id>\f0        The first few characters of the key id"
+    cp "  \fg-kf \fc<file>\f0       The full name of the key file or a vault file"
+    cp ""
+  if showSummary "status" then
+    cp "\fozvlt status \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info\f0|\fcfile.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
+    cp "  Check the unlock status of a key (without otherwise checking it)"
+  if matchDetail "status" then
+    cp ""
+  if showSummary "unlock" then
+    cp "\fozvlt unlock \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info>\f0|\fcfile.zvlt\f0] [\fg-dv \fc<directory>\f0]"
+    cp "  Unlock a key, temporarily storing the raw key (until locked)"
+  if matchDetail "unlock" then
+    cp ""
+  if showSummary "lock" then
+    cp "\fozvlt lock \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info\f0|\fcfile.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
+    cp "  Lock a key, deleting the temporary raw key copy created by \fozvlt unlock\f0."
+  if matchDetail "lock" then
+    cp ""
+  if showSummary "dump" then
+    cp "\fozvlt dump \f0[\fg-vf\f0] \fc<file.zvlt>\f0"
+    cp "  Dump technical details of a *.szvlt file"
+  if matchDetail "dump" then
+    cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to analyze."
     cp ""
   // show always:
   cp "\fozvlt help \f0[\fc<command>\f0]"

@@ -42,6 +42,8 @@ let runDump args =
       None
     | "-vf" :: file :: rest ->
       rest |> parseMore {o with VaultFile = file}
+    | file :: rest when file.EndsWith(".zvlt") ->
+      rest |> parseMore {o with VaultFile = file}
     | [] ->
       if o.VaultFile |> String.IsNullOrEmpty then
         failwith "No vault file specified"
@@ -77,7 +79,7 @@ let runDump args =
               cpx $"Not compressed: \fb{storedSize}\f0"
             else
               let percentage = (storedSize*100) / sourceSize
-              cpx $"Compressed: \fy{storedSize}\f0 : \fc{sourceSize}\f0 = \fg{percentage}\f0%%"
+              cpx $"Compressed: \fy%6d{storedSize}\f0 : \fc%8d{sourceSize}\f0 (\fg%2d{percentage}\f0%%)"
           else
             cpx $"\fk0 children\f0"
         else

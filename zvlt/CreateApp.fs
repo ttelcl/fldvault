@@ -73,6 +73,8 @@ let runCreate args =
       if file.EndsWith(".zvlt") |> not then
         failwith $"Expecting vault file name to have the extension '.zvlt'"
       rest |> parseMore {o with VaultName = file}
+    | file :: rest when file.EndsWith(".zvlt") ->
+      rest |> parseMore {o with VaultName = file}
     | "-key" :: keytag :: rest ->
       match o.Source with
       | AutoKey ->

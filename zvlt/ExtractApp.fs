@@ -65,6 +65,8 @@ let runExtract args =
       None
     | "-vf" :: vault :: rest ->
       rest |> parseMore {o with VaultName = Path.GetFullPath(vault)}
+    | vault :: rest when vault.EndsWith(".zvlt") ->
+      rest |> parseMore {o with VaultName = Path.GetFullPath(vault)}
     | "-same" :: rest ->
       rest |> parseMore {o with AllowSame = true}
     | "-all" :: rest ->

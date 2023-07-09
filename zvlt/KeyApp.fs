@@ -83,6 +83,10 @@ let private parseKeyOptions args =
       rest |> parseMore {o with KeyTag = Some(keytag)}
     | "-kf" :: file :: rest ->
       rest |> parseMore {o with KeyFile = Some(file)}
+    | file :: rest when file.EndsWith(".key-info") ->
+      rest |> parseMore {o with KeyFile = Some(file)}
+    | file :: rest when file.EndsWith(".zvlt") ->
+      rest |> parseMore {o with KeyFile = Some(file)}
     | "-dv" :: folder :: rest ->
       if folder |> Directory.Exists |> not then
         failwith $"Unknown directory {folder}"

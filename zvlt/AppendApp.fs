@@ -123,20 +123,8 @@ let runAppend args =
   match oo with
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultFile)
-    let pkif = vaultFile.GetPassphraseInfo()
-    if pkif = null then
-      failwith "No key information found in the vault"
-    let unlockCache = new UnlockStore()
     use keyChain = new KeyChain()
-    let _ =
-      let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
-      if rawKey = null then
-        cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
-        use k = pkif |> KeyEntry.enterKeyFor
-        k |> keyChain.PutCopy
-      else
-        cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."
-        rawKey
+    KeyUtilities.loadKeyIntoChain vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     let targets = o.Files |> List.map pathFileToFileTarget
     let alreadyAdded =

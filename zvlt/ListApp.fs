@@ -55,20 +55,9 @@ let runList args =
     let pkif = vaultFile.GetPassphraseInfo()
     if pkif = null then
       failwith "No key information found in the vault"
-    let unlockCache = new UnlockStore()
     use keyChain = new KeyChain()
-    let rawKey =
-      if o.PublicOnly then
-        null
-      else
-        let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
-        if rawKey = null then
-          cp $"Key \fg{pkif.KeyId}\f0 created \fc{pkif.UtcKeyStamp |> formatLocal}\f0 - \fcLocked\f0"
-          use rawkey = pkif |> KeyEntry.enterKeyFor
-          rawkey |> keyChain.PutCopy
-        else
-          cp $"Key \fg{pkif.KeyId}\f0 created \fc{pkif.UtcKeyStamp |> formatLocal}\f0 - \foUNLOCKED\f0"
-          rawKey
+    if o.PublicOnly |> not then
+      KeyUtilities.loadKeyIntoChain vaultFile keyChain
     let fileElements =
       vaultFile.FileElements()
       |> Seq.map(fun fe -> new FileElement(fe))
@@ -76,7 +65,7 @@ let runList args =
     if fileElements.Length = 0 then
       cp "\foThis vault is empty\f0."
     else
-      use cryptor = if rawKey = null then null else vaultFile.CreateCryptor(keyChain)
+      use cryptor = if o.PublicOnly then null else vaultFile.CreateCryptor(keyChain)
       use reader = new VaultFileReader(vaultFile, cryptor)
       for fe in fileElements do
         let header = fe.GetHeader(reader)

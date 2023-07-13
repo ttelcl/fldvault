@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -35,5 +36,16 @@ public interface IKeySeed
   /// True if the key was successfully loaded into the key chain
   /// </returns>
   bool TryResolveKey(KeyChain keyChain);
+
+  /// <summary>
+  /// Write this key identification info as a block in the given blockstream,
+  /// which is a brand new vault file being created. Implementations may
+  /// choose to ignore this method.
+  /// </summary>
+  /// <returns>
+  /// True if the seed wrote its information to the stream, false if it
+  /// skipped the request.
+  /// </returns>
+  bool WriteAsBlock(Stream stream);
 }
 

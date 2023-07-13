@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
+using FldVault.Core.KeyResolution;
 using FldVault.Core.Utilities;
 using FldVault.Core.Vaults;
 
@@ -96,7 +97,8 @@ public class VaultFile: IBlockElementContainer
   /// <summary>
   /// Open an existing vault file or create a new one. If an existing
   /// file is opened, the key must match the ID in the key-info.
-  /// This overload also creates a PASS block if it creates a new vault file.
+  /// This overload also creates a PASS block if it creates a new vault file
+  /// (or other similar block if the key is not passphrase based)
   /// </summary>
   /// <param name="fileName">
   /// The name of the file to open or create
@@ -111,7 +113,7 @@ public class VaultFile: IBlockElementContainer
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, PassphraseKeyInfoFile keyInfo, DateTime? stamp = null)
+  public static VaultFile OpenOrCreate(string fileName, IKeySeed keyInfo, DateTime? stamp = null)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -129,7 +131,7 @@ public class VaultFile: IBlockElementContainer
       using(var stream = File.Create(fileName))
       {
         VaultHeader.WriteSync(stream, keyInfo.KeyId, stamp);
-        keyInfo.WriteBlock(stream);
+        keyInfo.WriteAsBlock(stream);
       }
       return new VaultFile(fileName);
     }

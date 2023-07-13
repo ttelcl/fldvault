@@ -17,6 +17,7 @@ using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Utilities;
+using FldVault.Core.KeyResolution;
 
 namespace UnitTests.FldVault;
 
@@ -639,23 +640,25 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
     }
   }
 
-  private PassphraseKeyInfoFile CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)
+  private IKeySeed CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)
   {
     ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"
-    PassphraseKeyInfoFile pkif;
+    IKeySeed seed;
     using(var passphraseBuffer = new CryptoBuffer<char>(passphraseText.ToCharArray()))
     {
       using(var pk = PassphraseKey.FromCharacters(passphraseBuffer, salt))
       {
-        pkif = new PassphraseKeyInfoFile(pk, stamp);
+        var pkif = new PassphraseKeyInfoFile(pk, stamp);
         if(keyChain != null)
         {
           keyChain.PutCopy(pk);
         }
+        var pkr = new PassphraseKeyResolver(null);
+        seed = pkr.CreateSeed(pkif);
       }
     }
-    _outputHelper.WriteLine($"Key ID is {pkif.KeyId}");
-    return pkif;
+    _outputHelper.WriteLine($"Key ID is {seed.KeyId}");
+    return seed;
   }
 
   /// <summary>
@@ -701,7 +704,7 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
     return sb.ToString();
   }
 
-  private VaultFile ResetVault(PassphraseKeyInfoFile pkif, string vaultName, DateTime stamp)
+  private VaultFile ResetVault(IKeySeed seed, string vaultName, DateTime stamp)
   {
     if(File.Exists(vaultName))
     {
@@ -711,7 +714,7 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
     Assert.False(File.Exists(vaultName));
 
     _outputHelper.WriteLine($"Creating new {Path.GetFileName(vaultName)}");
-    var vaultFile = VaultFile.OpenOrCreate(vaultName, pkif, stamp);
+    var vaultFile = VaultFile.OpenOrCreate(vaultName, seed, stamp);
     Assert.NotNull(vaultFile);
     Assert.True(File.Exists(vaultName));
     return vaultFile;

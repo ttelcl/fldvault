@@ -150,5 +150,15 @@ public class PassphraseKeyResolver: IKeyKindSeedService
       }
       return false;
     }
+
+    /// <summary>
+    /// Writes the embedded information as a PASS block
+    /// </summary>
+    public bool WriteAsBlock(Stream stream)
+    {
+      _pkif.WriteBlock(stream);
+      return true;
+    }
+
   }
 }

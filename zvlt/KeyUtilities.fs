@@ -4,12 +4,12 @@ open System
 open System.IO
 
 open FldVault.Core.Crypto
+open FldVault.Core.KeyResolution
 open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
 
 open ColorPrint
 open CommonTools
-open FldVault.Core.KeyResolution
 
 /// Get a PassphraseKeyInfoFile instance from a *.pass.keyinfo or *.zvlt file
 let getPassKeyInfoFromFile (fileName: string) =
@@ -39,3 +39,9 @@ let loadKeyIntoChain (vaultFile: VaultFile) (keyChain: KeyChain) =
 let setupKeySeedService () =
   KeySeedService.NewStandardKeyService(fun guid -> KeyEntry.enterRawKey $"Please enter passphrase for key '{guid}'")
 
+let loadKeyIntoChain2 (seedService: KeySeedService) vaultFile keyChain =
+  let seed = vaultFile |> seedService.TryCreateSeedForVault
+  if seed = null then
+    failwith $"Insufficient information to locate key '{vaultFile.KeyId}'"
+  if keyChain |> seed.TryResolveKey |> not then
+    failwith $"Key not found or not available: '{vaultFile.KeyId}'"

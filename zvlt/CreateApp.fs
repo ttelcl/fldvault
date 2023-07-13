@@ -10,6 +10,7 @@ open FldVault.Core.Zvlt2
 
 open ColorPrint
 open CommonTools
+open FldVault.Core.KeyResolution
 
 type private KeySource = 
   | AutoKey
@@ -185,17 +186,17 @@ let runCreate args =
     let vaultFile = Path.Combine(vaultFolder, o.VaultName)
     if File.Exists(vaultFile) then
       failwith $"The output file already exists: {vaultFile}"
-    let pkif = keyFile |> KeyUtilities.getPassKeyInfoFromFile
     cp $"Vault folder: \fc{vaultFolder}\f0"
     cp $"Vault file:   \fg{Path.GetFileName(vaultFile)}\f0"
     cp $"Key folder:   \fc{keyDirectory}\f0"
     cp $"Key file:     \fg{Path.GetFileName(keyFile)}\f0"
-    cp $"Key:          \fo{pkif.KeyId}\f0 (created \fb{pkif.UtcKeyStamp |> formatStampLocal}\f0)"
     
     match o.Source with
     | KeySource.AutoKey
     | KeySource.KeyFile(_)
     | KeySource.KeyInfo(_) ->
+      let pkif = keyFile |> KeyUtilities.getPassKeyInfoFromFile
+      cp $"Key:          \fo{pkif.KeyId}\f0 (created \fb{pkif.UtcKeyStamp |> formatStampLocal}\f0)"
       // Note that this function doesn't actually use the key, we just verify
       // that we have it (unless we already implicitly did so by creating it)
       use pk = pkif |> KeyEntry.enterKeyFor
@@ -203,7 +204,27 @@ let runCreate args =
     | KeySource.Passphrase ->
       ()
 
-    cp $"Creating new vault file \fg{vaultFile}\f0 using key \fy{pkif.KeyId}\f0."
-    let newvault = VaultFile.OpenOrCreate(vaultFile, pkif)
+    let seedService =
+      match o.Source with
+      | KeySource.AutoKey
+      | KeySource.KeyFile(_)
+      | KeySource.KeyInfo(_)
+      | KeySource.Passphrase ->
+        new PassphraseKeyResolver(null) :> IKeySeedService
+
+    let seed =
+      if keyFile.EndsWith(".key-info", StringComparison.InvariantCultureIgnoreCase) then
+        keyFile |> seedService.TryCreateFromKeyInfoFile
+      elif keyFile.EndsWith(".zvlt", StringComparison.InvariantCultureIgnoreCase) then
+        let vf = VaultFile.Open(keyFile)
+        vf |> seedService.TryCreateSeedForVault
+      else
+        failwith $"Unrecognized key provider file '{Path.GetFileName(keyFile)}'"
+        
+    if seed = null then
+      failwith $"Internal error: Failed to create key info seed"
+
+    cp $"Creating new vault file \fg{vaultFile}\f0 using key \fy{seed.KeyId}\f0."
+    let _ = VaultFile.OpenOrCreate(vaultFile, seed)
     0
   | _ -> 0

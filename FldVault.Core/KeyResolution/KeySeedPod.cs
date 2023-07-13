@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -69,5 +70,21 @@ public class KeySeedPod: IKeySeed
       return true;
     }
     return _seeds.Any(seed => seed.TryResolveKey(keyChain));
+  }
+
+  /// <summary>
+  /// Try writing each of the child seeds, returning true as soon as any
+  /// of them succeeded in writing
+  /// </summary>
+  public bool WriteAsBlock(Stream stream)
+  {
+    foreach(var seed in _seeds)
+    {
+      if(seed.WriteAsBlock(stream))
+      {
+        return true;
+      }
+    }
+    return false;
   }
 }

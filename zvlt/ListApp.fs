@@ -52,12 +52,11 @@ let runList args =
       let version = vaultFile.Header.Version
       version >>> 16, version &&& 0x0FFFF
     cp $"Vault file created on \fc{vaultFile.Header.TimeStamp |> formatLocal}\f0 format \fyZVLT {major}.{minor}\f0."
-    let pkif = vaultFile.GetPassphraseInfo()
-    if pkif = null then
-      failwith "No key information found in the vault"
     use keyChain = new KeyChain()
+    let seedService = KeyUtilities.setupKeySeedService()
     if o.PublicOnly |> not then
-      KeyUtilities.loadKeyIntoChain vaultFile keyChain
+      //KeyUtilities.loadKeyIntoChain vaultFile keyChain
+      KeyUtilities.loadKeyIntoChain2 seedService vaultFile keyChain
     let fileElements =
       vaultFile.FileElements()
       |> Seq.map(fun fe -> new FileElement(fe))

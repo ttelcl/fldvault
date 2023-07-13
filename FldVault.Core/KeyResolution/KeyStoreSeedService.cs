@@ -83,6 +83,14 @@ public class KeyStoreSeedService: IKeySeedService
       }
     }
 
+    /// <summary>
+    /// Never writes and always returns false
+    /// </summary>
+    public bool WriteAsBlock(Stream stream)
+    {
+      return false;
+    }
+
   }
 
 }

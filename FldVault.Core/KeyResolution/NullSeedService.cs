@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -59,6 +60,14 @@ public class NullSeedService: IKeySeedService
         keyChain.PutCopy(key);
         return true;
       }
+    }
+
+    /// <summary>
+    /// Never writes and always returns false
+    /// </summary>
+    public bool WriteAsBlock(Stream stream)
+    {
+      return false;
     }
   }
 }

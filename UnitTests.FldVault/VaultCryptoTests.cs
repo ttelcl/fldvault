@@ -629,6 +629,16 @@ tellus. Ut sit amet tempus odio. Quisque eget ornare nulla, eu placerat nibh.";
     }
   }
 
+  [Fact]
+  public void NullKeyTest()
+  {
+    using(var nullKey = new NullKey())
+    {
+      _outputHelper.WriteLine($"NULL key ID is {nullKey.GetId()}");
+      Assert.Equal(NullKey.NullKeyId, nullKey.GetId());
+    }
+  }
+
   private PassphraseKeyInfoFile CreateTestKeyInfo(string passphraseText, DateTime stamp, KeyChain? keyChain)
   {
     ReadOnlySpan<byte> salt = CreateFixedBadSalt(); // "fixed" == "don't do this in real applications"

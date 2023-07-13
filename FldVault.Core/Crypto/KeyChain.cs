@@ -19,13 +19,20 @@ namespace FldVault.Core.Crypto;
 public class KeyChain: IDisposable
 {
   private readonly Dictionary<Guid, KeyBuffer> _store;
+  private static readonly List<KeyBuffer> __wellKnownKeys = new List<KeyBuffer> { 
+    new NullKey(),
+  };
 
   /// <summary>
-  /// Create a new KeyChain
+  /// Create a new KeyChain, and initialize it with the well-known keys
   /// </summary>
   public KeyChain()
   {
     _store = new Dictionary<Guid, KeyBuffer>();
+    foreach(var key in __wellKnownKeys)
+    {
+      PutCopy(key);
+    }
   }
 
   /// <summary>

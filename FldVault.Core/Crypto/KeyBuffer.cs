@@ -21,7 +21,7 @@ namespace FldVault.Core.Crypto
     private bool _disposed;
 
     /// <summary>
-    /// Create a new KeyBase, copying the source span into an equal-sized
+    /// Create a new KeyBuffer, copying the source span into an equal-sized
     /// key buffer. Once created the key buffer is immutable until disposed.
     /// </summary>
     /// <param name="source">
@@ -31,6 +31,10 @@ namespace FldVault.Core.Crypto
     {
       _buffer = new CryptoBuffer<byte>(source.Length);
       source.CopyTo(_buffer.Span());
+      if(source.Length != 32)
+      {
+        throw new ArgumentOutOfRangeException(nameof(source), "Expecting a 32 byte (256 bit) buffer as argument");
+      }
     }
 
     /// <summary>

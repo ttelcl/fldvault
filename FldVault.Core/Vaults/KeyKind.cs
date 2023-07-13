@@ -29,6 +29,11 @@ namespace FldVault.Core.Vaults
     /// </summary>
     public const string Link = "link";
 
-
+    /// <summary>
+    /// Indicates a stub key-info used to identify the null key
+    /// (key ID "ad7a6866-62f8-47bd-ac8f-c18b8e9f8e20", containing
+    /// 32 0x00 bytes).
+    /// </summary>
+    public const string Null = "null";
   }
 }

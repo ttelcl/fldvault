@@ -9,6 +9,7 @@ open FldVault.Core.Zvlt2
 
 open ColorPrint
 open CommonTools
+open FldVault.Core.KeyResolution
 
 /// Get a PassphraseKeyInfoFile instance from a *.pass.keyinfo or *.zvlt file
 let getPassKeyInfoFromFile (fileName: string) =
@@ -34,3 +35,7 @@ let loadKeyIntoChain (vaultFile: VaultFile) (keyChain: KeyChain) =
     k |> keyChain.PutCopy |> ignore
   else
     cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."
+
+let setupKeySeedService () =
+  KeySeedService.NewStandardKeyService(fun guid -> KeyEntry.enterRawKey $"Please enter passphrase for key '{guid}'")
+

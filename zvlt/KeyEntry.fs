@@ -9,6 +9,36 @@ open FldVault.Core.Vaults
 open ColorPrint
 open CommonTools
 
+let enterRawKey prompt =
+  if prompt |> String.IsNullOrEmpty |> not then
+    cp $"\fy%s{prompt}\f0: "
+  let mutable complete = false
+  let ss = new SecureString()
+  while not complete do
+    let ki = Console.ReadKey(true)
+    match ki.Key with
+    | ConsoleKey.Backspace ->
+      if ss.Length>0 then
+        ss.RemoveAt(ss.Length-1)
+        Console.Write("\b \b")
+      else
+        Console.Write('\u0007')
+    | ConsoleKey.Enter ->
+      complete <- true
+    | ConsoleKey.Escape ->
+      ss.Clear()
+      complete <- true
+      cpx " \foAborted\f0"
+    | _ ->
+      ss.AppendChar(ki.KeyChar)
+      Console.Write("*")
+  cp ""
+  if ss.Length >= 4 then
+    ss
+  else
+    ss.Dispose()
+    null
+
 let enterKey prompt (salt: ReadOnlySpan<byte>) =
   if prompt |> String.IsNullOrEmpty |> not then
     cp $"\fy%s{prompt}\f0: "

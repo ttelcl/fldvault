@@ -21,7 +21,7 @@ let usage detail =
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
     cp ""
   if showSummary "create" then
-    cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0]"
+    cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0|\fg-null\f0]"
     cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"
     cp "  or \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
   if matchDetail "create" then
@@ -31,7 +31,8 @@ let usage detail =
     cp "  \fx     \fx    \fx        file in the same folder as the new vault file."
     cp "  \fg-kf \fc<other.zvlt>\f0 The existing vault file providing the key for the new vault."
     cp "  \fg-p\f0\fx               Create a new key from a passphrase (combining \fokey-new\f0 and \focreate\f0)."
-    cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0]  Take the key from the one existing \fb*.key-info\f0 file."
+    cp "  \fg-null\f0\fx            Create a new vault using the NULL key. \foBeware:\f0: the resulting vault is NOT secure."
+    cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0 nor \fg-null\f0]  Take the key from the one existing \fb*.key-info\f0 file."
     cp ""
   if showSummary "list" then
     cp "\fozvlt list \f0[\fg-vf\f0] \fc<file.zvlt>\f0 \fg-public\f0"

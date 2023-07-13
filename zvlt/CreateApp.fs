@@ -17,6 +17,7 @@ type private KeySource =
   | KeyInfo of string
   | KeyFile of string
   | Passphrase
+  | NullKey
 
 type private CreateOptions = {
   VaultName: string
@@ -81,19 +82,25 @@ let runCreate args =
       | AutoKey ->
         rest |> parseMore {o with Source = KeySource.KeyInfo(keytag)}
       | _ ->
-        failwith $"'-key': duplicate key definition. '-key', '-kf', '-p' are mutually exclusive."
+        failwith $"'-key': duplicate key definition. '-key', '-kf', '-p', '-null' are mutually exclusive."
     | "-kf" :: file :: rest ->
       match o.Source with
       | AutoKey ->
         rest |> parseMore {o with Source = KeySource.KeyFile(file)}
       | _ ->
-        failwith $"'-kf': duplicate key definition. '-key', '-kf', '-p' are mutually exclusive."
+        failwith $"'-kf': duplicate key definition. '-key', '-kf', '-p', '-null' are mutually exclusive."
     | "-p" :: rest ->
       match o.Source with
       | AutoKey ->
         rest |> parseMore {o with Source = KeySource.Passphrase}
       | _ ->
-        failwith $"'-p': duplicate key definition. '-key', '-kf', '-p' are mutually exclusive."
+        failwith $"'-p': duplicate key definition. '-key', '-kf', '-p', '-null' are mutually exclusive."
+    | "-null" :: rest ->
+      match o.Source with
+      | AutoKey ->
+        rest |> parseMore {o with Source = KeySource.NullKey}
+      | _ ->
+        failwith $"'-null': duplicate key definition. '-key', '-kf', '-p', '-null' are mutually exclusive."
     | [] ->
       if o.VaultName |> String.IsNullOrEmpty then
         failwith "No vault name specified"
@@ -163,11 +170,7 @@ let runCreate args =
         // Before creating the new key we should first verify that the vault we
         // will create does not exist yet. This requires looking ahead a bit
         // and deriving the vault file name early.
-        let vaultFolder0 =
-          match vaultFolderHint with
-          | Some(vf) -> vf
-          | None -> kd
-        let vaultFile0 = Path.Combine(vaultFolder0, o.VaultName)
+        let vaultFile0 = Path.Combine(kd, o.VaultName)
         if File.Exists(vaultFile0) then
           failwith $"The output file already exists: {vaultFile0}"
         // Now create the new key
@@ -178,6 +181,23 @@ let runCreate args =
         let pkif = new PassphraseKeyInfoFile(pk1)
         let kf = pkif.WriteToFolder(kd)
         cp $"Created new key info file: \fg{kf}\f0"
+        kd, kf
+      | NullKey ->
+        let kd =
+          match vaultFolderHint with
+          | Some(vf) -> vf
+          | None -> Environment.CurrentDirectory
+        // Before creating the new key we should first verify that the vault we
+        // will create does not exist yet. This requires looking ahead a bit
+        // and deriving the vault file name early.
+        let vaultFile0 = Path.Combine(kd, o.VaultName)
+        if File.Exists(vaultFile0) then
+          failwith $"The output file already exists: {vaultFile0}"
+        // In this case our "key file" is imaginary: it doesn't actually
+        // exist, but we can fake a name for it
+        let kin = new KeyInfoName(NullKey.NullKeyId, KeyKind.Null)
+        let kf = Path.Combine(kd, kin.FileName)
+        cp $"Using imaginary key file: \fg{kf}\f0"
         kd, kf
     let vaultFolder =
       match vaultFolderHint with
@@ -203,6 +223,8 @@ let runCreate args =
       ()
     | KeySource.Passphrase ->
       ()
+    | KeySource.NullKey ->
+      ()
 
     let seedService =
       match o.Source with
@@ -211,6 +233,8 @@ let runCreate args =
       | KeySource.KeyInfo(_)
       | KeySource.Passphrase ->
         new PassphraseKeyResolver(null) :> IKeySeedService
+      | KeySource.NullKey ->
+        new NullSeedService() :> IKeySeedService
 
     let seed =
       if keyFile.EndsWith(".key-info", StringComparison.InvariantCultureIgnoreCase) then

@@ -3,6 +3,7 @@
 open System
 open System.IO
 
+open FldVault.Core.Crypto
 open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
 
@@ -22,3 +23,14 @@ let getPassKeyInfoFromFile (fileName: string) =
   else
     failwith $"Unrecognized key provider file '{Path.GetFileName(fileName)}'"
 
+let loadKeyIntoChain (vaultFile: VaultFile) (keyChain: KeyChain) =
+  let pkif = vaultFile.GetPassphraseInfo()
+  if pkif = null then
+    failwith "No key information found in the vault"
+  let rawKey = keyChain.FindOrImportKey(pkif.KeyId, UnlockStore.Default)
+  if rawKey = null then
+    cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
+    use k = pkif |> KeyEntry.enterKeyFor
+    k |> keyChain.PutCopy |> ignore
+  else
+    cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."

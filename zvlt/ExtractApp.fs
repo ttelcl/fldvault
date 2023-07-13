@@ -118,9 +118,6 @@ let runExtract args =
   match oo with
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultName)
-    let pkif = vaultFile.GetPassphraseInfo()
-    if pkif = null then
-      failwith "No key information found in the vault"
     let vaultFolder = Path.GetDirectoryName(o.VaultName)
     if o.OutDir |> Directory.Exists |> not then
       cp $"Creating output directory \fg{o.OutDir}\f0."
@@ -138,18 +135,9 @@ let runExtract args =
         failwith $"Folder distinctness check failed"
       else
         File.Delete(outProbe)
-    let unlockCache = new UnlockStore()
     use keyChain = new KeyChain()
+    KeyUtilities.loadKeyIntoChain vaultFile keyChain
     use cryptor =
-      let _ = // the resulting key is not used directly but via the key chain
-        let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
-        if rawKey = null then
-          cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
-          use k = pkif |> KeyEntry.enterKeyFor
-          k |> keyChain.PutCopy
-        else
-          cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."
-          rawKey
       vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)
     let makeVcf ibe =

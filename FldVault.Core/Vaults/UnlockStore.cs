@@ -31,6 +31,13 @@ public class UnlockStore: IKeyCacheStore
       "cache");
     if(!Directory.Exists(CacheFolder))
     {
+      // TODO: fix access rights on Unix. The most friction-free way requires
+      // System.IO.SetUnixFileMode(), which requires .net7 or newer.
+      // Or the Directory.CreateDirectory() overload that takes Unix permissions
+      // as second argument
+      // Manual fix:
+      //   chmod 700 ~/.local/share/.zvlt/
+      //   chmod 700 ~/.local/share/.zvlt/cache
       Directory.CreateDirectory(CacheFolder);
     }
   }

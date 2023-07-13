@@ -64,7 +64,8 @@ let runList args =
         let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
         if rawKey = null then
           cp $"Key \fg{pkif.KeyId}\f0 created \fc{pkif.UtcKeyStamp |> formatLocal}\f0 - \fcLocked\f0"
-          pkif |> KeyEntry.enterKeyFor :> KeyBuffer
+          use rawkey = pkif |> KeyEntry.enterKeyFor
+          rawkey |> keyChain.PutCopy
         else
           cp $"Key \fg{pkif.KeyId}\f0 created \fc{pkif.UtcKeyStamp |> formatLocal}\f0 - \foUNLOCKED\f0"
           rawKey
@@ -72,33 +73,36 @@ let runList args =
       vaultFile.FileElements()
       |> Seq.map(fun fe -> new FileElement(fe))
       |> Seq.toArray
-    use cryptor = if rawKey = null then null else vaultFile.CreateCryptor(keyChain)
-    use reader = new VaultFileReader(vaultFile, cryptor)
-    for fe in fileElements do
-      let header = fe.GetHeader(reader)
-      let length = fe.GetContentLength()
-      cp $"File id \fy{header.FileId}\f0. Added on \fc{header.EncryptionStampUtc |> formatLocal}\f0:"
-      cp $"   Total content length = \fb{length}\f0."
-      if cryptor <> null then
-        let metadata = fe.GetMetadata(reader)
-        if metadata.Name |> String.IsNullOrEmpty then
-          cp $"   File name: \foNot specified\f0."
-        else
-          cp $"   File name: \fg{metadata.Name}\f0."
-        if metadata.Stamp.HasValue then
-          cp $"   File time: \fc{metadata.UtcStamp.Value |> formatLocal}\f0."
-        else
-          cp $"   File time: \foNot specified\f0."
-        if metadata.Size.HasValue then
-          let color = if metadata.Size.Value = length then "\fb" else "\fr"
-          cp $"   File size: {color}{metadata.Size.Value}\f0."
-        else
-          cp $"   File size: \foNot specified\f0."
-        if metadata.OtherFields.Count = 0 then
-          cp $"   Custom metadata: \fonone\f0."
-        else
-          cp $"   Custom metadata: \fc{metadata.OtherFields.Count}\f0."
-        ()
+    if fileElements.Length = 0 then
+      cp "\foThis vault is empty\f0."
+    else
+      use cryptor = if rawKey = null then null else vaultFile.CreateCryptor(keyChain)
+      use reader = new VaultFileReader(vaultFile, cryptor)
+      for fe in fileElements do
+        let header = fe.GetHeader(reader)
+        let length = fe.GetContentLength()
+        cp $"File id \fy{header.FileId}\f0. Added on \fc{header.EncryptionStampUtc |> formatLocal}\f0:"
+        cp $"   Total content length = \fb{length}\f0."
+        if cryptor <> null then
+          let metadata = fe.GetMetadata(reader)
+          if metadata.Name |> String.IsNullOrEmpty then
+            cp $"   File name: \foNot specified\f0."
+          else
+            cp $"   File name: \fg{metadata.Name}\f0."
+          if metadata.Stamp.HasValue then
+            cp $"   File time: \fc{metadata.UtcStamp.Value |> formatLocal}\f0."
+          else
+            cp $"   File time: \foNot specified\f0."
+          if metadata.Size.HasValue then
+            let color = if metadata.Size.Value = length then "\fb" else "\fr"
+            cp $"   File size: {color}{metadata.Size.Value}\f0."
+          else
+            cp $"   File size: \foNot specified\f0."
+          if metadata.OtherFields.Count = 0 then
+            cp $"   Custom metadata: \fonone\f0."
+          else
+            cp $"   Custom metadata: \fc{metadata.OtherFields.Count}\f0."
+          ()
     0
   | None ->
     Usage.usage "list"

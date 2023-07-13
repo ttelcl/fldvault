@@ -145,7 +145,7 @@ let runExtract args =
         let rawKey = keyChain.FindOrImportKey(pkif.KeyId, unlockCache)
         if rawKey = null then
           cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
-          use k = pkif |> KeyEntry.enterKeyFor :> KeyBuffer
+          use k = pkif |> KeyEntry.enterKeyFor
           k |> keyChain.PutCopy
         else
           cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."

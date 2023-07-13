@@ -192,11 +192,17 @@ let runCreate args =
     cp $"Vault file:   \fg{Path.GetFileName(vaultFile)}\f0"
     cp $"Key:          \fo{pkif.KeyId}\f0 (created \fb{pkif.UtcKeyStamp |> formatStampLocal}\f0)"
     
-    if o.Source <> KeySource.Passphrase then
+    match o.Source with
+    | KeySource.AutoKey
+    | KeySource.KeyFile(_)
+    | KeySource.KeyInfo(_) ->
       // Note that this function doesn't actually use the key, we just verify
-      // that we have it (unless we already did so by creating it)
+      // that we have it (unless we already implicitly did so by creating it)
       use pk = pkif |> KeyEntry.enterKeyFor
       ()
+    | KeySource.Passphrase ->
+      ()
+
     cp $"Creating new vault file \fg{vaultFile}\f0 using key \fy{pkif.KeyId}\f0."
     let newvault = VaultFile.OpenOrCreate(vaultFile, pkif)
     0

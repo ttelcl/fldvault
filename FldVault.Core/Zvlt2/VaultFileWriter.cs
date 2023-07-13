@@ -160,13 +160,14 @@ public class VaultFileWriter: IDisposable
             case ZvltCompression.Auto:
               if(
                 compressedSize >= 0 
-                && compressedSize * 100 < n * 92) // require a compression to less than 92% to enable compression
+                && (compressedSize + 256) * 100 < n * 92) // require a compression to less than 92% to enable compression
               {
                 plaintext = _compressionBuffer.Span(0, compressedSize);
                 compression = ZvltCompression.On;
               }
               else
               {
+                // leave plaintext as-is: uncompressed
                 compression = ZvltCompression.Off;
               }
               break;
@@ -174,7 +175,8 @@ public class VaultFileWriter: IDisposable
               throw new InvalidOperationException(
                 "Unexpected compression mode");
             case ZvltCompression.On:
-              if(compressedSize >= 0 && compressedSize < n)
+              if(compressedSize >= 0 
+                && (compressedSize + 256) * 100 < n * 98) // now require compression to less than 98% (with 256 offset)
               {
                 plaintext = _compressionBuffer.Span(0, compressedSize);
               } // else keep the uncompressed data as encryption plaintext
@@ -182,14 +184,6 @@ public class VaultFileWriter: IDisposable
             default:
               throw new InvalidOperationException(
                 "Unrecognized compression mode");
-          }
-          if(compressedSize < 0)
-          {
-            // Leave uncompressed. Remember this in case of ZvltCompression.Auto
-            if(compression == ZvltCompression.Auto)
-            {
-              compression = ZvltCompression.Off;
-            }
           }
         }
 

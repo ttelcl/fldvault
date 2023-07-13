@@ -186,10 +186,10 @@ let runCreate args =
     if File.Exists(vaultFile) then
       failwith $"The output file already exists: {vaultFile}"
     let pkif = keyFile |> KeyUtilities.getPassKeyInfoFromFile
-    cp $"Key folder:   \fc{keyDirectory}\f0"
-    cp $"Key file:     \fg{Path.GetFileName(keyFile)}\f0"
     cp $"Vault folder: \fc{vaultFolder}\f0"
     cp $"Vault file:   \fg{Path.GetFileName(vaultFile)}\f0"
+    cp $"Key folder:   \fc{keyDirectory}\f0"
+    cp $"Key file:     \fg{Path.GetFileName(keyFile)}\f0"
     cp $"Key:          \fo{pkif.KeyId}\f0 (created \fb{pkif.UtcKeyStamp |> formatStampLocal}\f0)"
     
     match o.Source with

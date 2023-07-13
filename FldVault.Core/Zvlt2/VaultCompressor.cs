@@ -50,13 +50,21 @@ public static class VaultCompressor
   /// </returns>
   /// <remarks>
   /// <para>
-  /// The "compression is ineffective" if (1) it results in a "compressed" block that
-  /// is not smaller than the input or (2) the input was less than 16 bytes.
+  /// The "compression is ineffective" if any of the following is true.
   /// </para>
+  /// <list type="bullet">
+  /// <item>
+  /// The input was less than 256 bytes.
+  /// </item>
+  /// <item>
+  /// The resulting "compressed" block has a size outSize that does not meet the
+  /// requirement (outSize+256) &lt; inSize.
+  /// </item>
+  /// </list>
   /// </remarks>
   public static int Compress(ByteCryptoBuffer bcbIn, int count, ByteCryptoBuffer bcbOut)
   {
-    if(count < 16)
+    if(count < 256)
     {
       return -1;
     }
@@ -72,13 +80,14 @@ public static class VaultCompressor
         }
         if(sOut.OverflowDetected)
         {
+          sOut.OverflowDetected = false;
           return -1;
         }
         var length = (int)sOut.Length;
-        return length < count ? length : -1;
+        return (length + 256) < count ? length : -1;
       }
     }
-    catch(NotSupportedException) // thrown when writing more content than space in the output
+    catch(NotSupportedException) // thrown when writing more content than space in the output buffer
     {
       return -1;
     }

@@ -27,7 +27,7 @@ let rec run arglist =
     0
   | "key" :: "new" :: rest
   | "key-new" :: rest ->
-    rest |> KeyApp.runNewKey
+    rest |> NewKeyApp.runNewKey
   | "create" :: rest ->
     rest |> CreateApp.runCreate
   | "list" :: rest ->

@@ -55,8 +55,7 @@ let runList args =
     use keyChain = new KeyChain()
     let seedService = KeyUtilities.setupKeySeedService()
     if o.PublicOnly |> not then
-      //KeyUtilities.loadKeyIntoChain vaultFile keyChain
-      KeyUtilities.loadKeyIntoChain2 seedService vaultFile keyChain
+      KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     let fileElements =
       vaultFile.FileElements()
       |> Seq.map(fun fe -> new FileElement(fe))

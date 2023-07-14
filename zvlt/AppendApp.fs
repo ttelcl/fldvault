@@ -3,11 +3,8 @@
 open System
 open System.IO
 
-open FldVault.Core
-open FldVault.Core.BlockFiles
 open FldVault.Core.Crypto
 open FldVault.Core.Utilities
-open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
 
 open ColorPrint
@@ -124,7 +121,8 @@ let runAppend args =
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultFile)
     use keyChain = new KeyChain()
-    KeyUtilities.loadKeyIntoChain vaultFile keyChain
+    let seedService = KeyUtilities.setupKeySeedService()
+    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     let targets = o.Files |> List.map pathFileToFileTarget
     let alreadyAdded =

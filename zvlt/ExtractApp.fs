@@ -3,11 +3,7 @@
 open System
 open System.IO
 
-open FldVault.Core
-open FldVault.Core.BlockFiles
 open FldVault.Core.Crypto
-open FldVault.Core.Utilities
-open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
 
 open ColorPrint
@@ -129,16 +125,16 @@ let runExtract args =
       File.Create(outProbe).Dispose()
       if File.Exists(vaultProbe) then
         File.Delete(outProbe)
-        cp "\foYou are trying to extract content to the vault file's folder\f0. For security"
-        cp "reasons this is \frdenied\f0 by default. Extract to a different folder or pass the"
-        cp "\fg-same\f0 option to skip this check."
+        cp "\foYou are trying to extract content to the vault file's folder. For security\f0"
+        cp "\foreasons this is \frdenied\fo by default. \fyExtract to a different folder or pass the\f0"
+        cp "\fg-same\fy option to skip this check\f0."
         failwith $"Folder distinctness check failed"
       else
         File.Delete(outProbe)
     use keyChain = new KeyChain()
-    KeyUtilities.loadKeyIntoChain vaultFile keyChain
-    use cryptor =
-      vaultFile.CreateCryptor(keyChain)
+    let seedService = KeyUtilities.setupKeySeedService()
+    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
+    use cryptor = vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)
     let makeVcf ibe =
       let fe = new FileElement(ibe)

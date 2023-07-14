@@ -24,24 +24,22 @@ let getPassKeyInfoFromFile (fileName: string) =
   else
     failwith $"Unrecognized key provider file '{Path.GetFileName(fileName)}'"
 
-let loadKeyIntoChain (vaultFile: VaultFile) (keyChain: KeyChain) =
-  let pkif = vaultFile.GetPassphraseInfo()
-  if pkif = null then
-    failwith "No key information found in the vault"
-  let rawKey = keyChain.FindOrImportKey(pkif.KeyId, UnlockStore.Default)
-  if rawKey = null then
-    cp $"Key \fy{pkif.KeyId}\f0 is \folocked\f0."
-    use k = pkif |> KeyEntry.enterKeyFor
-    k |> keyChain.PutCopy |> ignore
-  else
-    cp $"Key \fy{pkif.KeyId}\f0 is \fcunlocked\f0."
-
 let setupKeySeedService () =
-  KeySeedService.NewStandardKeyService(fun guid -> KeyEntry.enterRawKey $"Please enter passphrase for key '{guid}'")
+  let keyEntry (guid: Guid) =
+    KeyEntry.enterRawKey $"Please enter passphrase for key '{guid}'"
+  KeySeedService.NewStandardKeyService(keyEntry) :> IKeySeedService
 
-let loadKeyIntoChain2 (seedService: KeySeedService) vaultFile keyChain =
+let hatchKeyIntoChain (seedService: IKeySeedService) vaultFile keyChain =
   let seed = vaultFile |> seedService.TryCreateSeedForVault
   if seed = null then
     failwith $"Insufficient information to locate key '{vaultFile.KeyId}'"
   if keyChain |> seed.TryResolveKey |> not then
     failwith $"Key not found or not available: '{vaultFile.KeyId}'"
+
+let trySeedFromKeyInfoFile (seedService: IKeySeedService) keyInfoFile =
+  keyInfoFile |> seedService.TryCreateFromKeyInfoFile
+
+let trySeedFromVault (seedService: IKeySeedService) vault =
+  vault |> seedService.TryCreateSeedForVault
+
+//

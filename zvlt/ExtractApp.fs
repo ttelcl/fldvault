@@ -3,6 +3,8 @@
 open System
 open System.IO
 
+open Newtonsoft.Json
+
 open FldVault.Core.Crypto
 open FldVault.Core.Zvlt2
 
@@ -23,6 +25,13 @@ type private ExistsHandling =
   | Overwrite
   | Skip
 
+type private MetaHandling =
+  | Auto
+  | No  // "No" to avoid conflict with Option.None
+  | All
+  | Only
+  | View
+
 type private ExtractOptions = {
   VaultName: string
   OutDir: string
@@ -31,6 +40,7 @@ type private ExtractOptions = {
   Backdate: bool
   ExistPolicy: ExistsHandling
   Files: ExtractFile list
+  MetaPolicy: MetaHandling
 }
 
 type private VaultContentFile = {
@@ -94,6 +104,17 @@ let runExtract args =
       rest |> parseMore {o with ExistPolicy = ExistsHandling.Overwrite}
     | "-x-skip" :: rest ->
       rest |> parseMore {o with ExistPolicy = ExistsHandling.Skip}
+    | "-meta" :: metaOption :: rest ->
+      let metaValue =
+        match metaOption with
+        | "auto" | "default" -> MetaHandling.Auto
+        | "no" | "none" -> MetaHandling.No
+        | "all" | "yes" -> MetaHandling.All
+        | "only" -> MetaHandling.Only
+        | "view" | "show" -> MetaHandling.View
+        | x ->
+          failwith $"Unrecognized metadata handling option: '{x}'"
+      rest |> parseMore {o with MetaPolicy = metaValue}
     | [] ->
       if o.VaultName |> String.IsNullOrEmpty then
         failwith "No vault name specified"
@@ -110,6 +131,7 @@ let runExtract args =
     Backdate = true
     ExistPolicy = ExistsHandling.Fail
     Files = []
+    MetaPolicy = MetaHandling.Auto
   }
   match oo with
   | Some(o) ->
@@ -233,19 +255,45 @@ let runExtract args =
           $"(\fc{txt}\f0)"
         else
           ""
-      if nt.OutputName |> File.Exists then
-        match o.ExistPolicy with
-        | ExistsHandling.Fail ->
-          // should never happen, because this was checked above
-          failwith $"Output {nt.OutputName} already exists"
-        | ExistsHandling.Skip ->
-          cp $"\foSkipping existing \fy{nt.OutputName}\f0 {stampText}"
-        | ExistsHandling.Overwrite ->
-          cp $"Extracting (\foOverwriting!\f0) \fg{nt.OutputName}\f0 {stampText}"
+      let shouldSaveFile, shouldSaveMeta, shouldShowMeta =
+        match o.MetaPolicy with
+        | MetaHandling.Auto ->
+          true, nt.TargetVcf.Meta.OtherFields.Count>0, false
+        | MetaHandling.No ->
+          true, false, false
+        | MetaHandling.All ->
+          true, true, false
+        | MetaHandling.Only ->
+          false, true, false
+        | MetaHandling.View ->
+          false, false, true
+      if shouldSaveFile then
+        if nt.OutputName |> File.Exists then
+          match o.ExistPolicy with
+          | ExistsHandling.Fail ->
+            // should never happen, because this was checked above
+            failwith $"Output {nt.OutputName} already exists"
+          | ExistsHandling.Skip ->
+            cp $"\foSkipping existing \fy{nt.OutputName}\f0 {stampText}"
+          | ExistsHandling.Overwrite ->
+            cp $"Extracting (\foOverwriting!\f0) \fg{nt.OutputName}\f0 {stampText}"
+            fe.SaveContentToFile(reader, o.OutDir, nt.OutputName, o.Backdate, false)
+        else
+          cp $"Extracting \fg{nt.OutputName}\f0 {stampText}"
           fe.SaveContentToFile(reader, o.OutDir, nt.OutputName, o.Backdate, false)
-      else
-        cp $"Extracting \fg{nt.OutputName}\f0 {stampText}"
-        fe.SaveContentToFile(reader, o.OutDir, nt.OutputName, o.Backdate, false)
+      if shouldSaveMeta || shouldShowMeta then
+        let json = JsonConvert.SerializeObject(nt.TargetVcf.Meta, Formatting.Indented)
+        if shouldSaveMeta then
+          let fullfile = nt.OutputName + ".meta.json"
+          let folder = fullfile |> Path.GetDirectoryName
+          let file = fullfile |> Path.GetFileName
+          cp $"Saving metadata to \fc{folder}\f0{Path.DirectorySeparatorChar}\fg{file}\f0."
+          File.WriteAllText(fullfile, json)
+        if shouldShowMeta then
+          cp $"\fG// file ID \fy{nt.TargetVcf.Id}\f0:"
+          cp $"{json}"
+        ()
+
     0
   | None ->
     Usage.usage "extract"

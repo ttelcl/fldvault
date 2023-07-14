@@ -57,7 +57,7 @@ let usage detail =
     cp "  \fg-n \fc<name>\f0        Override the name to use for the preceding file (\fg-f\f0)"
     cp ""
   if showSummary "extract" then
-    cpx "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0]"
+    cpx "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0] [\fg-meta \fcauto\f0|\fcnone\f0|\fcall\f0|\fconly\f0|\fcview\f0]"
     cp " [\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
     cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
@@ -65,9 +65,9 @@ let usage detail =
     cp "  \fg-od \fc<out-dir>\f0    The directory to extract to. File names with paths are resolved"
     cp "  \fx    \fx         \fx    relative to this. Default: current directory"
     cp "  \fg-same\f0\fx            Skip the check that prevents extracting to the vault folder"
-    cp "  \fg-notime\f0             Do not backdate the extract files to their original time"
-    cp "  \fg-x-overwrite\f0        If the target exists, overwrite it"
-    cp "  \fg-x-skip\f0             If the target exists, skip it"
+    cp "  \fg-notime\f0\fx          Do not backdate the extract files to their original time"
+    cp "  \fg-x-overwrite\f0\fx     If the target exists, overwrite it"
+    cp "  \fg-x-skip\f0\fx          If the target exists, skip it"
     cp "  \fg-f \fc<file>\f0        The name of a file to extract (repeatable)"
     cp "  \fg-id \fc<id>\f0         The start of a file ID (use \folist\f0 to discover file IDs)"
     cp "  \fg-n \fc<name>\f0        Overide the name for the preceding file (\fg-f\f0 or \fg-id\f0)"

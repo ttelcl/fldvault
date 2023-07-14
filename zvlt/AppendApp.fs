@@ -152,11 +152,21 @@ let runAppend args =
       cp $"Adding entry '\fg{target.Label}\f0' (\fk{target.Source}\f0)."
       // Use the long form append here to have more control over the metadata (enable paths)
       let fi = new FileInfo(target.Source)
-      let meta = new FileMetadata(target.Label, fi.LastWriteTimeUtc |> EpochTicks.FromUtc, fi.Length)
-      let compression = target.Compression
-      let _ =
-        use source = File.OpenRead(target.Source)
-        writer.AppendFile(source, meta, compression)
+      if fi.Exists then
+        let meta = new FileMetadata(target.Label, fi.LastWriteTimeUtc |> EpochTicks.FromUtc, fi.Length)
+        let metaExtraName = $"{target.Source}.meta.json"
+        if metaExtraName |> File.Exists then
+          cp $"  \fyIncluding metadata from \fc{metaExtraName |> Path.GetFileName}\f0."
+          let ok = meta.TryMergeMetadata(metaExtraName)
+          if ok |> not then
+            cp $"  \foWarning\f0 metadata merging failed."
+        let compression = target.Compression
+        let _ =
+          use source = File.OpenRead(target.Source)
+          writer.AppendFile(source, meta, compression)
+        ()
+      else
+        cp "  \foFile not found - skipping\f0."
       ()
     0
   | None ->

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -108,5 +109,63 @@ namespace FldVault.Core.Zvlt2
           "Invalid file name: path segments must not end with '.'");
       }
     }
+
+    /// <summary>
+    /// Insert all entries found in <paramref name="extraMeta"/> into
+    /// <see cref="OtherFields"/>. The values are cloned. Fields
+    /// "name", "size", and "stamp" are ignored.
+    /// </summary>
+    /// <param name="extraMeta">
+    /// The container carrying the extra fields. Note that <see cref="JObject"/>
+    /// is compatible with this type.
+    /// </param>
+    public void MergeMetadata(IDictionary<string, JToken?> extraMeta)
+    {
+      foreach(var kvp in extraMeta)
+      {
+        if(kvp.Key != "name" && kvp.Key != "size" && kvp.Key != "stamp")  // else: ignore
+        {
+          OtherFields[kvp.Key] = kvp.Value?.DeepClone();
+        }
+      }
+    }
+
+    /// <summary>
+    /// Try to merge metadata from the specified file, returning true
+    /// if successful. False indicates failure, which may because of
+    /// the file not existing, or the file not containing a json object.
+    /// </summary>
+    /// <param name="fileName">
+    /// The json file to merge.
+    /// </param>
+    public bool TryMergeMetadata(string fileName)
+    {
+      if(File.Exists(fileName))
+      {
+        var json = File.ReadAllText(fileName);
+        try
+        {
+          var jobject = JsonConvert.DeserializeObject<JObject>(json);
+          if(jobject != null)
+          {
+            MergeMetadata(jobject);
+            return true;
+          }
+          else
+          {
+            return false;
+          }
+        }
+        catch(Exception)
+        {
+          return false;
+        }
+      }
+      else
+      {
+        return false;
+      }
+    }
+
   }
 }

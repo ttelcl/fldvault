@@ -43,8 +43,10 @@ let usage detail =
     cp ""
   if showSummary "append" then
     cp "\fozvlt append \f0[\fg-vf\f0] \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
-    cp "  Append a file to a vault (encrypting it)"
+    cp "  Append a file to a vault (encrypting it)."
   if matchDetail "append" then
+    cp "  For each file added, if \fc<file>.meta.json\f0 exists, it is used to fill additional metadata"
+    cp "  (ignoring fields 'size', 'name' and 'stamp')"
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
     cp "  \fg-f \fc<file>\f0        The name of the file to append. Repeatable. \fkThe original path is ignored\f0."
     cp "                            The file (but not the folder) can include wildcards."

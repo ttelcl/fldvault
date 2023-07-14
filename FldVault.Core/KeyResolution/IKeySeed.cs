@@ -47,5 +47,24 @@ public interface IKeySeed
   /// skipped the request.
   /// </returns>
   bool WriteAsBlock(Stream stream);
+
+  /// <summary>
+  /// Try to adapt this seed to a more specific one.
+  /// In the case of composite keys this may return multiple child seeds.
+  /// In the typical case it returns no results or a single result
+  /// being this seed itself.
+  /// </summary>
+  IEnumerable<IKeySeed<T>> TryAdapt<T>();
 }
 
+/// <summary>
+/// A specialization of IKeySeed that exposes a key type specific
+/// detail.
+/// </summary>
+public interface IKeySeed<out T> : IKeySeed
+{
+  /// <summary>
+  /// Get the wrapped key-specific object
+  /// </summary>
+  T KeyDetail { get; }
+}

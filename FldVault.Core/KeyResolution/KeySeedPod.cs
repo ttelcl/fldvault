@@ -18,7 +18,7 @@ namespace FldVault.Core.KeyResolution;
 /// An <see cref="IKeySeed"/> implementation that tries a series
 /// of contained key seeds until one succeeds
 /// </summary>
-public class KeySeedPod: IKeySeed
+public class KeySeedPod: IKeySeed, IKeySeed<IReadOnlyList<IKeySeed>>
 {
   private readonly List<IKeySeed> _seeds;
 
@@ -39,6 +39,12 @@ public class KeySeedPod: IKeySeed
   /// A read-only view on the child seeds
   /// </summary>
   public IReadOnlyList<IKeySeed> Seeds { get; init; }
+
+  /// <summary>
+  /// Implements IKeySeed{IReadOnlyList{IKeySeed}}.
+  /// Alias for <see cref="Seeds"/>.
+  /// </summary>
+  public IReadOnlyList<IKeySeed> KeyDetail { get => Seeds; }
 
   /// <summary>
   /// Add a matching seed to this seed pod
@@ -87,4 +93,30 @@ public class KeySeedPod: IKeySeed
     }
     return false;
   }
+
+  /// <summary>
+  /// Implements IKeySeed.TryAdapt.
+  /// Returns a singleton containing this pod itself if <typeparamref name="T"/>
+  /// matches IReadOnlyList{IKeySeed}.
+  /// Otherwise it returns the concatenation of the TryAdapt outputs of all
+  /// children.
+  /// </summary>
+  public IEnumerable<IKeySeed<T>> TryAdapt<T>()
+  {
+    if(this is IKeySeed<T> cast)
+    {
+      yield return cast;
+    }
+    else
+    {
+      foreach(var seed in _seeds)
+      {
+        foreach(var subseed in seed.TryAdapt<T>())
+        {
+          yield return subseed;
+        }
+      }
+    }
+  }
+
 }

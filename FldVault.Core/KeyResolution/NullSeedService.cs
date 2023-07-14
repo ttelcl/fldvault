@@ -69,5 +69,12 @@ public class NullSeedService: IKeySeedService
     {
       return false;
     }
+
+    /// <inheritdoc/>
+    public IEnumerable<IKeySeed<T>> TryAdapt<T>()
+    {
+      return Enumerable.Empty<IKeySeed<T>>();
+    }
+
   }
 }

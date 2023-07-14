@@ -50,7 +50,7 @@ public class KeyStoreSeedService: IKeySeedService
     return new StoreKeySeed(vaultFile.KeyId, _keyCacheStore);
   }
 
-  internal class StoreKeySeed: IKeySeed
+  internal class StoreKeySeed: IKeySeed, IKeySeed<IKeyCacheStore>
   {
     public StoreKeySeed(Guid keyId, IKeyCacheStore store)
     {
@@ -61,6 +61,12 @@ public class KeyStoreSeedService: IKeySeedService
     public Guid KeyId { get; init; }
 
     public IKeyCacheStore KeyCacheStore { get; init; }
+
+    /// <summary>
+    /// Implements IKeySeed{IKeyCacheStore}.
+    /// Alias for <see cref="KeyCacheStore"/>
+    /// </summary>
+    public IKeyCacheStore KeyDetail { get => KeyCacheStore; }
 
     public bool TryResolveKey(KeyChain keyChain)
     {
@@ -89,6 +95,12 @@ public class KeyStoreSeedService: IKeySeedService
     public bool WriteAsBlock(Stream stream)
     {
       return false;
+    }
+
+    /// <inheritdoc/>
+    public IEnumerable<IKeySeed<T>> TryAdapt<T>()
+    {
+      return (this is IKeySeed<T> cast) ? new[] { cast } : Enumerable.Empty<IKeySeed<T>>();
     }
 
   }

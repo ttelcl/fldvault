@@ -110,7 +110,7 @@ public class PassphraseKeyResolver: IKeyKindSeedService
   /// <summary>
   /// Implements <see cref="IKeySeed"/> for passphrase based keys
   /// </summary>
-  internal class PassphraseKeySeed: IKeySeed
+  internal class PassphraseKeySeed: IKeySeed, IKeySeed<PassphraseKeyInfoFile>
   {
     private readonly PassphraseKeyInfoFile _pkif;
     private readonly PassphraseKeyResolver _resolver;
@@ -125,6 +125,11 @@ public class PassphraseKeyResolver: IKeyKindSeedService
 
     /// <inheritdoc/>
     public Guid KeyId { get => _pkif.KeyId; }
+
+    /// <summary>
+    /// Implements IKeySeed{PassphraseKeyInfoFile}
+    /// </summary>
+    public PassphraseKeyInfoFile KeyDetail { get => _pkif; }
 
     /// <inheritdoc/>
     public bool TryResolveKey(KeyChain keyChain)
@@ -158,6 +163,16 @@ public class PassphraseKeyResolver: IKeyKindSeedService
     {
       _pkif.WriteBlock(stream);
       return true;
+    }
+
+
+    /// <summary>
+    /// Returns a singleton containing this seed itself if T is <see cref="PassphraseKeyInfoFile"/>,
+    /// an empty collection otherwise
+    /// </summary>
+    public IEnumerable<IKeySeed<T>> TryAdapt<T>()
+    {
+      return (this is IKeySeed<T> cast) ? new[] {cast} : Enumerable.Empty<IKeySeed<T>>();
     }
 
   }

@@ -151,25 +151,42 @@ let runCheckKey args =
   match oo with
   | Some(o) ->
     let seedService = KeyUtilities.setupKeySeedService()
-    //let vaultsFolder, seed = o |> resolveKey seedService
-    let vaultsFolder, seed = o |> resolveKeyFile
-    cp "\frWork In Progress\f0."
+    let vaultsFolder, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
-    let unlockCache = new UnlockStore()
+    let unlockCache = UnlockStore.Default
     use keyChain = new KeyChain()
-    let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
     if seed.KeyId = NullKey.NullKeyId then
       cp $"Key \fb{seed.KeyId}\f0 (the \fonull key\f0)"
     else
       cp $"Key \fg{seed.KeyId}\f0"
+    let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
     let lockStatus = if rawKey <> null then "\foUnlocked\f0" else "\fbLocked\f0"
     cp $"  Lock status: {lockStatus}"
-    use keyCheck = KeyEntry.enterKey "Enter passphrase" seed.Salt
-    let guidCheck = keyCheck.GetId()
-    let ppStatus = if guidCheck = seed.KeyId then "\fgCorrect\f0" else "\frWrong\f0"
-    cp $"  Passphrase status: {ppStatus}"
-    if guidCheck = seed.KeyId then 0 else 1
+    if seed.KeyId = NullKey.NullKeyId then
+      cp $"     Key Kind: \fonull key\f0."
+      cp "\fyThe \fonull key\fy is always available and doesn't support any further checking\f0."
+      0
+    else
+      let passphraseSeeds = seed.TryAdapt<PassphraseKeyInfoFile>() |> Seq.toArray
+      match passphraseSeeds.Length with
+      | 0 ->
+        cp "No passphrase entries to validate found for this key."
+        0
+      | 1 ->
+        cp $"     Key Kind: \fgpassphrase based key\f0."
+        let pkif = passphraseSeeds[0].KeyDetail
+        use keyCheck = KeyEntry.enterKey $"Enter passphrase for key '{pkif.KeyId}'" pkif.Salt
+        let guidCheck = keyCheck.GetId()
+        let ppStatus = if guidCheck = seed.KeyId then "\fgCorrect\f0" else "\frWrong\f0"
+        cp $"  Passphrase status: {ppStatus}"
+        if guidCheck = seed.KeyId then 0 else 1
+      | n ->
+        cp $"\frNot yet supported\f0: multiple (\fb{n}\f0) passphrase based keys were found linked to this key."
+        for ppseed in passphraseSeeds do
+          let pkif = ppseed.KeyDetail
+          cp $"   - \fy{pkif.KeyId}\f0."
+        1
   | None ->
     Usage.usage "check"
     0

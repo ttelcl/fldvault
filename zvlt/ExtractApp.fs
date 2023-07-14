@@ -241,7 +241,7 @@ let runExtract args =
       failwith "No matching entries to extract"
     
     // Before extracting anything, make sure none of the targets exist if fail-if-exists is set
-    if o.ExistPolicy = ExistsHandling.Fail then
+    if o.ExistPolicy = ExistsHandling.Fail && (o.MetaPolicy <> MetaHandling.Only) && (o.MetaPolicy <> MetaHandling.View) then
       for nt in namedTasks do
         if nt.OutputName |> File.Exists then
           failwith $"Output {nt.OutputName} already exists"

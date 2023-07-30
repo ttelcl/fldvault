@@ -27,6 +27,11 @@ public static class MessageCodes
   public const int Unrecognized = 0x00000400;
 
   /// <summary>
+  /// Generic "not found" response (without any explanatory content)
+  /// </summary>
+  public const int NotFound = 0x00000404;
+
+  /// <summary>
   /// Generic "keep connection alive" (NOP) request. Also used as response.
   /// </summary>
   public const int KeepAlive = 0x00000000;

@@ -67,9 +67,10 @@ public class MessageFrameOut: IDisposable
   /// <param name="bytes">
   /// The bytes to append. Maximum length is <see cref="Space"/>
   /// </param>
-  public void AppendBytes(ReadOnlySpan<byte> bytes)
+  public MessageFrameOut AppendBytes(ReadOnlySpan<byte> bytes)
   {
     bytes.CopyTo(NextSlice(bytes.Length));
+    return this;
   }
 
   /// <summary>
@@ -94,47 +95,52 @@ public class MessageFrameOut: IDisposable
   /// <summary>
   /// Append a byte
   /// </summary>
-  public void AppendByte(byte value)
+  public MessageFrameOut AppendByte(byte value)
   {
     NextSlice(1)[0] = value;
+    return this;
   }
 
   /// <summary>
   /// Append an unsigned 16 bit integer
   /// </summary>
-  public void AppendU16(ushort value)
+  public MessageFrameOut AppendU16(ushort value)
   {
     BinaryPrimitives.WriteUInt16LittleEndian(NextSlice(2), value);
+    return this;
   }
 
   /// <summary>
   /// Append an unsigned 32 bit integer
   /// </summary>
-  public void AppendU32(uint value)
+  public MessageFrameOut AppendU32(uint value)
   {
     BinaryPrimitives.WriteUInt32LittleEndian(NextSlice(4), value);
+    return this;
   }
 
   /// <summary>
   /// Append a signed 32 bit integer
   /// </summary>
-  public void AppendI32(int value)
+  public MessageFrameOut AppendI32(int value)
   {
     BinaryPrimitives.WriteInt32LittleEndian(NextSlice(4), value);
+    return this;
   }
 
   /// <summary>
   /// Append a signed 64 bit integer
   /// </summary>
-  public void AppendI64(long value)
+  public MessageFrameOut AppendI64(long value)
   {
     BinaryPrimitives.WriteInt64LittleEndian(NextSlice(8), value);
+    return this;
   }
 
   /// <summary>
   /// Append a GUID
   /// </summary>
-  public void AppendGuid(Guid guid)
+  public MessageFrameOut AppendGuid(Guid guid)
   {
     var slice = NextSlice(16);
     if(!guid.TryWriteBytes(slice))
@@ -142,26 +148,27 @@ public class MessageFrameOut: IDisposable
       throw new InvalidOperationException( // this should be impossible
         "Internal error: Failed to write GUID");
     }
+    return this;
   }
 
   /// <summary>
   /// Append the UTC datetime in Epoch Ticks form
   /// </summary>
-  public void AppendUtcDateTime(DateTime utc)
+  public MessageFrameOut AppendUtcDateTime(DateTime utc)
   {
     if(utc.Kind != DateTimeKind.Utc)
     {
       throw new ArgumentOutOfRangeException(nameof(utc), "Expecting a UTC DateTime value");
     }
     var et = utc.Ticks - 0x089F7FF5F7B58000L; // ticks since 1970-01-01 00:00:00 Z
-    AppendI64(et);
+    return AppendI64(et);
   }
 
   /// <summary>
   /// Append an unsigned integer in a variable length form
   /// Values closer to 0 are encoded shorter.
   /// </summary>
-  public void AppendVarInt(ulong value)
+  public MessageFrameOut AppendVarInt(ulong value)
   {
     EnsureNotDisposed();
     while(true)
@@ -178,22 +185,23 @@ public class MessageFrameOut: IDisposable
         break;
       }
     }
+    return this;
   }
 
   /// <summary>
   /// Append a signed integer in a variable length form.
   /// Values closer to 0 are encoded shorter.
   /// </summary>
-  public void AppendSignedVarInt(long value)
+  public MessageFrameOut AppendSignedVarInt(long value)
   {
     var uv = value < 0 ? ((ulong)(-1L - value) << 1) + 1UL : (ulong)value << 1;
-    AppendVarInt(uv);
+    return AppendVarInt(uv);
   }
 
   /// <summary>
   /// Append a string
   /// </summary>
-  public void AppendString(string value)
+  public MessageFrameOut AppendString(string value)
   {
     EnsureNotDisposed();
     var byteCount = Encoding.UTF8.GetByteCount(value);
@@ -204,13 +212,14 @@ public class MessageFrameOut: IDisposable
       var slice = NextSlice(byteCount);
       Encoding.UTF8.GetBytes(value, slice);
     }
+    return this;
   }
 
   /// <summary>
   /// Append the specified bytes at the end of the buffer,
   /// prefixed by their length as a two byte unsigned integer.
   /// </summary>
-  public void AppendBlob(ReadOnlySpan<byte> blob)
+  public MessageFrameOut AppendBlob(ReadOnlySpan<byte> blob)
   {
     CheckSpace(blob.Length + 2);
     AppendU16((ushort)blob.Length);
@@ -218,6 +227,7 @@ public class MessageFrameOut: IDisposable
     {
       AppendBytes(blob);
     }
+    return this;
   }
 
   /// <summary>
@@ -251,10 +261,11 @@ public class MessageFrameOut: IDisposable
   /// <summary>
   /// Clear the buffer
   /// </summary>
-  public void Clear()
+  public MessageFrameOut Clear()
   {
     Position = 0;
     Array.Clear(_bytes);
+    return this;
   }
 
   private void CheckSpace(int writeSize)

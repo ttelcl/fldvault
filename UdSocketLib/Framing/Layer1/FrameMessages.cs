@@ -65,6 +65,22 @@ public static class FrameMessages
   }
 
   /// <summary>
+  /// Write a message into <paramref name="frame"/> that contains just a message code,
+  /// without further content.
+  /// </summary>
+  /// <param name="frame">
+  /// The frame to write to
+  /// </param>
+  /// <param name="messageCode">
+  /// The message code to write
+  /// </param>
+  public static void WriteNoContentMessage(this MessageFrameOut frame, int messageCode)
+  {
+    frame.Clear();
+    frame.AppendI32(messageCode);
+  }
+
+  /// <summary>
   /// Try to read the message in the frame as a text or json message
   /// </summary>
   /// <param name="frame">

@@ -75,13 +75,11 @@ public static class KeyServerMessages
   /// </exception>
   public static Guid ReadKeyRequest(this MessageFrameIn frame)
   {
-    frame.Rewind();
-    var mc = frame.ReadI32();
-    if(mc != KeyRequestCode)
-    {
-      throw new InvalidOperationException("Internal error: Incorrect message code");
-    }
-    var guid = frame.ReadGuid();
+    frame
+      .Rewind()
+      .ValidateI32(KeyUploadCode, "Internal error: Incorrect message code")
+      .TakeGuid(out var guid)
+      .EnsureFullyRead();
     return guid;
   }
 
@@ -111,9 +109,7 @@ public static class KeyServerMessages
   {
     if(key == null)
     {
-      frame
-        .Clear()
-        .AppendI32(KeyNotFoundCode);
+      frame.WriteNoContentMessage(KeyNotFoundCode);
     }
     else
     {
@@ -156,19 +152,16 @@ public static class KeyServerMessages
   /// </returns>
   public static Guid ReadKeyUpload(this MessageFrameIn frame, KeyChain keyChain)
   {
-    frame.Rewind();
-    var mc = frame.ReadI32();
-    if(mc == KeyUploadCode)
+    frame
+      .Rewind()
+      .ValidateI32(KeyUploadCode, "Unsupported message code for key transfer")
+      .TakeSlice(32, out var span)
+      .EnsureFullyRead();
+    using(var kb = new KeyBuffer(span))
     {
-      var span = frame.NextSlice(32);
-      using(var kb = new KeyBuffer(span))
-      {
-        keyChain.PutCopy(kb);
-        return kb.GetId();
-      }
+      keyChain.PutCopy(kb);
+      return kb.GetId();
     }
-    throw new InvalidOperationException(
-      "Unsupported message code for key transfer");
   }
 
   /// <summary>
@@ -186,19 +179,34 @@ public static class KeyServerMessages
   /// </returns>
   public static Guid ReadKeyResponse(this MessageFrameIn frame, KeyChain keyChain)
   {
-    frame.Rewind();
-    var mc = frame.ReadI32();
-    if(mc == KeyResponseCode)
+    frame
+      .Rewind()
+      .ValidateI32(KeyResponseCode, "Unsupported message code for key transfer")
+      .TakeSlice(32, out var span)
+      .EnsureFullyRead();
+    using(var kb = new KeyBuffer(span))
     {
-      var span = frame.NextSlice(32);
-      using(var kb = new KeyBuffer(span))
-      {
-        keyChain.PutCopy(kb);
-        return kb.GetId();
-      }
+      keyChain.PutCopy(kb);
+      return kb.GetId();
     }
-    throw new InvalidOperationException(
-      "Unsupported message code for key transfer");
   }
 
+  /// <summary>
+  /// Write one of the no-content messages into the output frame
+  /// </summary>
+  public static void WriteNoContent(this MessageFrameOut frame, int messageCode = MessageCodes.OkNoContent)
+  {
+    frame.Clear().AppendI32(messageCode);
+  }
+
+  /// <summary>
+  /// Write a key remove message into the output frame
+  /// </summary>
+  public static void WriteKeyRemove(this MessageFrameOut frame, Guid keyId)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyRemovedCode)
+      .AppendGuid(keyId);
+  }
 }

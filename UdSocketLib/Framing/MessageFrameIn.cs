@@ -5,6 +5,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -19,6 +20,14 @@ namespace UdSocketLib.Framing;
 /// <summary>
 /// A message frame buffer to store a message frame read from a stream
 /// </summary>
+/// <remarks>
+/// <para>
+/// The reading API comes in two variants: a series of ReadXXX() methods
+/// that return the value that was read from the frame and a series of
+/// TakeXXX() methods that return the value in an out parameter, and return
+/// this MessageFrameIn instance, enabling a Fluent API.
+/// </para>
+/// </remarks>
 public class MessageFrameIn: IDisposable
 {
   private byte[] _bytes;
@@ -68,6 +77,20 @@ public class MessageFrameIn: IDisposable
   public int Space => Length - Position;
 
   /// <summary>
+  /// Make sure that <see cref="Space"/> is 0. If not, an
+  /// exception is thrown.
+  /// </summary>
+  public void EnsureFullyRead()
+  {
+    EnsureNotDisposed();
+    if(Space != 0)
+    {
+      throw new InvalidOperationException(
+        $"Expecting the buffer to have been fully read, but there are {Space} bytes left.");
+    }
+  }
+
+  /// <summary>
   /// Return the next slice of <paramref name="count"/> bytes.
   /// </summary>
   /// <param name="count">
@@ -86,12 +109,35 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Return the next slice of <paramref name="count"/> bytes in
+  /// <paramref name="span"/> (Fluent API)
+  /// </summary>
+  public MessageFrameIn TakeSlice(int count, out Span<byte> span)
+  {
+    EnsureNotDisposed();
+    CheckSpace(count);
+    span = _bytes.AsSpan(Position, count);
+    Position += count;
+    return this;
+  }
+
+  /// <summary>
   /// Read the next byte from this buffer
   /// </summary>
   public byte ReadByte()
   {
     CheckSpace(1);
     return _bytes[Position++];
+  }
+
+  /// <summary>
+  /// Read the next byte from this buffer
+  /// </summary>
+  public MessageFrameIn TakeByte(out byte value)
+  {
+    CheckSpace(1);
+    value = _bytes[Position++];
+    return this;
   }
 
   /// <summary>
@@ -103,11 +149,29 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Read the next unsigned 16 bit integer
+  /// </summary>
+  public MessageFrameIn TakeU16(out ushort value)
+  {
+    value = BinaryPrimitives.ReadUInt16LittleEndian(NextSlice(2));
+    return this;
+  }
+
+  /// <summary>
   /// Read the next unsigned 32 bit integer
   /// </summary>
   public uint ReadU32()
   {
     return BinaryPrimitives.ReadUInt32LittleEndian(NextSlice(4));
+  }
+
+  /// <summary>
+  /// Read the next unsigned 32 bit integer
+  /// </summary>
+  public MessageFrameIn TakeU32(out uint value)
+  {
+    value = BinaryPrimitives.ReadUInt32LittleEndian(NextSlice(4));
+    return this;
   }
 
   /// <summary>
@@ -119,11 +183,54 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Read the next signed 32 bit integer.
+  /// </summary>
+  public MessageFrameIn TakeI32(out int value)
+  {
+    value = BinaryPrimitives.ReadInt32LittleEndian(NextSlice(4));
+    return this;
+  }
+
+  /// <summary>
+  /// Read the next signed 32 bit integer and run the validator on it.
+  /// </summary>
+  public MessageFrameIn ValidateI32(Action<int> validator)
+  {
+    var value = BinaryPrimitives.ReadInt32LittleEndian(NextSlice(4));
+    validator.Invoke(value);
+    return this;
+  }
+
+  /// <summary>
+  /// Read the next signed 32 bit integer and validate that the value
+  /// equals <paramref name="expectedValue"/>. If not, throw an exception
+  /// using the specified error message.
+  /// </summary>
+  public MessageFrameIn ValidateI32(int expectedValue, string errorMessage)
+  {
+    var value = BinaryPrimitives.ReadInt32LittleEndian(NextSlice(4));
+    if(value != expectedValue)
+    {
+      throw new InvalidOperationException(errorMessage);
+    }
+    return this;
+  }
+
+  /// <summary>
   /// Read the next signed 64 bit integer
   /// </summary>
   public long ReadI64()
   {
     return BinaryPrimitives.ReadInt64LittleEndian(NextSlice(8));
+  }
+
+  /// <summary>
+  /// Read the next signed 64 bit integer
+  /// </summary>
+  public MessageFrameIn TakeI64(out long value)
+  {
+    value = BinaryPrimitives.ReadInt64LittleEndian(NextSlice(8));
+    return this;
   }
 
   /// <summary>
@@ -135,6 +242,15 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Read the next GUID
+  /// </summary>
+  public MessageFrameIn TakeGuid(out Guid value)
+  {
+    value = new Guid(NextSlice(16));
+    return this;
+  }
+
+  /// <summary>
   /// Read the next UTC DateTime (via its EpochTicks value)
   /// </summary>
   public DateTime ReadUtcDateTime()
@@ -142,6 +258,15 @@ public class MessageFrameIn: IDisposable
     var et = ReadI64();
     var ticks = et + 0x089F7FF5F7B58000L; // ticks at 1970-01-01 00:00:00 Z
     return new DateTime(ticks, DateTimeKind.Utc);
+  }
+
+  /// <summary>
+  /// Read the next UTC DateTime (via its EpochTicks value)
+  /// </summary>
+  public MessageFrameIn TakeUtcDateTime(out DateTime value)
+  {
+    value = ReadUtcDateTime();
+    return this;
   }
 
   /// <summary>
@@ -163,6 +288,15 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Read a variable length unsigned integer
+  /// </summary>
+  public MessageFrameIn TakeVarInt(out ulong value)
+  {
+    value = ReadVarInt();
+    return this;
+  }
+
+  /// <summary>
   /// Read a variable length signed integer
   /// </summary>
   public long ReadSignedVarInt()
@@ -170,6 +304,15 @@ public class MessageFrameIn: IDisposable
     var ul = ReadVarInt();
     var l0 = (long)(ul >> 1);
     return (ul & 0x1UL) == 0 ? l0 : -1L - l0;
+  }
+
+  /// <summary>
+  /// Read a variable length signed integer
+  /// </summary>
+  public MessageFrameIn TakeSignedVarInt(out long value)
+  {
+    value = ReadSignedVarInt();
+    return this;
   }
 
   /// <summary>
@@ -186,6 +329,15 @@ public class MessageFrameIn: IDisposable
   }
 
   /// <summary>
+  /// Read the next string
+  /// </summary>
+  public MessageFrameIn TakeString(out string value)
+  {
+    value = ReadString();
+    return this;
+  }
+
+  /// <summary>
   /// Read the next blob from the frame, by first reading
   /// the two length bytes, then return a reference to the blob
   /// of that length. Beware that unlike other ReadXXX methods,
@@ -197,6 +349,21 @@ public class MessageFrameIn: IDisposable
   {
     var size = ReadU16();
     return NextSlice(size);
+  }
+
+  /// <summary>
+  /// Read the next blob from the frame, by first reading
+  /// the two length bytes, then return a reference to the blob
+  /// of that length. Beware that unlike other TakeXXX methods,
+  /// the returned value is only valid while this Frame buffer is
+  /// valid and then only until the next <see cref="Fill(Stream)"/>
+  /// or <see cref="Clear()"/>.
+  /// </summary>
+  public MessageFrameIn TakeBlob(out ReadOnlySpan<byte> blob)
+  {
+    var size = ReadU16();
+    blob = NextSlice(size);
+    return this;
   }
 
   /// <summary>
@@ -314,9 +481,10 @@ public class MessageFrameIn: IDisposable
   /// Rewind this buffer, leaving the content and length as-is,
   /// but reseting the position to the start.
   /// </summary>
-  public void Rewind()
+  public MessageFrameIn Rewind()
   {
     Position = 0;
+    return this;
   }
 
   /// <summary>

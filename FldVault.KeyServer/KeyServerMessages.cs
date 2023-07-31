@@ -142,11 +142,11 @@ public static class KeyServerMessages
   }
 
   /// <summary>
-  /// Read an uploaded key from the input frame, or the found key from a key response.
+  /// Read an uploaded key from the input frame.
   /// Then store it into the key chain and return the key ID
   /// </summary>
   /// <param name="frame">
-  /// The frame containing the key upload message or key response message
+  /// The frame containing the key upload message
   /// </param>
   /// <param name="keyChain">
   /// The key chain to store the key in
@@ -154,11 +154,41 @@ public static class KeyServerMessages
   /// <returns>
   /// The GUID of the key.
   /// </returns>
-  public static Guid ReadKey(this MessageFrameIn frame, KeyChain keyChain)
+  public static Guid ReadKeyUpload(this MessageFrameIn frame, KeyChain keyChain)
   {
     frame.Rewind();
     var mc = frame.ReadI32();
-    if(mc == KeyResponseCode || mc == KeyUploadCode)
+    if(mc == KeyUploadCode)
+    {
+      var span = frame.NextSlice(32);
+      using(var kb = new KeyBuffer(span))
+      {
+        keyChain.PutCopy(kb);
+        return kb.GetId();
+      }
+    }
+    throw new InvalidOperationException(
+      "Unsupported message code for key transfer");
+  }
+
+  /// <summary>
+  /// Read the found key from a key response.
+  /// Then store it into the key chain and return the key ID
+  /// </summary>
+  /// <param name="frame">
+  /// The frame containing the key response message
+  /// </param>
+  /// <param name="keyChain">
+  /// The key chain to store the key in
+  /// </param>
+  /// <returns>
+  /// The GUID of the key.
+  /// </returns>
+  public static Guid ReadKeyResponse(this MessageFrameIn frame, KeyChain keyChain)
+  {
+    frame.Rewind();
+    var mc = frame.ReadI32();
+    if(mc == KeyResponseCode)
     {
       var span = frame.NextSlice(32);
       using(var kb = new KeyBuffer(span))

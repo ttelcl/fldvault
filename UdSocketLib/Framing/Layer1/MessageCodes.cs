@@ -27,6 +27,12 @@ public static class MessageCodes
   public const int Unrecognized = 0x00000400;
 
   /// <summary>
+  /// Generic "error" response, including an error message (preceded
+  /// by two message blob length bytes)
+  /// </summary>
+  public const int ErrorText = 0x10000400;
+
+  /// <summary>
   /// Generic "not found" response (without any explanatory content)
   /// </summary>
   public const int NotFound = 0x00000404;

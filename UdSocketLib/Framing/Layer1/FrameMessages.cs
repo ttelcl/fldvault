@@ -111,6 +111,7 @@ public static class FrameMessages
       {
         case MessageCodes.RawText:
         case MessageCodes.RawJson:
+        case MessageCodes.ErrorText:
           message = frame.ReadString();
           return true;
         default:

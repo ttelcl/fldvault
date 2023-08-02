@@ -20,10 +20,9 @@ let rec run arglist =
     usage ""
     0  // program return status code to the operating system; 0 == "OK"
   | "serve" :: rest
+  | "server" :: rest
   | "run" :: rest ->
     rest |> AppServer.runServer
-  | "stop" :: rest ->
-    rest |> AppServer.runStop
   | x :: _ ->
     cp $"\frUnrecognized command \f0'\fo{x}\f0'."
     1

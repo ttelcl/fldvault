@@ -200,6 +200,25 @@ public static class KeyServerMessages
   }
 
   /// <summary>
+  /// Write an error message to the frame
+  /// </summary>
+  public static void WriteErrorResponse(this MessageFrameOut frame, string error)
+  {
+    frame
+      .Clear()
+      .AppendI32(MessageCodes.ErrorText)
+      .AppendString(error);
+  }
+
+  /// <summary>
+  /// Write an error message to the frame, derived from the exception type and message
+  /// </summary>
+  public static void WriteErrorResponse(this MessageFrameOut frame, Exception error)
+  {
+    frame.WriteErrorResponse(error.GetType().FullName + ": " + error.Message);
+  }
+
+  /// <summary>
   /// Write a key remove message into the output frame
   /// </summary>
   public static void WriteKeyRemove(this MessageFrameOut frame, Guid keyId)

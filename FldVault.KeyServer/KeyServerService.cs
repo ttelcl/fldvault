@@ -12,25 +12,28 @@ using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
 
+using UdSocketLib.Framing;
+using UdSocketLib.Framing.Layer1;
+
 namespace FldVault.KeyServer;
 
 /// <summary>
 /// The top level key server API.
 /// This does not include the actual running instance object. 
 /// </summary>
-public class KeyServerService: IDisposable
+public class KeyServerService
 {
   private readonly KeyChain _keyChain;
-  private bool _disposed;
 
   /// <summary>
   /// Create a new KeyServerService
   /// </summary>
   public KeyServerService(
+    KeyChain keyChain,
     string? socketName = null)
   {
     SocketPath = ResolveSocketPath(socketName);
-    _keyChain = new KeyChain();
+    _keyChain = keyChain;
   }
 
   /// <summary>
@@ -75,18 +78,6 @@ public class KeyServerService: IDisposable
         Directory.CreateDirectory(DefaultSocketFolder);
       }
       return Path.Combine(DefaultSocketFolder, socketName);
-    }
-  }
-
-  /// <summary>
-  /// Dispose the contained elements
-  /// </summary>
-  public void Dispose()
-  {
-    if(!_disposed)
-    {
-      _disposed = true;
-      _keyChain.Dispose();
     }
   }
 

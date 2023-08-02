@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
 
+using UdSocketLib.Communication;
 using UdSocketLib.Framing;
 using UdSocketLib.Framing.Layer1;
 
@@ -34,6 +35,7 @@ public class KeyServerService
   {
     SocketPath = ResolveSocketPath(socketName);
     _keyChain = keyChain;
+    SocketService = new UdSocketService(SocketPath);
   }
 
   /// <summary>
@@ -45,6 +47,11 @@ public class KeyServerService
   /// The key chain holding the keys to serve
   /// </summary>
   public KeyChain Keys => _keyChain;
+
+  /// <summary>
+  /// The socket service that is part of this KeyServerService
+  /// </summary>
+  public UdSocketService SocketService { get; init; }
 
   /// <summary>
   /// The default short name for the key server Unix Domain socket

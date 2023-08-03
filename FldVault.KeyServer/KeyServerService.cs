@@ -62,7 +62,7 @@ public class KeyServerService
   /// The folder where the key server socket is created by default
   /// </summary>
   public static string DefaultSocketFolder { get; } =
-    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".zvlt", "sockets");
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".zvlt", "sockets");
 
   /// <summary>
   /// Get the full path to the socket pseudo-file

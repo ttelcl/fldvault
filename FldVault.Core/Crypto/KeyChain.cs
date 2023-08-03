@@ -36,6 +36,11 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
+  /// Return the number of keys in the chain
+  /// </summary>
+  public int KeyCount => _store.Count;
+
+  /// <summary>
   /// Look up and return the key identified by the key. Do NOT dispose
   /// the returned value (if any), this KeyChain takes care of that.
   /// </summary>

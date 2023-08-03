@@ -41,6 +41,20 @@ public class KeyChain: IDisposable
   public int KeyCount => _store.Count;
 
   /// <summary>
+  /// Enumerate fingerprints for the keys in the key chain.
+  /// Each "fingerprint" is the first 13 characters of the key ID:
+  /// enough to verify a key is present, but not enough to reconstruct
+  /// the key id.
+  /// </summary>
+  public IEnumerable<string> EnumerateFingerprints()
+  {
+    return
+      _store
+        .Keys
+        .Select(key => key.ToString().Substring(0, 13));
+  }
+
+  /// <summary>
   /// Look up and return the key identified by the key. Do NOT dispose
   /// the returned value (if any), this KeyChain takes care of that.
   /// </summary>

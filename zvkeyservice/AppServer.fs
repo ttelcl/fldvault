@@ -104,6 +104,15 @@ let private serveApp o =
       // actually is relatively not-ugly ...
       cp $"\fyStopped\f0!"
     cp $"Exit stats: there were %d{keyChain.KeyCount} keys in the server."
+    let fingerprints =
+      keyChain.EnumerateFingerprints()
+      |> Seq.toArray
+      |> Array.sort
+    for fingerprint in fingerprints do
+      if fingerprint = "ad7a6866-62f8" then
+        cp $"  \fC{fingerprint}\f0  (null key)."
+      else
+        cp $"  \fG{fingerprint}\f0."
     0
   else
     cp "\frServer startup aborted\f0."

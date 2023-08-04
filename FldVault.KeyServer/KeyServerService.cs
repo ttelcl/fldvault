@@ -24,8 +24,6 @@ namespace FldVault.KeyServer;
 /// </summary>
 public class KeyServerService
 {
-  private readonly KeyChain _keyChain;
-
   /// <summary>
   /// Create a new KeyServerService
   /// </summary>
@@ -34,7 +32,6 @@ public class KeyServerService
     string? socketName = null)
   {
     SocketPath = ResolveSocketPath(socketName);
-    _keyChain = keyChain;
     SocketService = new UdSocketService(SocketPath);
   }
 
@@ -42,11 +39,6 @@ public class KeyServerService
   /// The full path to the socket
   /// </summary>
   public string SocketPath { get; init; }
-
-  /// <summary>
-  /// The key chain holding the keys to serve
-  /// </summary>
-  public KeyChain Keys => _keyChain;
 
   /// <summary>
   /// The socket service that is part of this KeyServerService

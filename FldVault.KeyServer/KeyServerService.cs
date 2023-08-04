@@ -28,7 +28,6 @@ public class KeyServerService
   /// Create a new KeyServerService
   /// </summary>
   public KeyServerService(
-    KeyChain keyChain,
     string? socketName = null)
   {
     SocketPath = ResolveSocketPath(socketName);

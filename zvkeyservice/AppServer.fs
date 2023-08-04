@@ -81,7 +81,7 @@ let private serverloopAsync (service: KeyServerService) (ct: CancellationToken) 
   
 let private serveApp o =
   use keyChain = new KeyChain()
-  let service = new KeyServerService(keyChain, o.SocketPath)
+  let service = new KeyServerService(o.SocketPath)
   let canStart =
     if service.SocketPath |> File.Exists then
       cp $"\frKey server socket seems to be in use already\f0"

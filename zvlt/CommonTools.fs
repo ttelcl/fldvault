@@ -98,7 +98,7 @@ let splitNoDash args =
   | [] ->
     [], []
 
-let private consoleCancelToken =
+let public consoleCancelToken =
   let cts = new CancellationTokenSource()
   let token = cts.Token
   Console.CancelKeyPress.Add(

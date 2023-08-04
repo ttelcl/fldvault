@@ -81,7 +81,7 @@ public static class FrameMessages
   }
 
   /// <summary>
-  /// Try to read the message in the frame as a text or json message
+  /// Try to read the message in the frame as a text, error or json message
   /// </summary>
   /// <param name="frame">
   /// The frame to read from
@@ -90,8 +90,8 @@ public static class FrameMessages
   /// On success: the text of the recognized text message
   /// </param>
   /// <param name="messageCode">
-  /// On success: the recognized message code (<see cref="MessageCodes.RawText"/>
-  /// or <see cref="MessageCodes.RawJson"/>).
+  /// On success: the recognized message code (<see cref="MessageCodes.RawText"/>,
+  /// <see cref="MessageCodes.ErrorText"/> or <see cref="MessageCodes.RawJson"/>).
   /// On failure, for a frame of sufficient size: the message code.
   /// On failure, for an empty frame: 0
   /// </param>

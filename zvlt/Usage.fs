@@ -21,10 +21,11 @@ let usage detail =
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
     cp ""
   if showSummary "key-serve" then
-    cp "\fozvlt key-serve [\fg-f\f0] \fc<file>\f0]"
+    cp "\fozvlt key-serve \f0[\fg-f\f0] \fc<file>\f0]"
     cp "  Send the key for the *.zvlt or *.pass.key-info file to the key server"
   if matchDetail "key-serve" then
     cp "  \fg-f \fc<file>\f0        The *.zvlt or *.pass.key-info to start serving the key for."
+    cp ""
   if showSummary "create" then
     cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0|\fg-null\f0]"
     cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"

@@ -28,6 +28,12 @@ let rec run arglist =
   | "key" :: "new" :: rest
   | "key-new" :: rest ->
     rest |> NewKeyApp.runNewKey
+  | "serve" :: rest
+  | "key" :: "serve" :: rest
+  | "upload" :: rest
+  | "key" :: "upload" :: rest
+  | "key-serve" :: rest ->
+    rest |> KeyServerApp.runKeyServe
   | "create" :: rest ->
     rest |> CreateApp.runCreate
   | "list" :: rest ->

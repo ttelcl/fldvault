@@ -73,15 +73,19 @@ let runKeyServe args =
     if file |> File.Exists then
       use keyChain = new KeyChain()
       let seedService = KeyUtilities.setupKeySeedService()
-      let folder, seed = resolveKey seedService file
-      let ok = seed.TryResolveKey keyChain
-      if ok then
-        let kss = KeyServer.createKeyService()
-        let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKey kss
-        if uploaded then 0 else 1
-      else
-        cp "Key retrieval failed"
+      let kss = KeyServer.createKeyService()
+      if kss.ServerAvailable |> not then
+        cp "\frError\f0: \foNo key server found\f0."
         1
+      else
+        let folder, seed = resolveKey seedService file
+        let ok = seed.TryResolveKey keyChain
+        if ok then
+          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKey kss
+          if uploaded then 0 else 1
+        else
+          cp "Key retrieval failed"
+          1
     else
       cp $"\frFile not found\f0: \fo{file}\f0."
       1

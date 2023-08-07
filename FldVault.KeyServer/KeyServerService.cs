@@ -45,6 +45,12 @@ public class KeyServerService
   public UdSocketService SocketService { get; init; }
 
   /// <summary>
+  /// Check if the key server app is available (or more precisely:
+  /// if the server socket exists)
+  /// </summary>
+  public bool ServerAvailable { get => File.Exists(SocketPath); }
+
+  /// <summary>
   /// The default short name for the key server Unix Domain socket
   /// </summary>
   public const string DefaultSocketName = "zvlt-keyserver.sock";

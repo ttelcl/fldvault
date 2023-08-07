@@ -32,14 +32,36 @@ let private stamp () =
 
 let readMessageCode (frameIn:MessageFrameIn) = frameIn.MessageCode()
 
-let private processMessage (service: KeyServerService) frameIn (frameOut: MessageFrameOut) =
+let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameOut) =
   let msgCode = frameIn |> readMessageCode
   match msgCode with
+  | KeyServerMessages.KeyUploadCode ->
+    let keyId = frameIn.ReadKeyUpload keyChain
+    cp $"Key upload imported: \fg{keyId}\f0."
+    frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode)
+  | KeyServerMessages.KeyRemoveCode ->
+    let keyId = frameIn.ReadKeyRemove()
+    let deleted = keyId |> keyChain.Delete
+    if deleted then
+      cp $"\foKey to delete was not found\f0: \fy{keyId}\f0."
+      frameOut.WriteNoContentMessage(KeyServerMessages.KeyNotFoundCode)
+    else
+      cp $"Key deleted: \fr{keyId}\f0."
+      frameOut.WriteNoContentMessage(KeyServerMessages.KeyRemovedCode)
+  | KeyServerMessages.KeyRequestCode ->
+    let keyId = frameIn.ReadKeyRequest()
+    let key = keyChain.FindDirect(keyId)
+    if key = null then
+      cp $"\foKey not found\f0: \fy{keyId}\f0."
+      frameOut.WriteNoContentMessage(KeyServerMessages.KeyNotFoundCode)
+    else
+      cp $"Key found \fg{keyId}\f0."
+      key |> frameOut.WriteKeyResponse
   | _ ->
-    cp "\foUnrecognized message\f0."
+    cp $"\foUnrecognized message \fc0x%08X{msgCode}\f0."
     frameOut.WriteNoContentMessage(MessageCodes.Unrecognized)
 
-let private serveOneClientAsync (service: KeyServerService) (connection: UdSocketServer) (ct: CancellationToken) =
+let private serveOneClientAsync (keyChain: KeyChain) (connection: UdSocketServer) (ct: CancellationToken) =
   task {
     // This version allocates new frames for each request
     use frameIn = new MessageFrameIn()
@@ -50,7 +72,7 @@ let private serveOneClientAsync (service: KeyServerService) (connection: UdSocke
       let msgId = frameIn |> readMessageCode
       cp $"Received message \fc%08X{msgId}\f0."
       try
-        processMessage service frameIn frameOut
+        processMessage keyChain frameIn frameOut
       with
       | :? OperationCanceledException as oce ->
         cp "\frCanceled\f0!"
@@ -67,7 +89,7 @@ let private serveOneClientAsync (service: KeyServerService) (connection: UdSocke
       cp $"\frReceive error\f0. \foAborting this connection\f0."
   }
 
-let private serverloopAsync (service: KeyServerService) (ct: CancellationToken) =
+let private serverloopAsync (service: KeyServerService) (keyChain: KeyChain) (ct: CancellationToken) =
   task {
     let socketService = service.SocketService
     use listener = socketService.StartServer(16)
@@ -75,7 +97,7 @@ let private serverloopAsync (service: KeyServerService) (ct: CancellationToken) 
     while ct.IsCancellationRequested |> not do
       cp "\fkWaiting for connection\f0."
       use! connection = ct |> listener.AcceptAsync
-      do! serveOneClientAsync service connection ct
+      do! serveOneClientAsync keyChain connection ct
       ()
   }
   
@@ -94,7 +116,7 @@ let private serveApp o =
   if canStart then  
     cp $"Starting key server on socket '\fg{service.SocketPath}\f0'"
     // service |> listenLoop
-    let loopTask = serverloopAsync service CommonTools.consoleCancelToken
+    let loopTask = serverloopAsync service keyChain CommonTools.consoleCancelToken
     try
       loopTask.Wait()
     with
@@ -110,9 +132,9 @@ let private serveApp o =
       |> Array.sort
     for fingerprint in fingerprints do
       if fingerprint = "ad7a6866-62f8" then
-        cp $"  \fC{fingerprint}\f0  (null key)."
+        cp $"  \fC{fingerprint}-...\f0  (null key)."
       else
-        cp $"  \fG{fingerprint}\f0."
+        cp $"  \fG{fingerprint}-...\f0."
     0
   else
     cp "\frServer startup aborted\f0."

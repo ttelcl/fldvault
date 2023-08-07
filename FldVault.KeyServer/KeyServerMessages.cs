@@ -77,7 +77,7 @@ public static class KeyServerMessages
   {
     frame
       .Rewind()
-      .ValidateI32(KeyUploadCode, "Internal error: Incorrect message code")
+      .ValidateI32(KeyRequestCode, "Internal error: Incorrect message code")
       .TakeGuid(out var guid)
       .EnsureFullyRead();
     return guid;
@@ -216,6 +216,28 @@ public static class KeyServerMessages
   public static void WriteErrorResponse(this MessageFrameOut frame, Exception error)
   {
     frame.WriteErrorResponse(error.GetType().FullName + ": " + error.Message);
+  }
+
+  /// <summary>
+  /// Read the key to remove from the key remove message in the frame
+  /// </summary>
+  /// <param name="frame">
+  /// The frame holding the received message
+  /// </param>
+  /// <returns>
+  /// The extracted GUID
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// Something went wrong: The frame's message code was wrong or the frame content was too short.
+  /// </exception>
+  public static Guid ReadKeyRemove(this MessageFrameIn frame)
+  {
+    frame
+      .Rewind()
+      .ValidateI32(KeyRemoveCode, "Internal error: Incorrect message code")
+      .TakeGuid(out var guid)
+      .EnsureFullyRead();
+    return guid;
   }
 
   /// <summary>

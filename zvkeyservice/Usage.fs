@@ -8,7 +8,7 @@ let usage detail =
   cp "\foZVLT key server\f0 (pseudo-service)"
   cp ""
   cp "\fozvkeyservice serve\f0 [\fg-s \fc<path>\f0] [\fg-F\f0]"
-  cp " Run the key service"
+  cp " Run the key service (aliases: \foserver\f0, \forun\f0)"
   cp " \fg-s \fc<path>\f0   Use a non-standard socket for communication"
   cp " \fg-F\f0\fx          (or \fg-force\f0) Try to replace a broken server"
   cp ""

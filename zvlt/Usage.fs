@@ -21,18 +21,19 @@ let usage detail =
     cp "  \fg-dv \fc<directory>\f0  The folder where the key will be used."
     cp ""
   if showSummary "key-serve" then
-    cp "\fozvlt key-serve \f0[\fg-f\f0] \fc<file>\f0]"
-    cp "  Send the key for the *.zvlt or *.pass.key-info file to the key server"
+    cp "\fozvlt key-serve \f0[\fg-f\f0] \fc<file>\f0 "
+    cp "  Send the key for the \fb*.zvlt\f0 or \fb*.key-info\f0 file to the key server"
+    cp "  (aliases: \foserve\f0, \foupload\f0)"
   if matchDetail "key-serve" then
-    cp "  \fg-f \fc<file>\f0        The *.zvlt or *.pass.key-info to start serving the key for."
+    cp "  \fg-f \fc<file>\f0        The file to start serving the key for."
     cp ""
   if showSummary "create" then
     cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0|\fg-null\f0]"
-    cp "  Create a new empty vault file. The key is taken from an existing \fb*.key-info\f0"
-    cp "  or \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
+    cp "  Create a new empty vault file (\fb*.zvlt\f0). The key is taken from an existing \fb*.key-info\f0"
+    cp "  or another \fb*.zvlt\f0 file. To use a new key call \fozvlt key-new\f0 first."
   if matchDetail "create" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the new vault file. Created in the same folder as the"
-    cp "                            key file, unless you include a path."
+    cp "  \fx\fx\fx                 key file, unless you include a path."
     cp "  \fg-key \fc<id>\f0        The first few characters of the name of an existing \fb*.key-info\f0"
     cp "  \fx     \fx    \fx        file in the same folder as the new vault file."
     cp "  \fg-kf \fc<other.zvlt>\f0 The existing vault file providing the key for the new vault."
@@ -55,7 +56,7 @@ let usage detail =
     cp "  (ignoring fields 'size', 'name' and 'stamp')"
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
     cp "  \fg-f \fc<file>\f0        The name of the file to append. Repeatable. \fkThe original path is ignored\f0."
-    cp "                            The file (but not the folder) can include wildcards."
+    cp "  \fx\fx\fx                 The file (but not the folder) can include wildcards."
     cp "  \fg-p \fc<path>\f0        The path to store with subsequent files. Use \fg-p \fc.\f0 to reset."
     cp "  \fg-z \fcoff\f0           Subsequent files will not be compressed"
     cp "  \fg-z \fcon\f0            Subsequent files will be compressed"
@@ -63,8 +64,8 @@ let usage detail =
     cp "  \fg-n \fc<name>\f0        Override the name to use for the preceding file (\fg-f\f0)"
     cp ""
   if showSummary "extract" then
-    cpx "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0] [\fg-meta \fcauto\f0|\fcnone\f0|\fcall\f0|\fconly\f0|\fcview\f0]"
-    cp " [\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
+    cp "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0] [\fg-meta \fcauto\f0|\fcnone\f0|\fcall\f0|\fconly\f0|\fcview\f0]"
+    cp "[\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
     cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to extract content from"

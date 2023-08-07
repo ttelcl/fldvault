@@ -62,6 +62,19 @@ public static class KeyServerMessages
   public const int KeyRemovedCode = MessageCodes.OkNoContent;
 
   /// <summary>
+  /// Request and response for checking which keys in a list of key guids
+  /// are present in the server. The response contains the subset of keys
+  /// that is present. This is a variable length message.
+  /// </summary>
+  public const int KeyPresenceListCode = 0x10010004;
+
+  /// <summary>
+  /// Request for the server to log diagnostics. The caller receives a plain
+  /// <see cref="MessageCodes.OkNoContent"/> as response.
+  /// </summary>
+  public const int ServerDiagnosticsCode = 0x00010005;
+
+  /// <summary>
   /// Read the key to look up from the key request message in the frame
   /// </summary>
   /// <param name="frame">

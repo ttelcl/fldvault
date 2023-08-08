@@ -61,7 +61,7 @@ let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameO
     let keysRequested = frameIn.ReadKeyPresence()
     let keysFound = keysRequested |> Seq.filter keyChain.ContainsKey |> Seq.toArray
     cp $"Key presence check: \fg{keysFound.Length}\f0 of \fb{keysRequested.Count}\f0 are present."
-    frameOut.WriteKeyPresence(keysFound)
+    frameOut.WriteKeyPresence(keysFound) |> ignore
   | _ ->
     cp $"\foUnrecognized message \fc0x%08X{msgCode}\f0."
     frameOut.WriteNoContentMessage(MessageCodes.Unrecognized)

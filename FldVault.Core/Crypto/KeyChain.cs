@@ -55,6 +55,11 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
+  /// Returns true if <paramref name="key"/> is present in this store
+  /// </summary>
+  public bool ContainsKey(Guid key) => _store.ContainsKey(key);
+
+  /// <summary>
   /// Look up and return the key identified by the key. Do NOT dispose
   /// the returned value (if any), this KeyChain takes care of that.
   /// </summary>
@@ -90,6 +95,21 @@ public class KeyChain: IDisposable
     else
     {
       return null;
+    }
+  }
+
+  /// <summary>
+  /// Copy all keys in this store that are not already present
+  /// in <paramref name="destination"/> to that destination.
+  /// </summary>
+  public void CopyAllTo(KeyChain destination)
+  {
+    foreach(var kvp in _store)
+    {
+      if(!destination.ContainsKey(kvp.Key))
+      {
+        destination.PutCopy(kvp.Value);
+      }
     }
   }
 

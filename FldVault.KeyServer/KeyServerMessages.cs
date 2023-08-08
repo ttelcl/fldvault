@@ -254,6 +254,56 @@ public static class KeyServerMessages
   }
 
   /// <summary>
+  /// Read a key presence request or response
+  /// </summary>
+  /// <param name="frame">
+  /// The frame to read from
+  /// </param>
+  /// <returns>
+  /// A list of the key ids in the messaage
+  /// </returns>
+  public static List<Guid> ReadKeyPresence(this MessageFrameIn frame)
+  {
+    frame
+      .Rewind()
+      .ValidateI32(KeyPresenceListCode, "Internal error: Incorrect message code");
+    var list = new List<Guid>();
+    while(frame.Space > 0)
+    {
+      var guid = frame.ReadGuid();
+      list.Add(guid);
+    }
+    frame.EnsureFullyRead();
+    return list;
+  }
+
+  /// <summary>
+  /// Write a key presence request or reponse
+  /// </summary>
+  /// <param name="frame">
+  /// The frame to write to
+  /// </param>
+  /// <param name="keys">
+  /// The key ids to write (possibly none)
+  /// </param>
+  /// <returns>
+  /// The number of keys written into the message
+  /// </returns>
+  public static int WriteKeyPresence(this MessageFrameOut frame, IEnumerable<Guid> keys)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyPresenceListCode);
+    var n = 0;
+    foreach(var guid in keys)
+    {
+      frame.AppendGuid(guid);
+      n++;
+    }
+    return n;
+  }
+
+  /// <summary>
   /// Write a key remove message into the output frame
   /// </summary>
   public static void WriteKeyRemove(this MessageFrameOut frame, Guid keyId)

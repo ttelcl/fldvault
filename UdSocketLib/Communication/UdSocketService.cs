@@ -34,7 +34,7 @@ namespace UdSocketLib.Communication
     public string SocketPath { get; init; }
 
     /// <summary>
-    /// Create a client connected to the socket.
+    /// Create a client connected to the socket (asynchronously).
     /// </summary>
     public async Task<UdSocketClient> ConnectClientAsync(CancellationToken cancellationToken)
     {
@@ -44,6 +44,26 @@ namespace UdSocketLib.Communication
       {
         socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
         await socket.ConnectAsync(endPoint, cancellationToken);
+        return new UdSocketClient(this, socket);
+      }
+      catch(Exception)
+      {
+        socket?.Dispose();
+        throw;
+      }
+    }
+
+    /// <summary>
+    /// Create a client connected to the socket (synchronously, blocking).
+    /// </summary>
+    public UdSocketClient ConnectClientSync()
+    {
+      var endPoint = new UnixDomainSocketEndPoint(SocketPath);
+      Socket? socket = null;
+      try
+      {
+        socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.IP);
+        socket.Connect(endPoint);
         return new UdSocketClient(this, socket);
       }
       catch(Exception)

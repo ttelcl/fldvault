@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
@@ -46,7 +47,7 @@ public class NullSeedService: IKeySeedService
   {
     public Guid KeyId { get => NullKey.NullKeyId; }
 
-    public bool TryResolveKey(KeyChain keyChain)
+    public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
     {
       var existingKey = keyChain.FindCopy(KeyId);
       if(existingKey != null)

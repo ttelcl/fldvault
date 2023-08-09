@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
@@ -83,14 +84,26 @@ public class KeyServerSeedService: IKeySeedService
     }
 
     /// <inheritdoc/>
-    public bool TryResolveKey(KeyChain keyChain)
+    public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
     {
       if(!_owner.Enabled || !_owner.ServerService.ServerAvailable)
       {
         return false;
       }
-      //var task = _owner.ServerService.LookupKeyAsync()
-      throw new NotImplementedException("NYI - how to get the ct here???");
+      using(var chain2 = new KeyChain())
+      {
+        var task = _owner.ServerService.LookupKeyAsync(KeyId, chain2, ct);
+        task.Wait(ct);
+        if(task.Result)
+        {
+          chain2.CopyAllTo(keyChain);
+          return true;
+        }
+        else
+        {
+          return false;
+        }
+      }
     }
 
     /// <inheritdoc/>

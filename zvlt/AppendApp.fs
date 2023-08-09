@@ -122,7 +122,7 @@ let runAppend args =
     let vaultFile = VaultFile.Open(o.VaultFile)
     use keyChain = new KeyChain()
     let seedService = KeyUtilities.setupKeySeedService()
-    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
+    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain consoleCancelToken
     use cryptor = vaultFile.CreateCryptor(keyChain)
     let targets = o.Files |> List.map pathFileToFileTarget
     let alreadyAdded =

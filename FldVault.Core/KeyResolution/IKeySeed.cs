@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
@@ -32,10 +33,14 @@ public interface IKeySeed
   /// The key chain to put the result in. This may also be used to access
   /// related keys and store intermediate keys.
   /// </param>
+  /// <param name="ct">
+  /// The cancelllation token to observe, enabling well behaved aborting of
+  /// long-running key resolutions.
+  /// </param>
   /// <returns>
   /// True if the key was successfully loaded into the key chain
   /// </returns>
-  bool TryResolveKey(KeyChain keyChain);
+  bool TryResolveKey(KeyChain keyChain, CancellationToken ct);
 
   /// <summary>
   /// Write this key identification info as a block in the given blockstream,

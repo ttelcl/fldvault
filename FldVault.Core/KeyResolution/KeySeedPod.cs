@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
@@ -64,18 +65,18 @@ public class KeySeedPod: IKeySeed, IKeySeed<IReadOnlyList<IKeySeed>>
   }
 
   /// <summary>
-  /// Implements <see cref="IKeySeed.TryResolveKey(KeyChain)"/> by trying
+  /// Implements <see cref="IKeySeed.TryResolveKey(KeyChain,CancellationToken)"/> by trying
   /// the embedded key seeds one by one, after first checking if the seed
   /// is already in the chain
   /// </summary>
-  public bool TryResolveKey(KeyChain keyChain)
+  public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
   {
     var existingKey = keyChain.FindCopy(KeyId);
     if(existingKey != null)
     {
       return true;
     }
-    return _seeds.Any(seed => seed.TryResolveKey(keyChain));
+    return _seeds.Any(seed => seed.TryResolveKey(keyChain, ct));
   }
 
   /// <summary>

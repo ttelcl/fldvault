@@ -233,7 +233,7 @@ let runUnlockKey args =
       0
     else
       cp $"Key \fg{seed.KeyId}\f0 is currently \fbLocked\f0"
-      let ok = seed.TryResolveKey keyChain
+      let ok = seed.TryResolveKey(keyChain, consoleCancelToken)
       if ok then
         let pk = seed.KeyId |> keyChain.FindDirect
         if pk = null then

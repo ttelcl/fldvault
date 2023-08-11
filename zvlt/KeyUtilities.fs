@@ -77,11 +77,11 @@ let setupkeySeedServiceEx includeUnlock (kss: KeyServerService) includePassphras
   |> addConditional includePassphrase addPassphraseKeySeedService
   |> completeKeySeedService
 
-let hatchKeyIntoChain (seedService: IKeySeedService) vaultFile keyChain ct =
+let hatchKeyIntoChain (seedService: IKeySeedService) vaultFile keyChain =
   let seed = vaultFile |> seedService.TryCreateSeedForVault
   if seed = null then
     failwith $"Insufficient information to locate key '{vaultFile.KeyId}'"
-  if seed.TryResolveKey(keyChain, ct) |> not then
+  if seed.TryResolveKey(keyChain) |> not then
     failwith $"Key not found or not available: '{vaultFile.KeyId}'"
 
 let trySeedFromKeyInfoFile (seedService: IKeySeedService) keyInfoFile =

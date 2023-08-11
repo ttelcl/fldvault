@@ -33,14 +33,10 @@ public interface IKeySeed
   /// The key chain to put the result in. This may also be used to access
   /// related keys and store intermediate keys.
   /// </param>
-  /// <param name="ct">
-  /// The cancelllation token to observe, enabling well behaved aborting of
-  /// long-running key resolutions.
-  /// </param>
   /// <returns>
   /// True if the key was successfully loaded into the key chain
   /// </returns>
-  bool TryResolveKey(KeyChain keyChain, CancellationToken ct);
+  bool TryResolveKey(KeyChain keyChain);
 
   /// <summary>
   /// Write this key identification info as a block in the given blockstream,

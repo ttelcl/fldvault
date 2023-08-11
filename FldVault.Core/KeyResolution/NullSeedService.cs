@@ -47,7 +47,7 @@ public class NullSeedService: IKeySeedService
   {
     public Guid KeyId { get => NullKey.NullKeyId; }
 
-    public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
+    public bool TryResolveKey(KeyChain keyChain)
     {
       var existingKey = keyChain.FindCopy(KeyId);
       if(existingKey != null)

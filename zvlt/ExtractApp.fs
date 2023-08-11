@@ -155,7 +155,7 @@ let runExtract args =
         File.Delete(outProbe)
     use keyChain = new KeyChain()
     let seedService = KeyUtilities.setupKeySeedService()
-    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain consoleCancelToken
+    KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)
     let makeVcf ibe =

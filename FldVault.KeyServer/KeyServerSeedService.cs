@@ -84,7 +84,7 @@ public class KeyServerSeedService: IKeySeedService
     }
 
     /// <inheritdoc/>
-    public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
+    public bool TryResolveKey(KeyChain keyChain)
     {
       if(!_owner.Enabled || !_owner.ServerService.ServerAvailable)
       {

@@ -69,7 +69,7 @@ public class KeyStoreSeedService: IKeySeedService
     /// </summary>
     public IKeyCacheStore KeyDetail { get => KeyCacheStore; }
 
-    public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
+    public bool TryResolveKey(KeyChain keyChain)
     {
       var existingKey = keyChain.FindCopy(KeyId);
       if(existingKey != null)

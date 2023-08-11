@@ -65,18 +65,18 @@ public class KeySeedPod: IKeySeed, IKeySeed<IReadOnlyList<IKeySeed>>
   }
 
   /// <summary>
-  /// Implements <see cref="IKeySeed.TryResolveKey(KeyChain,CancellationToken)"/> by trying
+  /// Implements <see cref="IKeySeed.TryResolveKey(KeyChain)"/> by trying
   /// the embedded key seeds one by one, after first checking if the seed
   /// is already in the chain
   /// </summary>
-  public bool TryResolveKey(KeyChain keyChain, CancellationToken ct)
+  public bool TryResolveKey(KeyChain keyChain)
   {
     var existingKey = keyChain.FindCopy(KeyId);
     if(existingKey != null)
     {
       return true;
     }
-    return _seeds.Any(seed => seed.TryResolveKey(keyChain, ct));
+    return _seeds.Any(seed => seed.TryResolveKey(keyChain));
   }
 
   /// <summary>

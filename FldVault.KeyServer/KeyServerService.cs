@@ -52,7 +52,7 @@ public class KeyServerService
   public bool ServerAvailable { get => File.Exists(SocketPath); }
 
   /// <summary>
-  /// Try to get the key from the key server. Fails if the key is not
+  /// Try to asynchronously get the key from the key server. Fails if the key is not
   /// present or if there is no key server. On success, the key is
   /// inserted in <paramref name="temporaryChain"/>.
   /// IMPORTANT! In the current implementation KeyChain is not thread
@@ -87,6 +87,58 @@ public class KeyServerService
       await client.SendFrameAsync(frameOut, ct);
       var frameIn = new MessageFrameIn();
       var receiveOk = await client.TryFillFrameAsync(frameIn, ct);
+      if(!receiveOk)
+      {
+        return false;
+      }
+      var messageCode = frameIn.MessageCode();
+      switch(messageCode)
+      {
+        case KeyServerMessages.KeyNotFoundCode:
+          return false;
+        case KeyServerMessages.KeyResponseCode:
+          frameIn.ReadKeyResponse(temporaryChain);
+          return true;
+        default:
+          throw new InvalidOperationException(
+            $"Unexpected response from server: 0x{messageCode:X08}");
+      }
+    }
+  }
+
+  /// <summary>
+  /// Try to synchronously get the key from the key server. Fails if the key is not
+  /// present or if there is no key server. On success, the key is
+  /// inserted in <paramref name="temporaryChain"/>.
+  /// IMPORTANT! In the current implementation KeyChain is not thread
+  /// safe. Therefore this must be a temporary key chain.
+  /// </summary>
+  /// <param name="keyId">
+  /// The key to retrieve
+  /// </param>
+  /// <param name="temporaryChain">
+  /// The buffer where the key is stored if found.
+  /// IMPORTANT! In the current implementation KeyChain is not thread
+  /// safe. Therefore this must be a temporary key chain.
+  /// </param>
+  /// <returns></returns>
+  public bool LookupKeySync(Guid keyId, KeyChain temporaryChain)
+  {
+    if(!ServerAvailable)
+    {
+      return false;
+    }
+    using(var client = SocketService.ConnectClientSync())
+    {
+      if(client == null)
+      {
+        return false;
+      }
+      var frameOut = new MessageFrameOut();
+      frameOut.WriteKeyRequest(keyId);
+      client.SendFrameSync(frameOut);
+      var frameIn = new MessageFrameIn();
+      var receiveOk = client.TryFillFrameSync(frameIn);
       if(!receiveOk)
       {
         return false;

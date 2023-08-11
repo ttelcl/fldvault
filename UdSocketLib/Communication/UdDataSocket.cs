@@ -47,4 +47,21 @@ public abstract class UdDataSocket: UdSocketBase
     return frame.EmitAsync(Socket, cancellationToken);
   }
 
+  /// <summary>
+  /// Try to fill an input message frame from this data socket (read 1 message).
+  /// Returns true on success, false on EOF.
+  /// </summary>
+  public bool TryFillFrameSync(MessageFrameIn frame)
+  {
+    return frame.FillSync(Socket);
+  }
+
+  /// <summary>
+  /// Send an output message frame to the socket
+  /// </summary>
+  public void SendFrameSync(MessageFrameOut frame)
+  {
+    frame.EmitSync(Socket);
+  }
+
 }

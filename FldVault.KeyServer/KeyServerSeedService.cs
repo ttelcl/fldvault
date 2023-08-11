@@ -92,9 +92,8 @@ public class KeyServerSeedService: IKeySeedService
       }
       using(var chain2 = new KeyChain())
       {
-        var task = _owner.ServerService.LookupKeyAsync(KeyId, chain2, ct);
-        task.Wait(ct);
-        if(task.Result)
+        var ok = _owner.ServerService.LookupKeySync(KeyId, chain2);
+        if(ok)
         {
           chain2.CopyAllTo(keyChain);
           return true;

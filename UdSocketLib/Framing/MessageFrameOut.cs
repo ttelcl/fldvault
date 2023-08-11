@@ -259,6 +259,21 @@ public class MessageFrameOut: IDisposable
   }
 
   /// <summary>
+  /// Send the frame content asynchronously to a socket and clear the frame afterward
+  /// </summary>
+  public void EmitSync(Socket socket)
+  {
+    var header = new byte[2];
+    BinaryPrimitives.WriteUInt16LittleEndian(header, (ushort)Position);
+    socket.TryFullySendSync(header);
+    if(Position > 0)
+    {
+      socket.TryFullySendSync(_bytes.AsSpan(0, Position));
+    }
+    Clear();
+  }
+
+  /// <summary>
   /// Clear the buffer
   /// </summary>
   public MessageFrameOut Clear()

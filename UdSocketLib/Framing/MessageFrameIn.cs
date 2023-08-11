@@ -448,7 +448,7 @@ public class MessageFrameIn: IDisposable
       return false;
     }
     var length = BinaryPrimitives.ReadUInt16LittleEndian(lengthBuffer);
-    if(length == 0xFFFE)
+    if(length > 0xFFFE)
     {
       // abort marker
       return false;
@@ -464,6 +464,53 @@ public class MessageFrameIn: IDisposable
     {
       var m = new Memory<byte>(_bytes, 0, length);
       var ok = await socket.TryFullyReceiveAsync(m, cancellationToken);
+      if(ok)
+      {
+        Length = length;
+        return true;
+      }
+      else
+      {
+        throw new EndOfStreamException("Unexpected end of socket stream");
+      }
+    }
+    return true; // empty message
+  }
+
+  /// <summary>
+  /// Clear the buffer and try to fill it asynchronously from a Socket.
+  /// Returns true on success, false on EOF (or upon reading the termination marker).
+  /// </summary>
+  /// <param name="socket">
+  /// The socket to read from
+  /// </param>
+  public bool FillSync(Socket socket)
+  {
+    EnsureNotDisposed();
+    Clear();
+
+    Span<byte> lengthBuffer = stackalloc byte[2];
+    if(!socket.TryFullyReceiveSync(lengthBuffer))
+    {
+      // the other side closed the socket
+      return false;
+    }
+    var length = BinaryPrimitives.ReadUInt16LittleEndian(lengthBuffer);
+    if(length > 0xFFFE)
+    {
+      // abort marker
+      return false;
+    }
+    if(length > Capacity)
+    {
+      // resize!
+      Array.Clear(_bytes);
+      Capacity = length;
+      _bytes = new byte[Capacity];
+    }
+    if(length > 0)
+    {
+      var ok = socket.TryFullyReceiveSync(_bytes.AsSpan(0, length));
       if(ok)
       {
         Length = length;

@@ -66,6 +66,48 @@ public static class SocketUtility
   }
 
   /// <summary>
+  /// Synchronously receive data from the socket onto the buffer, repeatedly
+  /// until the buffer is filled. 
+  /// </summary>
+  /// <param name="socket">
+  /// The socket to read from
+  /// </param>
+  /// <param name="buffer">
+  /// The buffer to write to
+  /// </param>
+  /// <returns>
+  /// True if the buffer was completely filled.
+  /// False if the first read attempt indicated that there is nothing more to read.
+  /// </returns>
+  /// <exception cref="EndOfStreamException">
+  /// Thrown when some data was read, and subsequently the socket indicated that the
+  /// end of the stream was reached.
+  /// </exception>
+  public static bool TryFullyReceiveSync(
+    this Socket socket, Span<byte> buffer)
+  {
+    var offset = 0;
+    while(offset < buffer.Length)
+    {
+      var m = buffer[offset..];
+      var n = socket.Receive(m, SocketFlags.None);
+      if(n == 0)
+      {
+        if(offset > 0)
+        {
+          throw new EndOfStreamException("Unexpected end of socket stream");
+        }
+        else
+        {
+          return false;
+        }
+      }
+      offset += n;
+    }
+    return true;
+  }
+
+  /// <summary>
   /// Try to fully send the <paramref name="buffer"/> to the
   /// <paramref name="socket"/>.
   /// </summary>
@@ -86,6 +128,32 @@ public static class SocketUtility
     {
       var m = buffer[offset..];
       var n = await socket.SendAsync(m, SocketFlags.None, cancellationToken);
+      if(n == 0)
+      {
+        throw new EndOfStreamException("Cannot write to socket");
+      }
+      offset += n;
+    }
+  }
+
+  /// <summary>
+  /// Try to fully send the <paramref name="buffer"/> to the
+  /// <paramref name="socket"/>.
+  /// </summary>
+  /// <param name="socket">
+  /// The socket to send to
+  /// </param>
+  /// <param name="buffer">
+  /// The buffer holding the contents to send
+  /// </param>
+  public static void TryFullySendSync(
+    this Socket socket, ReadOnlySpan<byte> buffer)
+  {
+    var offset = 0;
+    while(offset < buffer.Length)
+    {
+      var m = buffer[offset..];
+      var n = socket.Send(m, SocketFlags.None);
       if(n == 0)
       {
         throw new EndOfStreamException("Cannot write to socket");

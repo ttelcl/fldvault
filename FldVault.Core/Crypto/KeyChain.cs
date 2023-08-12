@@ -20,7 +20,7 @@ public class KeyChain: IDisposable
 {
   private readonly object _lock = new object();
   private readonly Dictionary<Guid, KeyBuffer> _store;
-  private static readonly List<KeyBuffer> __wellKnownKeys = new List<KeyBuffer> { 
+  private static readonly List<KeyBuffer> __wellKnownKeys = new List<KeyBuffer> {
     new NullKey(),
   };
 
@@ -39,7 +39,14 @@ public class KeyChain: IDisposable
   /// <summary>
   /// Return the number of keys in the chain
   /// </summary>
-  public int KeyCount => _store.Count;
+  public int KeyCount {
+    get {
+      lock(_lock)
+      {
+        return _store.Count;
+      }
+    }
+  }
 
   /// <summary>
   /// Enumerate fingerprints for the keys in the key chain.
@@ -110,6 +117,68 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
+  /// Try to find the key, and if found, invoke <paramref name="keyAction"/> and return true.
+  /// If not found return false.
+  /// This method allows using a key in an action, without copying the key to a temporary buffer.
+  /// </summary>
+  /// <param name="keyId">
+  /// The id of the key to find
+  /// </param>
+  /// <param name="keyAction">
+  /// The Action to invoke on the key id and the the key bytes, if found.
+  /// </param>
+  /// <returns>
+  /// True if the key was found and the action was invoked, false if the key was not found.
+  /// </returns>
+  /// <seealso cref="TryMapKey{T}(Guid, Func{Guid, IBytesWrapper, T})"/>
+  public bool TryUseKey(Guid keyId, Action<Guid, IBytesWrapper> keyAction)
+  {
+    KeyBuffer kb;
+    lock(_lock)
+    {
+      if(!_store.TryGetValue(keyId, out kb!))
+      {
+        return false;
+      }
+    }
+    keyAction(keyId, kb);
+    return true;
+  }
+
+  /// <summary>
+  /// Try to find the key, and if found, invoke <paramref name="keyFunction"/> and return its
+  /// return value.
+  /// If not found return null.
+  /// This method allows using a key in a function, without copying the key to a temporary buffer.
+  /// </summary>
+  /// <typeparam name="T">
+  /// The return value of the function, which must be a non-value type (so that this method
+  /// can return null as a marker)
+  /// </typeparam>
+  /// <param name="keyId">
+  /// The ID of the key to find
+  /// </param>
+  /// <param name="keyFunction">
+  /// The function that receives the key ID and key content as argument
+  /// </param>
+  /// <returns>
+  /// The return value from the function if the key was found, or null if not found
+  /// </returns>
+  /// <seealso cref="TryUseKey(Guid, Action{Guid, IBytesWrapper})"/>
+  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T: class
+  {
+    KeyBuffer kb;
+    lock(_lock)
+    {
+      if(!_store.TryGetValue(keyId, out kb!))
+      {
+        return null;
+      }
+    }
+    return keyFunction(keyId, kb);
+  }
+
+  /// <summary>
   /// Copy all keys in this store that are not already present
   /// in <paramref name="destination"/> to that destination.
   /// </summary>
@@ -126,7 +195,10 @@ public class KeyChain: IDisposable
       {
         using(var kb = FindCopy(keyId))
         {
-          destination.PutCopy(kb);
+          if(kb != null)
+          {
+            destination.PutCopy(kb);
+          }
         }
       }
     }

@@ -223,6 +223,10 @@ public class VaultCryptoTests
         byte[] key4 = k.Bytes.ToArray();
         Assert.Equal(key1, key4);
       }
+      keychain.TryUseKey(id1, (kid, ibw) => {
+        byte[] key5 = ibw.Bytes.ToArray();
+        Assert.Equal(key1, key5);
+      });
     }
   }
 

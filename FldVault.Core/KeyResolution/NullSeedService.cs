@@ -49,8 +49,7 @@ public class NullSeedService: IKeySeedService
 
     public bool TryResolveKey(KeyChain keyChain)
     {
-      var existingKey = keyChain.FindCopy(KeyId);
-      if(existingKey != null)
+      if(keyChain.ContainsKey(KeyId))
       {
         // This normally should trigger, unless the null key was explicitly
         // removed from the key chain.

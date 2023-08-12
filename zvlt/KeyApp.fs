@@ -161,7 +161,7 @@ let runCheckKey args =
       if keyServer.ServerAvailable then
         new KeyServerSeedService(keyServer)
       else
-        cp "\foKey server not available\f0."
+        // cp "\foKey server not available\f0."
         null
     if serverSeedService <> null then
       serverSeedService |> seedService.AddSeedService |> ignore
@@ -176,19 +176,25 @@ let runCheckKey args =
       cp $"Key \fg{seed.KeyId}\f0"
     let foundKey = keyChain.ImportKey(seed.KeyId, unlockCache)
     let lockStatus = if foundKey then "\foUnlocked\f0" else "\fbLocked\f0"
-    cp $"  Lock status: {lockStatus}"
+    cp $"   Lock status: {lockStatus}"
     if seed.KeyId = NullKey.NullKeyId then
-      cp $"     Key Kind: \fonull key\f0."
+      cp $"      Key Kind: \fonull key\f0."
       cp "\fyThe \fonull key\fy is always available and doesn't support any further checking\f0."
       0
     else
+      if serverSeedService <> null then
+        let present = seed.KeyId |> KeyServer.checkKeyPresence1 keyServer
+        let serverStatus = if present then "\fgAvailable\f0" else "\foMissing\f0"
+        cp $" Server status: {serverStatus}."
+      else
+        cp $" Server status: \foKey server is not running\f0."
       let passphraseSeeds = seed.TryAdapt<PassphraseKeyInfoFile>() |> Seq.toArray
       match passphraseSeeds.Length with
       | 0 ->
         cp "No passphrase entries to validate found for this key."
         0
       | 1 ->
-        cp $"     Key Kind: \fgpassphrase based key\f0."
+        cp $"      Key Kind: \fgpassphrase based key\f0."
         let pkif = passphraseSeeds[0].KeyDetail
         use keyCheck = KeyEntry.enterKey $"Enter passphrase for key '{pkif.KeyId}'" pkif.Salt
         let guidCheck = keyCheck.GetId()

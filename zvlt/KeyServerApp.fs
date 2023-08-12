@@ -82,7 +82,7 @@ let runKeyServe args =
         let folder, seed = resolveKey seedService file
         let ok = seed.TryResolveKey(keyChain)
         if ok then
-          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeyResync keyServer
+          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeySync keyServer
           if uploaded then 0 else 1
         else
           cp "Key retrieval failed"

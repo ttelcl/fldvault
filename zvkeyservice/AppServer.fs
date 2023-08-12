@@ -41,7 +41,7 @@ let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameO
     frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode)
   | KeyServerMessages.KeyRemoveCode ->
     let keyId = frameIn.ReadKeyRemove()
-    let deleted = keyId |> keyChain.Delete
+    let deleted = keyId |> keyChain.DeleteKey
     if deleted then
       cp $"\foKey to delete was not found\f0: \fy{keyId}\f0."
       frameOut.WriteNoContentMessage(KeyServerMessages.KeyNotFoundCode)
@@ -50,7 +50,7 @@ let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameO
       frameOut.WriteNoContentMessage(KeyServerMessages.KeyRemovedCode)
   | KeyServerMessages.KeyRequestCode ->
     let keyId = frameIn.ReadKeyRequest()
-    let key = keyChain.FindDirect(keyId)
+    use key = keyChain.FindCopy(keyId)
     if key = null then
       cp $"\foKey not found\f0: \fy{keyId}\f0."
       frameOut.WriteNoContentMessage(KeyServerMessages.KeyNotFoundCode)

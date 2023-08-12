@@ -20,9 +20,12 @@ open UdSocketLib.Framing.Layer1
 open ColorPrint
 open CommonTools
 
-let uploadKeySync (kss: KeyServerService) (keyBuffer: KeyBuffer) =
+let uploadKeySync (kss: KeyServerService) (keyChain: KeyChain) keyId =
   if kss.SocketPath |> File.Exists |> not then
     failwith "The key server is not running"
+  use keyBuffer = keyId |> keyChain.FindCopy
+  if keyBuffer = null then
+    failwith $"Key not present in the key chain: {keyId}"
   cp $"Uploading key \fg{keyBuffer.GetId()}\f0 to key server."
   let socketService = kss.SocketService
   use frameOut = new MessageFrameOut()

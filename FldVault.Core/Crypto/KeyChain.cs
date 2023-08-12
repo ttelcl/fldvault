@@ -18,8 +18,9 @@ namespace FldVault.Core.Crypto;
 /// </summary>
 public class KeyChain: IDisposable
 {
+  private readonly object _lock = new object();
   private readonly Dictionary<Guid, KeyBuffer> _store;
-  private static readonly List<KeyBuffer> __wellKnownKeys = new List<KeyBuffer> { 
+  private static readonly List<KeyBuffer> __wellKnownKeys = new List<KeyBuffer> {
     new NullKey(),
   };
 
@@ -38,64 +39,143 @@ public class KeyChain: IDisposable
   /// <summary>
   /// Return the number of keys in the chain
   /// </summary>
-  public int KeyCount => _store.Count;
+  public int KeyCount {
+    get {
+      lock(_lock)
+      {
+        return _store.Count;
+      }
+    }
+  }
 
   /// <summary>
   /// Enumerate fingerprints for the keys in the key chain.
   /// Each "fingerprint" is the first 13 characters of the key ID:
   /// enough to verify a key is present, but not enough to reconstruct
-  /// the key id.
+  /// the key id. [Thread safe]
   /// </summary>
   public IEnumerable<string> EnumerateFingerprints()
   {
-    return
-      _store
-        .Keys
-        .Select(key => key.ToString().Substring(0, 13));
+    List<Guid> keys;
+    lock(_lock)
+    {
+      keys = _store.Keys.ToList();
+    }
+    return keys.Select(key => key.ToString().Substring(0, 13));
   }
 
   /// <summary>
-  /// Returns true if <paramref name="key"/> is present in this store
+  /// Returns true if <paramref name="key"/> is present in this store.
+  /// [Thread safe]
   /// </summary>
-  public bool ContainsKey(Guid key) => _store.ContainsKey(key);
-
-  /// <summary>
-  /// Look up and return the key identified by the key. Do NOT dispose
-  /// the returned value (if any), this KeyChain takes care of that.
-  /// </summary>
-  public KeyBuffer? FindDirect(Guid guid)
+  public bool ContainsKey(Guid key)
   {
-    return _store.TryGetValue(guid, out var key) ? key : null;
+    lock(_lock)
+    {
+      return _store.ContainsKey(key);
+    }
   }
 
   /// <summary>
   /// Look up the key identified by the key and return a copy if found.
   /// DO dispose the returned value after use (if any).
+  /// [Thread safe]
   /// </summary>
   public KeyBuffer? FindCopy(Guid guid)
   {
-    var raw = FindDirect(guid);
-    return (raw != null) ? new KeyBuffer(raw.Bytes) : null;
+    lock(_lock)
+    {
+      if(_store.TryGetValue(guid, out var keyBuffer))
+      {
+        return new KeyBuffer(keyBuffer.Bytes);
+      }
+    }
+    return null;
   }
 
   /// <summary>
-  /// Remove the key identified by the guid from this key chain
-  /// and return it (if it is present). The caller is now reponsible
-  /// for disposing the returned key (if any)
+  /// Put a copy of the given key in this chain, if it isn't there already.
+  /// The stored copy is always a plain <see cref="KeyBuffer"/>, not the
+  /// subclass implementing <paramref name="key"/>.
+  /// [Thread safe]
   /// </summary>
-  /// <param name="keyId"></param>
-  /// <returns></returns>
-  public KeyBuffer? Extract(Guid keyId)
+  /// <param name="key">
+  /// The key to copy
+  /// </param>
+  public KeyBuffer PutCopy(KeyBuffer key)
   {
-    if(_store.TryGetValue(keyId, out var key))
+    lock(_lock)
     {
-      _store.Remove(keyId);
-      return key;
+      var keyId = key.GetId();
+      if(!_store.ContainsKey(keyId))
+      {
+        var copy = new KeyBuffer(key.Bytes);
+        _store.Add(copy.GetId(), copy);
+      }
+      return _store[keyId];
     }
-    else
+  }
+
+  /// <summary>
+  /// Try to find the key, and if found, invoke <paramref name="keyAction"/> and return true.
+  /// If not found return false.
+  /// This method allows using a key in an action, without copying the key to a temporary buffer.
+  /// </summary>
+  /// <param name="keyId">
+  /// The id of the key to find
+  /// </param>
+  /// <param name="keyAction">
+  /// The Action to invoke on the key id and the the key bytes, if found.
+  /// </param>
+  /// <returns>
+  /// True if the key was found and the action was invoked, false if the key was not found.
+  /// </returns>
+  /// <seealso cref="TryMapKey{T}(Guid, Func{Guid, IBytesWrapper, T})"/>
+  public bool TryUseKey(Guid keyId, Action<Guid, IBytesWrapper> keyAction)
+  {
+    KeyBuffer kb;
+    lock(_lock)
     {
-      return null;
+      if(!_store.TryGetValue(keyId, out kb!))
+      {
+        return false;
+      }
     }
+    keyAction(keyId, kb);
+    return true;
+  }
+
+  /// <summary>
+  /// Try to find the key, and if found, invoke <paramref name="keyFunction"/> and return its
+  /// return value.
+  /// If not found return null.
+  /// This method allows using a key in a function, without copying the key to a temporary buffer.
+  /// </summary>
+  /// <typeparam name="T">
+  /// The return value of the function, which must be a non-value type (so that this method
+  /// can return null as a marker)
+  /// </typeparam>
+  /// <param name="keyId">
+  /// The ID of the key to find
+  /// </param>
+  /// <param name="keyFunction">
+  /// The function that receives the key ID and key content as argument
+  /// </param>
+  /// <returns>
+  /// The return value from the function if the key was found, or null if not found
+  /// </returns>
+  /// <seealso cref="TryUseKey(Guid, Action{Guid, IBytesWrapper})"/>
+  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T: class
+  {
+    KeyBuffer kb;
+    lock(_lock)
+    {
+      if(!_store.TryGetValue(keyId, out kb!))
+      {
+        return null;
+      }
+    }
+    return keyFunction(keyId, kb);
   }
 
   /// <summary>
@@ -104,139 +184,54 @@ public class KeyChain: IDisposable
   /// </summary>
   public void CopyAllTo(KeyChain destination)
   {
-    foreach(var kvp in _store)
+    List<Guid> keyids;
+    lock(_lock)
     {
-      if(!destination.ContainsKey(kvp.Key))
+      keyids = _store.Keys.ToList();
+    }
+    foreach(var keyId in keyids)
+    {
+      if(!destination.ContainsKey(keyId))
       {
-        destination.PutCopy(kvp.Value);
+        using(var kb = FindCopy(keyId))
+        {
+          if(kb != null)
+          {
+            destination.PutCopy(kb);
+          }
+        }
       }
     }
   }
 
   /// <summary>
-  /// Remove a key from the chain and dispose it (if it existed)
+  /// Remove a key from the chain and dispose it (if it existed).
+  /// [Thread safe]
   /// </summary>
   /// <param name="keyId">
   /// The ID of the key to remove
   /// </param>
   /// <returns></returns>
-  public bool Delete(Guid keyId)
+  public bool DeleteKey(Guid keyId)
   {
-    if(_store.Remove(keyId, out var key))
+    lock(_lock)
     {
-      key.Dispose();
-      return true;
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-  /// <summary>
-  /// Put a copy of the given key in this chain, if it isn't there already.
-  /// The stored copy is always a plain <see cref="KeyBuffer"/>, not the
-  /// subclass implementing <paramref name="key"/>
-  /// </summary>
-  /// <param name="key">
-  /// The key to copy into
-  /// </param>
-  /// <remarks>
-  /// <para>
-  /// This is probably the most robust of the key insertion methods, since it
-  /// doesn't affect keys already present and key Disposal flow is unconditional
-  /// (the caller stays reponsible for disposing the key provided for insertion).
-  /// </para>
-  /// <para>
-  /// The drawback is that the stored copy loses any extras the key implementation
-  /// had if it was a subclass of KeyBuffer (e.g. the salt in a PassphraseKey is
-  /// lost)
-  /// </para>
-  /// </remarks>
-  public KeyBuffer PutCopy(KeyBuffer key)
-  {
-    if(!_store.ContainsKey(key.GetId()))
-    {
-      var copy = new KeyBuffer(key.Bytes);
-      _store.Add(copy.GetId(), copy);
-    }
-    return _store[key.GetId()];
-  }
-
-  /// <summary>
-  /// Put a key in this key chain. If a key with the same ID already exists,
-  /// this call fails. This key chain now becomes responsible for disposing
-  /// the key.
-  /// </summary>
-  /// <param name="key">
-  /// The key to be stored
-  /// </param>
-  /// <exception cref="InvalidOperationException">
-  /// Thrown when a key with the same ID already exists
-  /// </exception>
-  public void Put(KeyBuffer key)
-  {
-    if(_store.ContainsKey(key.GetId()))
-    {
-      throw new InvalidOperationException(
-        $"Duplicate key: {key.GetId()}");
-    }
-    else
-    {
-      _store[key.GetId()] = key;
-    }
-  }
-
-  /// <summary>
-  /// Try to put the key in this key chain.
-  /// Returns false if there was another instance in the slot already.
-  /// Returns true if successful (and this chain has taking over the
-  /// responsibility of disposing it later on)
-  /// </summary>
-  /// <param name="key">
-  /// The key to store
-  /// </param>
-  /// <returns></returns>
-  public bool TryPut(KeyBuffer key)
-  {
-    if(_store.ContainsKey(key.GetId()))
-    {
-      return false;
-    }
-    else
-    {
-      _store[key.GetId()] = key;
-      return true;
-    }
-  }
-
-  /// <summary>
-  /// Put or replace a key
-  /// </summary>
-  /// <param name="key">
-  /// The key to insert
-  /// </param>
-  /// <returns>
-  /// The original key with the same ID, if any
-  /// </returns>
-  public KeyBuffer? Replace(KeyBuffer key)
-  {
-    var id = key.GetId();
-    if(_store.TryGetValue(id, out var original))
-    {
-      _store[id] = key;
-      return original;
-    }
-    else
-    {
-      _store[id] = key;
-      return null;
+      if(_store.Remove(keyId, out var key))
+      {
+        key.Dispose();
+        return true;
+      }
+      else
+      {
+        return false;
+      }
     }
   }
 
   /// <summary>
   /// Import mising keys in the key ID list from the given key cache,
   /// if available
+  /// [Thread safe]
   /// </summary>
   /// <param name="source">
   /// The key cache that may have some of the missing keys available
@@ -247,9 +242,13 @@ public class KeyChain: IDisposable
   public void ImportMissingKeys(
     IKeyCacheStore source, IEnumerable<Guid> keyIds)
   {
+    // Note that both ContainsKey and PutCopy lock.
+    // To avoid deadlock LoadKey must appear outside the lock
+    // It is deemed acceptable if the chain actually contains
+    // the key by the time PutCopy is called (replacing the key)
     foreach(var keyId in keyIds)
     {
-      if(!_store.ContainsKey(keyId))
+      if(!ContainsKey(keyId))
       {
         using(var key = source.LoadKey(keyId))
         {
@@ -266,6 +265,7 @@ public class KeyChain: IDisposable
   /// If the key with the given ID is not in this chain
   /// try to import it from the key source, returning
   /// true on success, or false on failure.
+  /// [Thread safe]
   /// </summary>
   /// <param name="keyId">
   /// The id of the key to look up
@@ -301,11 +301,17 @@ public class KeyChain: IDisposable
   {
     if(_store != null)
     {
-      var keys = _store.Values;
-      _store.Clear();
-      foreach(var key in keys)
+      lock(_lock)
       {
-        key.Dispose();
+        if(_store != null) // double check locking
+        {
+          var keys = _store.Values;
+          _store.Clear();
+          foreach(var key in keys)
+          {
+            key.Dispose();
+          }
+        }
       }
     }
   }

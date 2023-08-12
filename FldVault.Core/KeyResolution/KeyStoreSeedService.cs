@@ -71,8 +71,7 @@ public class KeyStoreSeedService: IKeySeedService
 
     public bool TryResolveKey(KeyChain keyChain)
     {
-      var existingKey = keyChain.FindCopy(KeyId);
-      if(existingKey != null)
+      if(keyChain.ContainsKey(KeyId))
       {
         return true;
       }

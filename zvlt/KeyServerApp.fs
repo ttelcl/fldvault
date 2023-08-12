@@ -87,7 +87,7 @@ let runKeyServe args =
         else
           let ok = seed.TryResolveKey(keyChain)
           if ok then
-            let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeySync keyServer
+            let uploaded = seed.KeyId |> KeyServer.uploadKeySync keyServer keyChain
             if uploaded then 0 else 1
           else
             cp "\frKey retrieval failed\f0."

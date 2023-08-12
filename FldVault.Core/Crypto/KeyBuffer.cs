@@ -14,7 +14,7 @@ namespace FldVault.Core.Crypto
   /// <summary>
   /// Basic key functionality (intended for derivation, but usable as-is as well)
   /// </summary>
-  public class KeyBuffer: IDisposable
+  public class KeyBuffer: IDisposable, IBytesWrapper
   {
     private readonly CryptoBuffer<byte> _buffer;
     private HashResult? _hashResult;

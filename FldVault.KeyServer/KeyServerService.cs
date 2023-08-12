@@ -53,21 +53,17 @@ public class KeyServerService
 
   /// <summary>
   /// Try to synchronously get the key from the key server. Fails if the key is not
-  /// present or if there is no key server. On success, the key is
-  /// inserted in <paramref name="temporaryChain"/>.
-  /// IMPORTANT! In the current implementation KeyChain is not thread
-  /// safe. Therefore this must be a temporary key chain.
+  /// present or if there is no key server.
+  /// On success, the key is inserted in <paramref name="keyChain"/>.
   /// </summary>
   /// <param name="keyId">
   /// The key to retrieve
   /// </param>
-  /// <param name="temporaryChain">
+  /// <param name="keyChain">
   /// The buffer where the key is stored if found.
-  /// IMPORTANT! In the current implementation KeyChain is not thread
-  /// safe. Therefore this must be a temporary key chain.
   /// </param>
   /// <returns></returns>
-  public bool LookupKeySync(Guid keyId, KeyChain temporaryChain)
+  public bool LookupKeySync(Guid keyId, KeyChain keyChain)
   {
     if(!ServerAvailable)
     {
@@ -94,7 +90,7 @@ public class KeyServerService
         case KeyServerMessages.KeyNotFoundCode:
           return false;
         case KeyServerMessages.KeyResponseCode:
-          frameIn.ReadKeyResponse(temporaryChain);
+          frameIn.ReadKeyResponse(keyChain);
           return true;
         default:
           throw new InvalidOperationException(

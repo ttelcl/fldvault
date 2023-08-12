@@ -263,41 +263,35 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
-  /// If the key with the given ID is in this chain, return it.
-  /// Otherwise try to import it from the key source, returning
-  /// the imported copy on success, or null on failure.
-  /// The lifecycle of the returned key is controlled by this KeyChain:
-  /// do NOT dispose the returned key.
+  /// If the key with the given ID is not in this chain
+  /// try to import it from the key source, returning
+  /// true on success, or false on failure.
   /// </summary>
   /// <param name="keyId">
   /// The id of the key to look up
   /// </param>
   /// <param name="source">
-  /// The source for cached keys, or null to skip the import attempt.
+  /// The source for cached keys.
   /// </param>
   /// <returns>
-  /// The key in this chain, if found or imported, null otherwise.
-  /// Do NOT dispose the returned key.
+  /// True if the key was already in the chain or if it was successfully imported,
+  /// false if an import was attempted but failed
   /// </returns>
-  public KeyBuffer? FindOrImportKey(Guid keyId, IKeyCacheStore? source)
+  public bool ImportKey(Guid keyId, IKeyCacheStore source)
   {
-    var kb = FindDirect(keyId);
-    if(kb != null)
+    if(ContainsKey(keyId))
     {
-      return kb;
+      return true;
     }
-    if(source != null)
+    using(var key = source.LoadKey(keyId))
     {
-      using(var key = source.LoadKey(keyId))
+      if(key!=null)
       {
-        if(key!=null)
-        {
-          PutCopy(key);
-          return FindDirect(keyId);
-        }
+        PutCopy(key);
+        return true;
       }
     }
-    return null;
+    return false;
   }
 
   /// <summary>

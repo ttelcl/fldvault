@@ -152,18 +152,30 @@ let runCheckKey args =
   match oo with
   | Some(o) ->
     let keyServer = new KeyServerService()
-    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
+    // Use a customized seed service for this command, so we can use the unlock seed service
+    // and server seed service independently
+    let seedService = KeyUtilities.minimalKeySeedService()
+    let unlockCache = UnlockStore.Default
+    unlockCache |> seedService.AddStoreService |> ignore
+    let serverSeedService =
+      if keyServer.ServerAvailable then
+        new KeyServerSeedService(keyServer)
+      else
+        cp "\foKey server not available\f0."
+        null
+    if serverSeedService <> null then
+      serverSeedService |> seedService.AddSeedService |> ignore
+    seedService |> KeyUtilities.addPassphraseKeySeedService |> ignore
     let vaultsFolder, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
-    let unlockCache = UnlockStore.Default
     use keyChain = new KeyChain()
     if seed.KeyId = NullKey.NullKeyId then
       cp $"Key \fb{seed.KeyId}\f0 (the \fonull key\f0)"
     else
       cp $"Key \fg{seed.KeyId}\f0"
-    let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
-    let lockStatus = if rawKey <> null then "\foUnlocked\f0" else "\fbLocked\f0"
+    let foundKey = keyChain.ImportKey(seed.KeyId, unlockCache)
+    let lockStatus = if foundKey then "\foUnlocked\f0" else "\fbLocked\f0"
     cp $"  Lock status: {lockStatus}"
     if seed.KeyId = NullKey.NullKeyId then
       cp $"     Key Kind: \fonull key\f0."
@@ -198,19 +210,37 @@ let runStatusKey args =
   match oo with
   | Some(o) ->
     let keyServer = new KeyServerService()
-    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
+    // Use a customized seed service for this command, so we can use the unlock seed service
+    // and server seed service independently
+    let seedService = KeyUtilities.minimalKeySeedService()
+    let unlockCache = UnlockStore.Default
+    unlockCache |> seedService.AddStoreService |> ignore
+    let serverSeedService =
+      if keyServer.ServerAvailable then
+        new KeyServerSeedService(keyServer)
+      else
+        // cp "\foKey server not available\f0."
+        null
+    if serverSeedService <> null then
+      serverSeedService |> seedService.AddSeedService |> ignore
+    // For this command: do NOT include the passphrase key service
+    // seedService |> KeyUtilities.addPassphraseKeySeedService |> ignore
     let _, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
-    let unlockCache = new UnlockStore()
-    use keyChain = new KeyChain()
-    let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
     if seed.KeyId = NullKey.NullKeyId then
-      cp $"Key \fb{seed.KeyId}\f0 (the \fonull key\f0)"
+      cp $"Key \fc{seed.KeyId}\f0"
+      cp $"   Lock status: This is the \fcnull key\f0, which is always available (and cannot be locked)"
     else
       cp $"Key \fg{seed.KeyId}\f0"
-    let lockStatus = if rawKey <> null then "\foUnlocked\f0" else "\fbLocked\f0"
-    cp $"  Lock status: {lockStatus}"
+      use keyChain = new KeyChain()
+      let foundKey = keyChain.ImportKey(seed.KeyId, unlockCache)
+      let lockStatus = if foundKey then "\foUnlocked\f0" else "\fbLocked\f0"
+      cp $"   Lock status: {lockStatus}"
+      if serverSeedService <> null then
+        cp $" Server status: \frNYI\f0."
+      else
+        cp $" Server status: \foKey server is not running\f0."        
     0
   | None ->
     Usage.usage "status"
@@ -227,8 +257,7 @@ let runUnlockKey args =
       failwith "Key info loading failed"
     let unlockCache = new UnlockStore()
     use keyChain = new KeyChain()
-    let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
-    let isUnlocked = rawKey <> null
+    let isUnlocked = keyChain.ImportKey(seed.KeyId, unlockCache)
     if seed.KeyId = NullKey.NullKeyId then
       cp $"Key \fb{seed.KeyId}\f0 is the \fonull key\f0, which is always \foUnlocked\f0"
       0
@@ -239,7 +268,7 @@ let runUnlockKey args =
       cp $"Key \fg{seed.KeyId}\f0 is currently \fbLocked\f0"
       let ok = seed.TryResolveKey(keyChain)
       if ok then
-        let pk = seed.KeyId |> keyChain.FindDirect
+        use pk = seed.KeyId |> keyChain.FindCopy
         if pk = null then
           failwith $"Internal error: key unexpectedly missing from key chain"
         unlockCache.StoreKey(pk) |> ignore
@@ -267,8 +296,7 @@ let runLockKey args =
     else
       let unlockCache = new UnlockStore()
       use keyChain = new KeyChain()
-      let rawKey = keyChain.FindOrImportKey(seed.KeyId, unlockCache) // no "use" - keyChain takes care of disposal
-      let isUnlocked = rawKey <> null
+      let isUnlocked = keyChain.ImportKey(seed.KeyId, unlockCache)
       if isUnlocked then
         cp $"\fbLocking\f0 key \fg{seed.KeyId}\f0"
         unlockCache.EraseKey(seed.KeyId) |> ignore

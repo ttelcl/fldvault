@@ -56,26 +56,18 @@ let addKeyServerSeedService (kss: KeyServerService) (ks: KeySeedService) =
 let addConditional condition (adder: KeySeedService -> KeySeedService) (ks: KeySeedService) =
   if condition then ks |> adder else ks  
 
-//let setupKeySeedServiceOLD () =
-//  cp "\frWarning\f0: \foUsing deprecated key access service setup\f0."
-//  let keyEntry (guid: Guid) =
-//    KeyEntry.enterRawKey $"Please enter passphrase for key '{guid}'"
-//  KeySeedService.NewStandardKeyService(keyEntry) :> IKeySeedService
-
-let setupKeySeedService () =
-  // Backward compatibility mode, also example of the "new" way
-  cp "\frWarning\f0: \foUsing deprecated key access service setup\f0."
-  minimalKeySeedService()
-  |> addConditional true addUnlockKeySeedService
-  |> addConditional true addPassphraseKeySeedService
-  |> completeKeySeedService
-
-let setupkeySeedServiceEx includeUnlock (kss: KeyServerService) includePassphrase =
-  minimalKeySeedService()
-  |> addConditional includeUnlock addUnlockKeySeedService
-  |> addConditional (kss <> null) (addKeyServerSeedService kss)
-  |> addConditional includePassphrase addPassphraseKeySeedService
-  |> completeKeySeedService
+let setupKeySeedService useUnlock usePassphrase keyserver =
+  let svc = minimalKeySeedService()
+  if useUnlock then
+    svc |> addUnlockKeySeedService |> ignore
+  match keyserver with
+  | Some(kss) ->
+    svc |> addKeyServerSeedService kss |> ignore
+  | None ->
+    ()
+  if usePassphrase then
+    svc |> addPassphraseKeySeedService |> ignore
+  svc |> completeKeySeedService
 
 let hatchKeyIntoChain (seedService: IKeySeedService) vaultFile keyChain =
   let seed = vaultFile |> seedService.TryCreateSeedForVault

@@ -6,6 +6,7 @@ open System.IO
 open FldVault.Core.Crypto
 open FldVault.Core.Utilities
 open FldVault.Core.Zvlt2
+open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
@@ -121,7 +122,8 @@ let runAppend args =
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultFile)
     use keyChain = new KeyChain()
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     let targets = o.Files |> List.map pathFileToFileTarget

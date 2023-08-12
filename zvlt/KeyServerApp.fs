@@ -72,16 +72,17 @@ let runKeyServe args =
     let file = o.TargetFile |> Path.GetFullPath
     if file |> File.Exists then
       use keyChain = new KeyChain()
-      let seedService = KeyUtilities.setupKeySeedService()
-      let kss = KeyServer.createKeyService()
-      if kss.ServerAvailable |> not then
+      let keyServer = new KeyServerService()
+      if keyServer.ServerAvailable |> not then
         cp "\frError\f0: \foNo key server found\f0."
         1
       else
+        // Do not include the key server as a potential source for the key to upload to itself!
+        let seedService = KeyUtilities.setupKeySeedService true true None
         let folder, seed = resolveKey seedService file
         let ok = seed.TryResolveKey(keyChain)
         if ok then
-          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKey kss
+          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeyResync keyServer
           if uploaded then 0 else 1
         else
           cp "Key retrieval failed"

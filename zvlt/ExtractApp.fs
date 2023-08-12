@@ -7,6 +7,7 @@ open Newtonsoft.Json
 
 open FldVault.Core.Crypto
 open FldVault.Core.Zvlt2
+open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
@@ -154,7 +155,8 @@ let runExtract args =
       else
         File.Delete(outProbe)
     use keyChain = new KeyChain()
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)

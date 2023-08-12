@@ -7,6 +7,7 @@ open FldVault.Core
 open FldVault.Core.Crypto
 open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
+open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
@@ -57,7 +58,8 @@ let runList args =
     else
       cp $"Key ID \fy{vaultFile.KeyId}\f0."
     use keyChain = new KeyChain()
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     if o.PublicOnly |> not then
       KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     let fileElements =

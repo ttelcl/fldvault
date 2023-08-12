@@ -8,6 +8,7 @@ open FldVault.Core.Crypto
 open FldVault.Core.KeyResolution
 open FldVault.Core.Vaults
 open FldVault.Core.Zvlt2
+open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
@@ -150,7 +151,8 @@ let runCheckKey args =
   let oo = args |> parseKeyOptions
   match oo with
   | Some(o) ->
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     let vaultsFolder, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
@@ -195,7 +197,8 @@ let runStatusKey args =
   let oo = args |> parseKeyOptions
   match oo with
   | Some(o) ->
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     let _, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
@@ -217,7 +220,8 @@ let runUnlockKey args =
   let oo = args |> parseKeyOptions
   match oo with
   | Some(o) ->
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     let _, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"
@@ -252,7 +256,8 @@ let runLockKey args =
   let oo = args |> parseKeyOptions
   match oo with
   | Some(o) ->
-    let seedService = KeyUtilities.setupKeySeedService()
+    let keyServer = new KeyServerService()
+    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
     let _, seed = o |> resolveKey seedService
     if seed = null then
       failwith "Key info loading failed"

@@ -44,25 +44,6 @@ public class KeySeedService: IKeySeedService
   }
 
   /// <summary>
-  /// Create a new <see cref="KeySeedService"/> and initialize the normal
-  /// key resolver services
-  /// </summary>
-  /// <param name="passphraseUserInterface">
-  /// The user interface callback to ask users for a passphrase.
-  /// If this is null, users are not asked for passphrases
-  /// </param>
-  public static KeySeedService NewStandardKeyService(
-    Func<Guid, SecureString?>? passphraseUserInterface)
-  {
-    return
-      NewEmptyKeyService()
-      .AddNullKeyService()
-      .AddUnlockStoreService()
-      .AddPassphraseKeyService(passphraseUserInterface)
-      ;
-  }
-
-  /// <summary>
   /// Appends the key seed service at the end of the list of child
   /// seed services. For most services more specific versions
   /// of this method exist.

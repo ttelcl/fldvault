@@ -32,10 +32,10 @@ let uploadKeyAsync (kss: KeyServerService) (keyBuffer: KeyBuffer) =
     let ct = consoleCancelToken
     let socketService = kss.SocketService
     use! client = socketService.ConnectClientAsync(ct)
-    let frameOut = new MessageFrameOut()
+    use frameOut = new MessageFrameOut()
     frameOut.WriteKeyUpload(keyBuffer)
     do! client.SendFrameAsync(frameOut, ct)
-    let frameIn = new MessageFrameIn()
+    use frameIn = new MessageFrameIn()
     let! ok = client.TryFillFrameAsync(frameIn, ct)
     let success = 
       if ok then
@@ -59,7 +59,7 @@ let uploadKeyAsync (kss: KeyServerService) (keyBuffer: KeyBuffer) =
     return success
   }
 
-let uploadKey (kss: KeyServerService) (keyBuffer: KeyBuffer) =
+let uploadKeyResync (kss: KeyServerService) (keyBuffer: KeyBuffer) =
   let tsk = uploadKeyAsync kss keyBuffer
   tsk.Wait(consoleCancelToken)
   tsk.Result

@@ -50,3 +50,11 @@ let uploadKeySync (kss: KeyServerService) (keyBuffer: KeyBuffer) =
     cp "\frNo response from key server\f0."
     false
 
+let checkKeyPresences (kss: KeyServerService) keyIds =
+  if kss.ServerAvailable |> not then
+    failwith "The key server is not running"
+  keyIds |> kss.CheckKeyPresenceSync
+
+let checkKeyPresence1 kss keyId =
+  let hashset = [| keyId |] |> checkKeyPresences kss
+  keyId |> hashset.Contains

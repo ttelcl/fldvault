@@ -80,13 +80,18 @@ let runKeyServe args =
         // Do not include the key server as a potential source for the key to upload to itself!
         let seedService = KeyUtilities.setupKeySeedService true true None
         let folder, seed = resolveKey seedService file
-        let ok = seed.TryResolveKey(keyChain)
-        if ok then
-          let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeySync keyServer
-          if uploaded then 0 else 1
+        let present = seed.KeyId |> KeyServer.checkKeyPresence1 keyServer
+        if present then
+          cp $"\foKey '\fg{seed.KeyId}\fo' is already present on the key server\f0 No need to upload it again."
+          0
         else
-          cp "Key retrieval failed"
-          1
+          let ok = seed.TryResolveKey(keyChain)
+          if ok then
+            let uploaded = seed.KeyId |> keyChain.FindDirect |> KeyServer.uploadKeySync keyServer
+            if uploaded then 0 else 1
+          else
+            cp "\frKey retrieval failed\f0."
+            1
     else
       cp $"\frFile not found\f0: \fo{file}\f0."
       1

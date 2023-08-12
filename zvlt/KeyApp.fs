@@ -236,9 +236,11 @@ let runStatusKey args =
       use keyChain = new KeyChain()
       let foundKey = keyChain.ImportKey(seed.KeyId, unlockCache)
       let lockStatus = if foundKey then "\foUnlocked\f0" else "\fbLocked\f0"
-      cp $"   Lock status: {lockStatus}"
+      cp $"   Lock status: {lockStatus}."
       if serverSeedService <> null then
-        cp $" Server status: \frNYI\f0."
+        let present = seed.KeyId |> KeyServer.checkKeyPresence1 keyServer
+        let serverStatus = if present then "\fgAvailable\f0" else "\foMissing\f0"
+        cp $" Server status: {serverStatus}."
       else
         cp $" Server status: \foKey server is not running\f0."        
     0

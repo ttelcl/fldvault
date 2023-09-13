@@ -13,17 +13,42 @@ using System.Threading.Tasks;
 namespace FldVault.Upi;
 
 /// <summary>
-/// Key server UPI interface
+/// Key server UPI interface. A newly created instance implementing this interface
+/// is initially not running the server (but does allocate the shared state that
+/// the server requires)
 /// </summary>
 public interface IKeyServerUpi: IDisposable
 {
+  /// <summary>
+  /// Start the server thread. Can only be successfully called if 
+  /// <see cref="ServerState"/> is <see cref="ServerStatus.CanStart"/>.
+  /// </summary>
+  /// <param name="hostCallbacks">
+  /// The interface containing the host callbacks. Host callbacks are called on
+  /// the server thread.
+  /// </param>
+  /// <returns>
+  /// The new server status (<see cref="ServerStatus.Running"/> if successful)
+  /// </returns>
+  ServerStatus StartServer(IKeyServerHost hostCallbacks);
+
+  /// <summary>
+  /// Retrieve the current server status
+  /// </summary>
+  ServerStatus ServerState { get; }
+
+  /// <summary>
+  /// Request the server to stop if it was running
+  /// </summary>
+  void StopServer();
+
   /// <summary>
   /// Return Key information for all keys that the key server is aware of.
   /// </summary>
   IReadOnlyList<IKeyInfo> ListKeys();
 
   /// <summary>
-  /// Retriever the status of the key in the server
+  /// Retrieve the status of the key in the server
   /// </summary>
   /// <param name="keyId">
   /// The ID of the key to retrieve the status of.
@@ -72,4 +97,22 @@ public interface IKeyServerUpi: IDisposable
   /// The actual new status
   /// </returns>
   KeyStatus ChangeStatus(Guid keyId, KeyStatus status);
+
+  /// <summary>
+  /// In case the key is unknown, try to find a key seed for it based
+  /// on the given target file. In case the key is already known,
+  /// this method is a NOP.
+  /// </summary>
+  /// <param name="keyId">
+  /// The key ID of the key to find
+  /// </param>
+  /// <param name="targetFile">
+  /// The target *.zvlt or *.key-info file that is expected to provide
+  /// the key seed information for the key.
+  /// </param>
+  /// <returns>
+  /// The key status afterward. <see cref="KeyStatus.Unknown"/> indicates
+  /// failure.
+  /// </returns>
+  KeyStatus PrepareKey(Guid keyId, string targetFile);
 }

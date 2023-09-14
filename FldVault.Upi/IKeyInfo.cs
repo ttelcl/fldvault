@@ -25,4 +25,9 @@ public interface IKeyInfo
   /// The latest status of the key
   /// </summary>
   KeyStatus Status { get; }
+
+  /// <summary>
+  /// Retrieve a list of zero or more fully specified file names associated with a key
+  /// </summary>
+  IReadOnlyList<string> AssociatedFiles { get; }
 }

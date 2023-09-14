@@ -38,9 +38,22 @@ public interface IKeyServerUpi: IDisposable
   ServerStatus ServerState { get; }
 
   /// <summary>
-  /// Request the server to stop if it was running
+  /// Request the server to stop if it was running. This call does not wait
+  /// for the termination to complete, it just initiates the termination.
   /// </summary>
   void StopServer();
+
+  /// <summary>
+  /// Wait for the server stop request to complete.
+  /// If necessary this call includes a call to <see cref="StopServer"/>.
+  /// </summary>
+  /// <param name="timeout">
+  /// The maximum time in milliseconds to wait for the stop procedure to complete
+  /// </param>
+  /// <returns>
+  /// True on success, false on timeout.
+  /// </returns>
+  bool WaitForServerStop(int timeout);
 
   /// <summary>
   /// Return Key information for all keys that the key server is aware of.
@@ -101,7 +114,7 @@ public interface IKeyServerUpi: IDisposable
   /// <summary>
   /// In case the key is unknown, try to find a key seed for it based
   /// on the given target file. In case the key is already known,
-  /// this method is a NOP.
+  /// this method is mostly a NOP (but still may associate the file with the key)
   /// </summary>
   /// <param name="keyId">
   /// The key ID of the key to find
@@ -115,4 +128,17 @@ public interface IKeyServerUpi: IDisposable
   /// failure.
   /// </returns>
   KeyStatus PrepareKey(Guid keyId, string targetFile);
+
+  /// <summary>
+  /// Check if the given file is a ZVault file, and if it is return some information
+  /// about it.
+  /// </summary>
+  /// <param name="vaultFile">
+  /// The name of the file to check. Normally the extension would be *.zvlt, but
+  /// that is not a requirement.
+  /// </param>
+  /// <returns>
+  /// Null if the file is not recognized, a vault decriptor otherwise
+  /// </returns>
+  VaultInfo? IsVault(string vaultFile);
 }

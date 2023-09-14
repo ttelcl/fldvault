@@ -42,7 +42,7 @@ public static class KeyServerMessages
   /// Key upload "request". The content is the 32 bytes of the key. Expected response
   /// <see cref="KeyUploadedCode"/> (== <see cref="MessageCodes.OkNoContent"/>)
   /// </summary>
-  public const int KeyUploadCode = 0x10001002;
+  public const int KeyUploadCode = 0x10010002;
 
   /// <summary>
   /// The code indicating that the key upload succeeded (no content)

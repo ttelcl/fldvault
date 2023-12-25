@@ -55,9 +55,9 @@ let runKeyServe args =
     | "-h" :: _ ->
       None
     | "-f" :: file :: rest ->
-      rest |> parseMore {o with TargetFile = file}
+      rest |> parseMore {TargetFile = file} // {o with TargetFile = file}
     | file :: rest when file.EndsWith(".zvlt") || file.EndsWith(".key-info") ->
-      rest |> parseMore {o with TargetFile = file}
+      rest |> parseMore {TargetFile = file} // {o with TargetFile = file}
     | [] ->
       if o.TargetFile |> String.IsNullOrEmpty then 
         failwith "No target file specified"

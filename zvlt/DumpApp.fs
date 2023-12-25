@@ -41,9 +41,9 @@ let runDump args =
     | "-h" :: _ ->
       None
     | "-vf" :: file :: rest ->
-      rest |> parseMore {o with VaultFile = file}
+      rest |> parseMore {VaultFile = file} // {o with VaultFile = file}
     | file :: rest when file.EndsWith(".zvlt") ->
-      rest |> parseMore {o with VaultFile = file}
+      rest |> parseMore {VaultFile = file} // {o with VaultFile = file}
     | [] ->
       if o.VaultFile |> String.IsNullOrEmpty then
         failwith "No vault file specified"

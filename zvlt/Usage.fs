@@ -27,6 +27,14 @@ let usage detail =
   if matchDetail "key-serve" then
     cp "  \fg-f \fc<file>\f0        The file to start serving the key for."
     cp ""
+  if showSummary "register" then
+    cp "\fozvlt register \f0[\fg-f\f0] \fc<file>\f0 "
+    cp "  Alert the key server of interest in the key of the \fb*.zvlt\f0 or \fb*.key-info\f0 file."
+    cp "  This allows a GUI based key server to provide more useful context when prompting"
+    cp "  the user for a passphrase."
+  if matchDetail "register" then
+    cp "  \fg-f \fc<file>\f0        The file to register."
+    cp ""
   if showSummary "create" then
     cp "\fozvlt create \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-key \fc<id>\f0|\fg-kf \fc<other.zvlt>\f0|\fg-p\f0|\fg-null\f0]"
     cp "  Create a new empty vault file (\fb*.zvlt\f0). The key is taken from an existing \fb*.key-info\f0"
@@ -105,7 +113,7 @@ let usage detail =
     cp ""
   if showSummary "dump" then
     cp "\fozvlt dump \f0[\fg-vf\f0] \fc<file.zvlt>\f0"
-    cp "  Dump technical details of a *.szvlt file"
+    cp "  Dump technical details of a *.zvlt file"
   if matchDetail "dump" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to analyze."
     cp ""

@@ -7,6 +7,8 @@ open System.Threading
 
 open FldVault.Core.Crypto
 open FldVault.KeyServer
+open FldVault.Core.Vaults
+open FldVault.Core.Zvlt2
 
 open UdSocketLib.Communication
 open UdSocketLib.Framing
@@ -26,11 +28,37 @@ type private ServerOptions = {
   Force: bool
 }
 
+type KeyInfoResult =
+  | Success of PassphraseKeyInfoFile
+  | Badrequest of string
+  | Failed of string
+
 let private stamp () =
   let t = DateTimeOffset.Now
   t.ToString("yyyy-MM-dd HH:mm:ss")
 
 let readMessageCode (frameIn:MessageFrameIn) = frameIn.MessageCode()
+
+let findKeyInfoForFile fileName =
+  if fileName |> File.Exists then
+    if fileName.EndsWith(".pass.key-info", StringComparison.InvariantCultureIgnoreCase) then
+      try
+        let pkif = PassphraseKeyInfoFile.ReadFrom(fileName)
+        Success(pkif)
+      with
+      | ex ->
+        Badrequest(ex.Message)
+    elif fileName.EndsWith(".zvlt", StringComparison.InvariantCultureIgnoreCase) then
+      let vf = VaultFile.Open(fileName)
+      let pkif = vf.GetPassphraseInfo()
+      if pkif = null then
+        Failed("The vault file has no key info entry")
+      else
+        Success(pkif)
+    else
+      Failed("Unsupported file type")
+  else
+    Badrequest("The requested file was not found")
 
 let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameOut) =
   let msgCode = frameIn |> readMessageCode
@@ -62,6 +90,34 @@ let private processMessage (keyChain: KeyChain) frameIn (frameOut: MessageFrameO
     let keysFound = keysRequested |> Seq.filter keyChain.ContainsKey |> Seq.toArray
     cp $"Key presence check: \fg{keysFound.Length}\f0 of \fb{keysRequested.Count}\f0 are present."
     frameOut.WriteKeyPresence(keysFound) |> ignore
+  | KeyServerMessages.KeyForFileCode ->
+    let fileName = frameIn.ReadKeyForFileRequest()
+    if fileName |> String.IsNullOrEmpty then
+      cp $"\frMissing file name\f0."
+      "Invalid request: no file specified" |> frameOut.WriteErrorResponse
+    elif fileName |> File.Exists |> not then
+      cp $"\frSpecified file not found\f0: {fileName}."
+      "Invalid request: file not found" |> frameOut.WriteErrorResponse
+    elif fileName |> Path.IsPathFullyQualified |> not then
+      cp $"\frSpecified file name is not absolute\f0: {fileName}."
+      "Invalid request: file name is not absolute" |> frameOut.WriteErrorResponse
+    else
+      let pkifResult = fileName |> findKeyInfoForFile
+      match pkifResult with
+      | Success(pkif) ->
+        // This server does not really use the file name
+        let keyId = pkif.KeyId
+        use key = keyChain.FindCopy(keyId)
+        if key = null then
+          cp $"\foKey not found\f0: \fy{keyId}\f0 (\fk{fileName}\f0)."
+          frameOut.WriteNoContentMessage(KeyServerMessages.KeyNotFoundCode)
+        else
+          cp $"Key found \fg{keyId}\f0 (\fG{fileName}\f0)."
+          key |> frameOut.WriteKeyResponse
+      | Badrequest(message) ->
+        frameOut.WriteErrorResponse(message)
+      | Failed(message) ->
+        frameOut.WriteErrorResponse(message)
   | _ ->
     cp $"\foUnrecognized message \fc0x%08X{msgCode}\f0."
     frameOut.WriteNoContentMessage(MessageCodes.Unrecognized)

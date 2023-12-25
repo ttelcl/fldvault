@@ -29,6 +29,7 @@
     <Compile Include="KeyUtilities.fs" />
     <Compile Include="KeyServer.fs" />
     <Compile Include="KeyServerApp.fs" />
+    <Compile Include="FileRegisterApp.fs" />
     <Compile Include="NewKeyApp.fs" />
     <Compile Include="KeyApp.fs" />
     <Compile Include="CreateApp.fs" />

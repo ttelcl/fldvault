@@ -27,7 +27,8 @@ public interface IKeyInfo
   KeyStatus Status { get; }
 
   /// <summary>
-  /// Retrieve a list of zero or more fully specified file names associated with a key
+  /// A map of fully specified names of files that use this key to
+  /// timestamps when the server was alerted to that file.
   /// </summary>
-  IReadOnlyList<string> AssociatedFiles { get; }
+  IReadOnlyDictionary<string, DateTimeOffset> AssociatedFiles { get; }
 }

@@ -11,7 +11,7 @@ using System.Windows.Shapes;
 
 using MahApps.Metro.Controls;
 
-namespace ZvaultKeyServer;
+namespace ZvaultKeyServer.Main;
 
 /// <summary>
 /// Interaction logic for MainWindow.xaml

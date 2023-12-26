@@ -3,6 +3,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Windows;
 
+using ZvaultKeyServer.Main;
+
 namespace ZvaultKeyServer;
 
 /// <summary>

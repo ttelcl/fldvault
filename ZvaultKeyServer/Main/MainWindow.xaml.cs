@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.ComponentModel;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -21,5 +22,14 @@ public partial class MainWindow: MetroWindow
   public MainWindow()
   {
     InitializeComponent();
+  }
+
+  protected override void OnClosing(CancelEventArgs e)
+  {
+    if(DataContext is MainViewModel mainViewModel)
+    {
+      mainViewModel.OnClosing(e);
+    }
+    base.OnClosing(e);
   }
 }

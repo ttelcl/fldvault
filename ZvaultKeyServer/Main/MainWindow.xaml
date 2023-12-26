@@ -19,6 +19,11 @@
                 <Separator/>
                 <MenuItem Header="_Exit" Command="{Binding ExitCommand}"/>
             </MenuItem>
+            <MenuItem Header="_Server">
+                <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}"/>
+                <MenuItem Header="_Start" Command="{Binding StartServerCommand}"/>
+                <MenuItem Header="_Stop" Command="{Binding StopServerCommand}"/>
+            </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
             <!-- Reminder: The panel of a StatusBar is a DockPanel, so you can use DockPanel.Dock! -->
@@ -30,7 +35,16 @@
             <StatusBarItem DockPanel.Dock="Right" Padding="1,0">
                 <Border BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
                         Padding="2,1">
-                    <TextBlock Text="TBD"/>
+                    <TextBlock Text="{Binding ServerStatusText}" Cursor="Hand">
+                        <TextBlock.InputBindings>
+                            <!-- faux button -->
+                            <MouseBinding Command="{Binding CheckServerStateCommand}" MouseAction="LeftClick"/>
+                        </TextBlock.InputBindings>
+                    </TextBlock>
+                    <!--<Button
+                        Content="{Binding ServerStatusText}"
+                        Command="{Binding CheckServerStateCommand}"
+                        Padding="5,0,5,1"/>-->
                 </Border>
             </StatusBarItem>
             <!-- {DynamicResource MahApps.Brushes.Accent2} -->
@@ -44,7 +58,7 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            
+
         </Border>
     </DockPanel>
 </mah:MetroWindow>

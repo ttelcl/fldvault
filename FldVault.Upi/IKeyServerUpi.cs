@@ -31,7 +31,7 @@ public interface IKeyServerUpi: IDisposable
   /// The new server status (<see cref="ServerStatus.Running"/> if successful or
   /// already running)
   /// </returns>
-  ServerStatus StartServer(IKeyServerHost hostCallbacks);
+  Task<ServerStatus> StartServer(IKeyServerHost hostCallbacks);
 
   /// <summary>
   /// Retrieve the current server status

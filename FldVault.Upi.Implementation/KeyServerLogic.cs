@@ -190,6 +190,7 @@ public class KeyServerLogic: IDisposable
         var messageCode = _frameIn.MessageCode();
         try
         {
+          Trace.TraceInformation($"Received request code {messageCode:X08}");
           switch(messageCode)
           {
             case MessageCodes.KeepAlive:

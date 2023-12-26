@@ -14,4 +14,12 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
+    <ProjectReference Include="..\FldVault.Upi.Implementation\FldVault.Upi.Implementation.csproj" />
+    <ProjectReference Include="..\FldVault.Upi\FldVault.Upi.csproj" />
+    <ProjectReference Include="..\UdSocketLib\UdSocketLib.csproj" />
+  </ItemGroup>
+
 </Project>

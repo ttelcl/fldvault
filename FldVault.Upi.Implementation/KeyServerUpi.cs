@@ -78,8 +78,31 @@ public class KeyServerUpi: IKeyServerUpi
     }
   }
 
+  /// <summary>
+  /// True if the server object exists, i.e. ServerState is
+  /// Running or Stopping.
+  /// </summary>
+  public bool ServerActive { get => _server != null; }
+
   /// <inheritdoc/>
-  public ServerStatus StartServer(IKeyServerHost hostCallbacks)
+  public bool WaitForServerStop(int timeout)
+  {
+    if(_server != null)
+    {
+      var result = _server.WaitForStop(timeout);
+      if(result)
+      {
+        _server = null;
+        _listener?.Dispose();
+        _listener = null;
+      }
+      return result;
+    }
+    return true; // There was no server running at all
+  }
+
+  /// <inheritdoc/>
+  public async Task<ServerStatus> StartServer(IKeyServerHost hostCallbacks)
   {
     lock(_lock)
     {
@@ -88,9 +111,12 @@ public class KeyServerUpi: IKeyServerUpi
       {
         return status;
       }
-      throw new NotImplementedException();
+      var listener = _keyServerService.SocketService.StartServer(10);
+      _listener = listener;
+      _server = new KeyServerLogic(hostCallbacks, _keyServerService, listener);
     }
-    throw new NotImplementedException("TODO start server thread");
+    await _server.Start();
+    return ServerState;
   }
 
   /// <inheritdoc/>
@@ -146,23 +172,6 @@ public class KeyServerUpi: IKeyServerUpi
   public KeyStatus TryUnlockKey(Guid keyId, SecureString passphrase, bool publish)
   {
     throw new NotImplementedException();
-  }
-
-  /// <inheritdoc/>
-  public bool WaitForServerStop(int timeout)
-  {
-    if(_server != null)
-    {
-      var result = _server.WaitForStop(timeout);
-      if(result)
-      {
-        _server = null;
-        _listener?.Dispose();
-        _listener = null;
-      }
-      return result;
-    }
-    return true; // There was no server running at all
   }
 
 }

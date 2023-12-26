@@ -51,7 +51,7 @@ public class UdSocketListener: UdSocketBase, IStopRequest
     if(!StopRequested)
     {
       StopRequested = true;
-      Socket.Shutdown(SocketShutdown.Receive);
+      // Socket.Shutdown(SocketShutdown.Receive);
     }
   }
 

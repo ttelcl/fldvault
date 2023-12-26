@@ -21,12 +21,12 @@ public partial class App: Application
   {
     Trace.TraceInformation($"App.App_Startup enter");
     var mainWindow = new MainWindow();
-    //MainModel = new MainViewModel();
-    //mainWindow.DataContext = MainModel;
+    MainModel = new MainViewModel();
+    mainWindow.DataContext = MainModel;
     Trace.TraceInformation($"App.App_Startup showing main window");
     mainWindow.Show();
     Trace.TraceInformation($"App.App_Startup exit");
   }
 
-  //public MainViewModel? MainModel { get; private set; }
+  public MainViewModel? MainModel { get; private set; }
 }

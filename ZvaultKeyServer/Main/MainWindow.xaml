@@ -10,8 +10,41 @@
     Title="Zvault Key Server"
     TitleCharacterCasing="Normal"
     Height="450"
-    Width="800">
+    Width="800"
+    ResizeMode="CanResizeWithGrip"
+    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}">
     <DockPanel>
-
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <Separator/>
+                <MenuItem Header="_Exit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+        </Menu>
+        <StatusBar DockPanel.Dock="Bottom">
+            <!-- Reminder: The panel of a StatusBar is a DockPanel, so you can use DockPanel.Dock! -->
+            <!--<Separator HorizontalAlignment="Right"/>-->
+            <StatusBarItem DockPanel.Dock="Right" Padding="1,0">
+                <!-- Space for grip -->
+                <TextBlock Text="" Width="15"/>
+            </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right" Padding="1,0">
+                <Border BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                        Padding="2,1">
+                    <TextBlock Text="TBD"/>
+                </Border>
+            </StatusBarItem>
+            <!-- {DynamicResource MahApps.Brushes.Accent2} -->
+            <StatusBarItem HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="1,0">
+                <Border BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                        Padding="2,1">
+                    <TextBlock Text="{Binding StatusMessage}"/>
+                </Border>
+            </StatusBarItem>
+        </StatusBar>
+        <Border
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            
+        </Border>
     </DockPanel>
 </mah:MetroWindow>

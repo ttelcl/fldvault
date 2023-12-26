@@ -28,7 +28,8 @@ public interface IKeyServerUpi: IDisposable
   /// the server thread.
   /// </param>
   /// <returns>
-  /// The new server status (<see cref="ServerStatus.Running"/> if successful)
+  /// The new server status (<see cref="ServerStatus.Running"/> if successful or
+  /// already running)
   /// </returns>
   ServerStatus StartServer(IKeyServerHost hostCallbacks);
 
@@ -109,7 +110,7 @@ public interface IKeyServerUpi: IDisposable
   /// <returns>
   /// The actual new status
   /// </returns>
-  KeyStatus ChangeStatus(Guid keyId, KeyStatus status);
+  KeyStatus ChangeKeyStatus(Guid keyId, KeyStatus status);
 
   /// <summary>
   /// In case the key is unknown, try to find a key seed for it based

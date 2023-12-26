@@ -28,7 +28,9 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "zvkeyservice", "zvkeyservic
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FldVault.KeyServer", "FldVault.KeyServer\FldVault.KeyServer.csproj", "{CA47EAA1-F840-47CF-8197-07CFD2CEB849}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FldVault.Upi", "FldVault.Upi\FldVault.Upi.csproj", "{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FldVault.Upi", "FldVault.Upi\FldVault.Upi.csproj", "{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FldVault.Upi.Implementation", "FldVault.Upi.Implementation\FldVault.Upi.Implementation.csproj", "{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +66,10 @@ Global
 		{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,6 +82,7 @@ Global
 		{D9B81B47-850D-4B44-ADDF-892AA28EDA86} = {E554EA83-9E37-4A3C-AEFC-B94D89F52168}
 		{CA47EAA1-F840-47CF-8197-07CFD2CEB849} = {8A375364-B265-4786-AD15-DA3F01B77376}
 		{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78} = {8A375364-B265-4786-AD15-DA3F01B77376}
+		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59} = {8A375364-B265-4786-AD15-DA3F01B77376}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {031C7C67-97E0-4943-B6F7-344A9A89CC1D}

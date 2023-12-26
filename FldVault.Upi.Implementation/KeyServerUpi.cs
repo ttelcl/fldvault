@@ -24,16 +24,9 @@ public class KeyServerUpi: IKeyServerUpi
 {
   private readonly KeyServerService _keyServerService;
   private UdSocketListener? _listener;
-  private IKeyServerHost? _host;
-  private bool _serverLoopRunning;
-  private bool _serverLoopStopping;
+  private KeyServerLogic? _server;
   private object _lock = new Object();
-  private Mutex _serverLoopMutex = new Mutex();
-  private ManualResetEvent _serverLoopIdleEvent = new(true); // set while NOT running
-  private ManualResetEvent _serverLoopRunningEvent = new(false);
-  private CancellationTokenSource? _cancelServerSource;
-  private Thread? _serverThread;
-  
+
   /// <summary>
   /// Create a new KeyServerUpi
   /// </summary>
@@ -45,6 +38,13 @@ public class KeyServerUpi: IKeyServerUpi
   /// <inheritdoc/>
   public void Dispose()
   {
+    if(_server != null)
+    {
+      Trace.TraceWarning("Server disposal without preparing cleanup.");
+      _server.RequestStop();
+      _server.Dispose();
+      _server = null;
+    }
     if(_listener != null)
     {
       if(!_listener.StopRequested)
@@ -55,18 +55,6 @@ public class KeyServerUpi: IKeyServerUpi
       _listener.Dispose();
       _listener = null;
     }
-    if(_cancelServerSource != null)
-    {
-      _cancelServerSource.Cancel();
-      _cancelServerSource.Dispose();
-      _cancelServerSource = null;
-    }
-    if(_serverThread != null)
-    {
-      Trace.TraceWarning("Server thread is still alive at shutdown time");
-      _serverThread.Join(3000);
-      _serverThread = null;
-    }
   }
 
   /// <inheritdoc/>
@@ -74,19 +62,18 @@ public class KeyServerUpi: IKeyServerUpi
     get {
       lock(_lock)
       {
-        if(_serverLoopStopping)
+        if(_server == null)
         {
-          return ServerStatus.Stopping;
+          return _keyServerService.ServerAvailable
+            ? ServerStatus.Blocked // another server is running already
+            : ServerStatus.CanStart;
         }
-        if(_serverLoopRunning)
+        else
         {
-          return ServerStatus.Running;
+          return _server.ServerState == ServerStatus.Running
+            ? ServerStatus.Running
+            : ServerStatus.Stopping;
         }
-        if(_keyServerService.ServerAvailable)
-        {
-          return ServerStatus.Blocked;
-        }
-        return ServerStatus.CanStart;
       }
     }
   }
@@ -101,20 +88,6 @@ public class KeyServerUpi: IKeyServerUpi
       {
         return status;
       }
-      if(_serverThread != null)
-      {
-        throw new InvalidOperationException(
-          "Internal error: attempting to start a new server thread when the previous one is still alive");
-      }
-      if(_cancelServerSource == null)
-      {
-        _cancelServerSource = new CancellationTokenSource();
-      }
-      else
-      {
-        Trace.TraceWarning("Cancellation Source already existed???");
-      }
-      //_serverThread = new Thread();
       throw new NotImplementedException();
     }
     throw new NotImplementedException("TODO start server thread");
@@ -125,10 +98,16 @@ public class KeyServerUpi: IKeyServerUpi
   {
     lock(_lock)
     {
-      _cancelServerSource?.Cancel();
-      if(_listener != null)
+      if(_server != null)
       {
-        _listener.RequestStop();
+        _server.RequestStop();
+      }
+      else
+      {
+        if(_listener != null)
+        {
+          _listener.RequestStop();
+        }
       }
     }
   }
@@ -172,51 +151,18 @@ public class KeyServerUpi: IKeyServerUpi
   /// <inheritdoc/>
   public bool WaitForServerStop(int timeout)
   {
-    throw new NotImplementedException();
+    if(_server != null)
+    {
+      var result = _server.WaitForStop(timeout);
+      if(result)
+      {
+        _server = null;
+        _listener?.Dispose();
+        _listener = null;
+      }
+      return result;
+    }
+    return true; // There was no server running at all
   }
 
-  private async Task<bool> ServerLoop()
-  {
-    CancellationToken ct;
-    lock(_lock)
-    {
-      if(!_serverLoopMutex.WaitOne(0))
-      {
-        Trace.TraceWarning("Unexpected: cannot acquire server loop mutex");
-        return false;
-      }
-      _serverLoopRunning = true;
-      _serverLoopIdleEvent.Reset();
-      _cancelServerSource ??= new CancellationTokenSource();
-      ct = _cancelServerSource.Token;
-    }
-    try
-    {
-      using(_listener = _keyServerService.SocketService.StartServer(10))
-      {
-        while(!ct.IsCancellationRequested)
-        {
-          var socket = await _listener.AcceptAsync(ct);
-          await RunOneCommand(socket, ct);
-        }
-      }
-      _listener = null;
-    }
-    finally
-    {
-      lock(_lock)
-      {
-        _serverLoopRunning = false;
-        _serverLoopStopping = false;
-        _serverLoopMutex.ReleaseMutex();
-      }
-      _serverLoopIdleEvent.Set();
-    }
-    return true;
-  }
-
-  private async Task RunOneCommand(UdSocketServer socket, CancellationToken ct)
-  {
-    throw new NotImplementedException();
-  }
 }

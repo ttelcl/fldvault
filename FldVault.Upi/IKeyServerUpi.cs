@@ -47,6 +47,7 @@ public interface IKeyServerUpi: IDisposable
   /// <summary>
   /// Wait for the server stop request to complete.
   /// If necessary this call includes a call to <see cref="StopServer"/>.
+  /// A call to this method is required to clean up resources!
   /// </summary>
   /// <param name="timeout">
   /// The maximum time in milliseconds to wait for the stop procedure to complete

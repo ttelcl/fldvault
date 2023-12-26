@@ -32,6 +32,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FldVault.Upi", "FldVault.Up
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FldVault.Upi.Implementation", "FldVault.Upi.Implementation\FldVault.Upi.Implementation.csproj", "{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GuiApps", "GuiApps", "{CFF07758-9BC0-43C2-9BE9-162CCA769C0C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZvaultKeyServer", "ZvaultKeyServer\ZvaultKeyServer.csproj", "{B930F3E0-1D65-49D3-B3F9-EAB783F44064}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,6 +74,10 @@ Global
 		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B930F3E0-1D65-49D3-B3F9-EAB783F44064}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B930F3E0-1D65-49D3-B3F9-EAB783F44064}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B930F3E0-1D65-49D3-B3F9-EAB783F44064}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B930F3E0-1D65-49D3-B3F9-EAB783F44064}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -83,6 +91,7 @@ Global
 		{CA47EAA1-F840-47CF-8197-07CFD2CEB849} = {8A375364-B265-4786-AD15-DA3F01B77376}
 		{9C6558C3-D1DC-47B2-9F41-CA164FF5BA78} = {8A375364-B265-4786-AD15-DA3F01B77376}
 		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59} = {8A375364-B265-4786-AD15-DA3F01B77376}
+		{B930F3E0-1D65-49D3-B3F9-EAB783F44064} = {CFF07758-9BC0-43C2-9BE9-162CCA769C0C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {031C7C67-97E0-4943-B6F7-344A9A89CC1D}

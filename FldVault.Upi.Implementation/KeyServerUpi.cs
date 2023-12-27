@@ -129,16 +129,19 @@ public class KeyServerUpi: IKeyServerUpi
         KeyStates);
     }
     await _server.Start();
+    await hostCallbacks.ServerStatusChanged(this, ServerState);
     return ServerState;
   }
 
   /// <inheritdoc/>
-  public void StopServer()
+  public async void StopServer()
   {
+    IKeyServerHost? hostCallbacks = null;
     lock(_lock)
     {
       if(_server != null)
       {
+        hostCallbacks = _server.Host;
         _server.RequestStop();
       }
       else
@@ -148,6 +151,10 @@ public class KeyServerUpi: IKeyServerUpi
           _listener.RequestStop();
         }
       }
+    }
+    if(hostCallbacks != null)
+    {
+      await hostCallbacks.ServerStatusChanged(this, ServerState);
     }
   }
 

@@ -116,9 +116,22 @@ public class MainViewModel: ViewModelBase
     ServerStatus = Server.ServerState;
   }
 
-  public void StopServer()
+  public async void StopServer()
   {
+    Trace.TraceInformation("Stopping server.");
+    StatusMessage = "Stopping server";
     Server.StopServer();
+    if(Server.WaitForServerStop(1000))
+    {
+      Trace.TraceInformation("Server successfully stopped");
+      StatusMessage = "Server stopped";
+    }
+    else
+    {
+      Trace.TraceInformation("Server stop timed out");
+      StatusMessage = "Server stop FAILED";
+    }
+    await HostAdapter.ServerStatusChanged(Server, Server.ServerState);
   }
 
   public bool CanStopServer => Server.ServerActive;

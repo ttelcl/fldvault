@@ -133,6 +133,18 @@ public class KeyServerUpi: IKeyServerUpi
     return ServerState;
   }
 
+  /// <summary>
+  /// Make sure the host is made aware of the current server status
+  /// </summary>
+  public async Task SyncServerStatus(IKeyServerHost hostCallbacks, ServerStatus previousStatus)
+  {
+    var status = ServerState;
+    if(status != previousStatus)
+    {
+      await hostCallbacks.ServerStatusChanged(this, status);
+    }
+  }
+
   /// <inheritdoc/>
   public async void StopServer()
   {

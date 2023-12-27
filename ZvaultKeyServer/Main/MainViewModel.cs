@@ -36,6 +36,7 @@ public class MainViewModel: ViewModelBase
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
+    ServerStatus = Server.ServerState;
   }
 
   public ServerHostAdapter HostAdapter { get; }
@@ -113,7 +114,7 @@ public class MainViewModel: ViewModelBase
       Trace.TraceError($"Error starting server {ex}");
       StatusMessage = ex.Message;
     }
-    ServerStatus = Server.ServerState;
+    await Server.SyncServerStatus(HostAdapter, ServerStatus);
   }
 
   public async void StopServer()
@@ -131,7 +132,7 @@ public class MainViewModel: ViewModelBase
       Trace.TraceInformation("Server stop timed out");
       StatusMessage = "Server stop FAILED";
     }
-    await HostAdapter.ServerStatusChanged(Server, Server.ServerState);
+    await Server.SyncServerStatus(HostAdapter, ServerStatus);
   }
 
   public bool CanStopServer => Server.ServerActive;

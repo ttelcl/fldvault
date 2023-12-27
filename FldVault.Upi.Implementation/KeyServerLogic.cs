@@ -174,6 +174,10 @@ public class KeyServerLogic: IDisposable
         }
       }
     }
+    catch(OperationCanceledException oce)
+    {
+      Trace.TraceInformation($"Caught OperationCanceledException. {oce.Message}");
+    }
     finally
     {
       _serverCompleted.SetResult();

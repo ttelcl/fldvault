@@ -4,7 +4,8 @@
              xmlns:local="clr-namespace:ZvaultKeyServer"
              xmlns:main="clr-namespace:ZvaultKeyServer.Main"
              xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
-             Startup="App_Startup">
+             Startup="App_Startup"
+             Exit="Application_Exit">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

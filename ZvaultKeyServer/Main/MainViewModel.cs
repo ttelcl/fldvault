@@ -13,8 +13,10 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
 
+using FldVault.Core.Crypto;
 using FldVault.Upi;
 using FldVault.Upi.Implementation;
+using FldVault.Upi.Implementation.Keys;
 
 using ZvaultKeyServer.Server;
 using ZvaultKeyServer.WpfUtilities;
@@ -23,18 +25,26 @@ namespace ZvaultKeyServer.Main;
 
 public class MainViewModel: ViewModelBase
 {
-  public MainViewModel(Dispatcher dispatcher)
+  public MainViewModel(
+    Dispatcher dispatcher,
+    KeyChain keyChain)
   {
+    KeyChain = keyChain;
+    KeyStates = new KeyStateStore(KeyChain);
     HostAdapter = new ServerHostAdapter(this, dispatcher);
-    Server = new KeyServerUpi(null);
+    Server = new KeyServerUpi(KeyStates, null);
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
-    StopServerCommand = new DelegateCommand(p => {  StopServer(); }, p => CanStopServer);
+    StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
   }
 
   public ServerHostAdapter HostAdapter { get; }
 
   public KeyServerUpi Server { get; }
+
+  public KeyChain KeyChain { get; }
+
+  public KeyStateStore KeyStates { get; }
 
   public ICommand ExitCommand { get; } = new DelegateCommand(p => {
     var w = Application.Current.MainWindow;
@@ -72,7 +82,7 @@ public class MainViewModel: ViewModelBase
   public string ServerStatusText {
     get => _status.ToString();
   }
-  
+
   public void OnClosing(CancelEventArgs e)
   {
     if(Server.ServerActive)
@@ -98,7 +108,7 @@ public class MainViewModel: ViewModelBase
       await Server.StartServer(HostAdapter);
       StatusMessage = "Server started";
     }
-    catch (Exception ex)
+    catch(Exception ex)
     {
       Trace.TraceError($"Error starting server {ex}");
       StatusMessage = ex.Message;

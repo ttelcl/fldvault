@@ -168,7 +168,7 @@ public static class KeyServerMessages
   /// If the key lookup succeeded: the key buffer holding the key.
   /// If the key lookup failed: null
   /// </param>
-  public static void WriteKeyResponse(this MessageFrameOut frame, KeyBuffer? key)
+  public static void WriteKeyResponse(this MessageFrameOut frame, IBytesWrapper? key)
   {
     if(key == null)
     {
@@ -192,7 +192,7 @@ public static class KeyServerMessages
   /// <param name="key">
   /// The key to write
   /// </param>
-  public static void WriteKeyUpload(this MessageFrameOut frame, KeyBuffer key)
+  public static void WriteKeyUpload(this MessageFrameOut frame, IBytesWrapper key)
   {
     frame
       .Clear()

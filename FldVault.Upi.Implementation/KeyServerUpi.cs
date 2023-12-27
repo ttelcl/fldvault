@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.KeyServer;
+using FldVault.Upi.Implementation.Keys;
 
 using UdSocketLib.Communication;
 
@@ -30,8 +31,11 @@ public class KeyServerUpi: IKeyServerUpi
   /// <summary>
   /// Create a new KeyServerUpi
   /// </summary>
-  public KeyServerUpi(string? socketName = null)
+  public KeyServerUpi(
+    KeyStateStore keyStates,
+    string? socketName = null)
   {
+    KeyStates = keyStates;
     _keyServerService = new KeyServerService(socketName);
   }
 
@@ -79,6 +83,11 @@ public class KeyServerUpi: IKeyServerUpi
   }
 
   /// <summary>
+  /// Tracks keys and their associated 
+  /// </summary>
+  public KeyStateStore KeyStates { get; }
+
+  /// <summary>
   /// True if the server object exists, i.e. ServerState is
   /// Running or Stopping.
   /// </summary>
@@ -113,7 +122,11 @@ public class KeyServerUpi: IKeyServerUpi
       }
       var listener = _keyServerService.SocketService.StartServer(10);
       _listener = listener;
-      _server = new KeyServerLogic(hostCallbacks, _keyServerService, listener);
+      _server = new KeyServerLogic(
+        hostCallbacks,
+        _keyServerService,
+        listener,
+        KeyStates);
     }
     await _server.Start();
     return ServerState;

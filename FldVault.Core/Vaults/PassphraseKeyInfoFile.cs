@@ -84,7 +84,7 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
-  /// Read a PassphraseKeyInfoFile from a stream
+  /// Read a PassphraseKeyInfoFile from a *.pass.key-info stream
   /// </summary>
   public static PassphraseKeyInfoFile ReadFrom(Stream stream)
   {
@@ -99,7 +99,7 @@ public class PassphraseKeyInfoFile
   }
 
   /// <summary>
-  /// Read a PassphraseKeyInfoFile from a stream
+  /// Read a PassphraseKeyInfoFile from a *.pass.key-info file
   /// </summary>
   public static PassphraseKeyInfoFile ReadFrom(string filename)
   {
@@ -218,6 +218,31 @@ public class PassphraseKeyInfoFile
         $"The content of ${kin.FileName} does not match its name (key ID is ${pkif.KeyId})");
     }
     return pkif;
+  }
+
+  /// <summary>
+  /// Try to read a PassphraseKeyInfoFile from a file in a supported format.
+  /// This implementation supports both *.pass.key-info files as well as *.zvlt
+  /// files.
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the file, which should have a recognized file extension
+  /// </param>
+  /// <returns>
+  /// The key info that was loaded from the file, if any was found
+  /// </returns>
+  public static PassphraseKeyInfoFile? TryFromFile(string fileName)
+  {
+    if(fileName.EndsWith(".pass.keyinfo"))
+    {
+      return ReadFrom(fileName);
+    }
+    if(fileName.EndsWith(".zvlt"))
+    {
+      var vaultFile = new VaultFile(fileName);
+      return vaultFile.GetPassphraseInfo();
+    }
+    return null;
   }
 
   /// <summary>

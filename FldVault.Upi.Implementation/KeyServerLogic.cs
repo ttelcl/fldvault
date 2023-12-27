@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.KeyServer;
+using FldVault.Upi.Implementation.Keys;
 
 using UdSocketLib.Communication;
 using UdSocketLib.Framing;
@@ -31,6 +32,7 @@ public class KeyServerLogic: IDisposable
   private Task? _serverTask;
   private readonly MessageFrameIn _frameIn;
   private readonly MessageFrameOut _frameOut;
+  private readonly Dictionary<int, Func<MessageFrameIn, MessageFrameOut, Task>> _handlers;
 
   /// <summary>
   /// Create a new KeyServerLogic
@@ -44,19 +46,27 @@ public class KeyServerLogic: IDisposable
   /// <param name="listener">
   /// The already-opened and listening server socket
   /// </param>
+  /// <param name="keyStates">
+  /// The key state storage
+  /// </param>
   internal KeyServerLogic(
     IKeyServerHost host,
     KeyServerService api,
-    UdSocketListener listener)
+    UdSocketListener listener,
+    KeyStateStore keyStates)
   {
     Host = host;
     Api = api;
+    KeyStates = keyStates;
     _listener = listener;
     _serverStarted = new TaskCompletionSource();
     _serverCompleted = new TaskCompletionSource();
     _stopRequest = new CancellationTokenSource();
     _frameIn = new MessageFrameIn();
     _frameOut = new MessageFrameOut();
+    _handlers = new() {
+      [MessageCodes.KeepAlive] = HandleKeepAlive,
+    };
   }
 
   /// <summary>
@@ -77,6 +87,11 @@ public class KeyServerLogic: IDisposable
   /// The low level message API implementation
   /// </summary>
   public KeyServerService Api { get; }
+
+  /// <summary>
+  /// The key state store
+  /// </summary>
+  public KeyStateStore KeyStates { get; }
 
   /// <summary>
   /// A cancellation token that is in "cancellation requested" state after
@@ -195,19 +210,20 @@ public class KeyServerLogic: IDisposable
         try
         {
           Trace.TraceInformation($"Received request code {messageCode:X08}");
-          switch(messageCode)
+          var handler = _handlers[messageCode];
+          if(handler != null)
           {
-            case MessageCodes.KeepAlive:
-              {
-                _frameOut.WriteNoContentMessage(MessageCodes.KeepAlive);
-                break;
-              }
-            // TODO: the other commands ...
-            default:
-              {
-                _frameOut.WriteNoContentMessage(MessageCodes.Unrecognized);
-                break;
-              }
+            _frameOut.Clear();
+            await handler(_frameIn, _frameOut);
+            if(_frameOut.Position == 0)
+            {
+              throw new InvalidOperationException(
+                $"Internal error: handler for {messageCode:X08} did not fill message buffer");
+            }
+          }
+          else
+          {
+            _frameOut.WriteNoContentMessage(MessageCodes.Unrecognized);
           }
         }
         catch(OperationCanceledException)
@@ -227,4 +243,9 @@ public class KeyServerLogic: IDisposable
     }
   }
 
+  private Task HandleKeepAlive(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    frameOut.WriteNoContentMessage(MessageCodes.KeepAlive);
+    return Task.CompletedTask;
+  }
 }

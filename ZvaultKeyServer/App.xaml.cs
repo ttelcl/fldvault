@@ -3,6 +3,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Windows;
 
+using FldVault.Core.Crypto;
+
 using ZvaultKeyServer.Main;
 
 namespace ZvaultKeyServer;
@@ -12,6 +14,8 @@ namespace ZvaultKeyServer;
 /// </summary>
 public partial class App: Application
 {
+  private readonly KeyChain _keyChain = new KeyChain();
+
   /// <summary>
   /// Instead of using a Startup Uri, create the window manually.
   /// This method is referenced in the header of app.xaml instead of
@@ -21,7 +25,7 @@ public partial class App: Application
   {
     Trace.TraceInformation($"App.App_Startup enter");
     var mainWindow = new MainWindow();
-    MainModel = new MainViewModel(mainWindow.Dispatcher);
+    MainModel = new MainViewModel(mainWindow.Dispatcher, _keyChain);
     mainWindow.DataContext = MainModel;
     Trace.TraceInformation($"App.App_Startup showing main window");
     mainWindow.Show();
@@ -29,4 +33,11 @@ public partial class App: Application
   }
 
   public MainViewModel? MainModel { get; private set; }
+
+  private void Application_Exit(object sender, ExitEventArgs e)
+  {
+    Trace.TraceInformation("Application_Exit: Destroying keychain");
+    // zero out memory that is holding keys
+    _keyChain.Dispose();
+  }
 }

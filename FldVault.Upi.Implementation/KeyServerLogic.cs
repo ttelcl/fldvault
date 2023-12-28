@@ -77,6 +77,7 @@ public class KeyServerLogic: IDisposable
       [KeyServerMessages.KeyUploadCode] = HandleKeyUpload,
       [KeyServerMessages.KeyRequestCode] = HandleKeyRequest,
       [KeyServerMessages.KeyPresenceListCode] = HandleKeyPresenceList,
+      [KeyServerMessages.ServerDiagnosticsCode] = HandleServerDiagnostics,
     };
   }
 
@@ -369,5 +370,17 @@ public class KeyServerLogic: IDisposable
       }
     }
     frameOut.WriteKeyPresence(foundList);
+  }
+
+  private Task HandleServerDiagnostics(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    frameOut.WriteNoContentMessage(MessageCodes.OkNoContent);
+    var states = KeyStates.AllStates;
+    Trace.TraceInformation($"Diag: {states.Count} states.");
+    foreach(var state in states)
+    {
+      Trace.TraceInformation($"{state.KeyId} ({state.Status})");
+    }
+    return Task.CompletedTask;
   }
 }

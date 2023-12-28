@@ -10,7 +10,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
-using FldVault.Upi;
 
 namespace FldVault.Upi.Implementation.Keys;
 
@@ -91,4 +90,15 @@ public class KeyStateStore
     }
   }
 
+  /// <summary>
+  /// Return a list containing all States
+  /// </summary>
+  public IReadOnlyList<KeyState> AllStates {
+    get {
+      lock(_lock)
+      {
+        return _states.Values.ToList();
+      }
+    }
+  }
 }

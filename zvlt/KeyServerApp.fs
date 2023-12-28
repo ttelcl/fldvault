@@ -80,7 +80,8 @@ let runKeyServe args =
         // Do not include the key server as a potential source for the key to upload to itself!
         let seedService = KeyUtilities.setupKeySeedService true true None
         let folder, seed = resolveKey seedService file
-        let present = seed.KeyId |> KeyServer.checkKeyPresence1 keyServer
+        //let present = seed.KeyId |> KeyServer.checkKeyPresence1 keyServer
+        let present = file |> KeyServer.announceFile keyServer keyChain
         if present then
           cp $"\foKey '\fg{seed.KeyId}\fo' is already present on the key server\f0 No need to upload it again."
           0

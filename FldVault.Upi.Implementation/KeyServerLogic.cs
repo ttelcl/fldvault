@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using FldVault.Core.Vaults;
 using FldVault.KeyServer;
 using FldVault.Upi.Implementation.Keys;
 
@@ -37,8 +39,11 @@ public class KeyServerLogic: IDisposable
   /// <summary>
   /// Create a new KeyServerLogic
   /// </summary>
-  /// <param name="host">
+  /// <param name="callbacks">
   /// The host API providing UI callbacks
+  /// </param>
+  /// <param name="owner">
+  /// The UPI owning this server logic
   /// </param>
   /// <param name="api">
   /// The server API implementation
@@ -50,14 +55,16 @@ public class KeyServerLogic: IDisposable
   /// The key state storage
   /// </param>
   internal KeyServerLogic(
-    IKeyServerHost host,
+    IKeyServerHost callbacks,
+    IKeyServerUpi owner,
     KeyServerService api,
     UdSocketListener listener,
     KeyStateStore keyStates)
   {
-    Host = host;
+    Callbacks = callbacks;
     Api = api;
     KeyStates = keyStates;
+    Owner = owner;
     _listener = listener;
     _serverStarted = new TaskCompletionSource();
     _serverCompleted = new TaskCompletionSource();
@@ -66,6 +73,10 @@ public class KeyServerLogic: IDisposable
     _frameOut = new MessageFrameOut();
     _handlers = new() {
       [MessageCodes.KeepAlive] = HandleKeepAlive,
+      [KeyServerMessages.KeyForFileCode] = HandleKeyForFile,
+      [KeyServerMessages.KeyUploadCode] = HandleKeyUpload,
+      [KeyServerMessages.KeyRequestCode] = HandleKeyRequest,
+      [KeyServerMessages.KeyPresenceListCode] = HandleKeyPresenceList,
     };
   }
 
@@ -81,7 +92,12 @@ public class KeyServerLogic: IDisposable
   /// <summary>
   /// The host interface
   /// </summary>
-  public IKeyServerHost Host { get; }
+  public IKeyServerHost Callbacks { get; }
+
+  /// <summary>
+  /// The UPI handling the lifetime of this object
+  /// </summary>
+  public IKeyServerUpi Owner { get; }
 
   /// <summary>
   /// The low level message API implementation
@@ -210,8 +226,7 @@ public class KeyServerLogic: IDisposable
         try
         {
           Trace.TraceInformation($"Received request code {messageCode:X08}");
-          var handler = _handlers[messageCode];
-          if(handler != null)
+          if(_handlers.TryGetValue(messageCode, out var handler))
           {
             _frameOut.Clear();
             await handler(_frameIn, _frameOut);
@@ -243,9 +258,116 @@ public class KeyServerLogic: IDisposable
     }
   }
 
+  /// <summary>
+  /// Handle a "keep alive" message. This message is mostly used for
+  /// debugging, since there is no network connection involved.
+  /// </summary>
   private Task HandleKeepAlive(MessageFrameIn frameIn, MessageFrameOut frameOut)
   {
     frameOut.WriteNoContentMessage(MessageCodes.KeepAlive);
     return Task.CompletedTask;
+  }
+
+  /// <summary>
+  /// Handle a "key for file" request. This request has two purposes: it
+  /// acts as a key request using a target file as argument instead of a key ID.
+  /// It is also used for the side effect of associating a file name with
+  /// a key. And if the key isn't available yet, tagging the key in the UI as
+  /// requiring attention.
+  /// </summary>
+  private async Task HandleKeyForFile(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var fileName = frameIn.ReadKeyForFileRequest();
+    if(String.IsNullOrEmpty(fileName))
+    {
+      frameOut.WriteErrorResponse("Missing file name");
+      return;
+    }
+    if(!File.Exists(fileName))
+    {
+      frameOut.WriteErrorResponse("No such file");
+      return;
+    }
+    if(!Path.IsPathFullyQualified(fileName))
+    {
+      frameOut.WriteErrorResponse("Expecting an absolute file name");
+      return;
+    }
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif == null)
+    {
+      frameOut.WriteErrorResponse("Unrecognized file format");
+      return;
+    }
+    var keyId = pkif.KeyId;
+    var state = KeyStates.GetKey(keyId);
+    state.AssociateFile(fileName, true);
+    var status = state.Status;
+    switch(status)
+    {
+      case KeyStatus.Published:
+        {
+          state.UseKey(frameOut.WriteKeyResponse);
+          break;
+        }
+      case KeyStatus.Seeded:
+      case KeyStatus.Hidden:
+        {
+          frameOut.WriteKeyResponse(null);
+          await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
+          break;
+        }
+      default:
+        {
+          frameOut.WriteErrorResponse("Internal error - unexpected key status");
+          break;
+        }
+    }
+    await Callbacks.KeyStatusChanged(Owner, keyId, status);
+  }
+
+  private async Task HandleKeyRequest(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keyId = frameIn.ReadKeyRequest();
+    var state = KeyStates.GetKey(keyId);
+    var found = false;
+    state.UseKey(bw => {
+      found = bw != null;
+      frameOut.WriteKeyResponse(bw);
+    });
+    if(!found)
+    {
+      await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
+    }
+  }
+
+  private async Task HandleKeyUpload(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keyId = frameIn.ReadKeyUpload(KeyStates.KeyChain);
+    var state = KeyStates.GetKey(keyId);
+    frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode);
+    await Callbacks.KeyStatusChanged(Owner, keyId, state.Status);
+  }
+
+  private async Task HandleKeyPresenceList(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keysRequested = frameIn.ReadKeyPresence();
+    var foundList = new List<Guid>();
+    foreach(var key in keysRequested)
+    {
+      var state = KeyStates.FindKey(key);
+      if(state != null)
+      {
+        if(state.Status == KeyStatus.Published)
+        {
+          foundList.Add(key);
+        }
+        else
+        {
+          await Callbacks.KeyLoadRequest(Owner, key, state.Status, null);
+        }
+      }
+    }
+    frameOut.WriteKeyPresence(foundList);
   }
 }

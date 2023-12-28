@@ -74,7 +74,7 @@ public class KeyStateStore
   /// The Key State object, either the existing one
   /// or a new one.
   /// </returns>
-  public KeyState? GetKey(Guid keyId)
+  public KeyState GetKey(Guid keyId)
   {
     lock(_lock)
     {

@@ -56,6 +56,8 @@ public class ServerHostAdapter: IKeyServerHost
       return;
     }
     // TODO
+    Trace.TraceInformation(
+      $"Callback: KeyLoadRequest {keyId} '{status}' ({contextFile??String.Empty})");
   }
 
   public async Task KeyStatusChanged(
@@ -67,6 +69,7 @@ public class ServerHostAdapter: IKeyServerHost
       return;
     }
     // TODO
+    Trace.TraceInformation($"Callback: KeyStatusChanged {keyId} '{status}'");
   }
 
   public async Task ServerStatusChanged(
@@ -77,6 +80,7 @@ public class ServerHostAdapter: IKeyServerHost
     {
       return;
     }
+    Trace.TraceInformation($"Callback: ServerStatusChanged '{status}'");
     MainModel.ServerStatus = status;
   }
 }

@@ -49,7 +49,7 @@ public class KeyState: IKeyInfo
     get { 
       if(KeyChain.ContainsKey(KeyId))
       {
-        return WithholdKey ? KeyStatus.WithHeld : KeyStatus.Published;
+        return HideKey ? KeyStatus.Hidden : KeyStatus.Published;
       }
       else
       {
@@ -59,10 +59,10 @@ public class KeyState: IKeyInfo
   }
 
   /// <summary>
-  /// True if the key is currently withheld.
+  /// True if the key is currently hidden (or should be hidden if it were known).
   /// TODO: timeout logic to set this automatically
   /// </summary>
-  public bool WithholdKey { get; private set; }
+  public bool HideKey { get; private set; }
 
   /// <inheritdoc/>
   public DateTimeOffset LastRegistered { get; }
@@ -109,7 +109,7 @@ public class KeyState: IKeyInfo
   /// and the file must exist.
   /// </param>
   /// <param name="loadSeed">
-  /// If true and there is not seed available, try to create a
+  /// If true and there is no seed available, try to create a
   /// seed from the file if possible.
   /// </param>
   /// <returns>
@@ -184,7 +184,7 @@ public class KeyState: IKeyInfo
     {
       var now = DateTimeOffset.Now;
       LastRequested = now;
-      if(!WithholdKey)
+      if(!HideKey)
       {
         KeyChain.TryUseKey(KeyId, (_, bw) => { key = bw; });
       }

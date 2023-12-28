@@ -89,7 +89,7 @@ public interface IKeyServerUpi: IDisposable
   /// The new status or failure reason. <see cref="KeyStatus.Unknown"/> indicates
   /// the key is not known or cannot be unlocked with a passphrase.
   /// <see cref="KeyStatus.Seeded"/> indicates the passphrase was wrong.
-  /// <see cref="KeyStatus.WithHeld"/> or <see cref="KeyStatus.Published"/> indicate
+  /// <see cref="KeyStatus.Hidden"/> or <see cref="KeyStatus.Published"/> indicate
   /// either a successful unlock, or that the key was already unlocked.
   /// </returns>
   KeyStatus TryUnlockKey(Guid keyId, SecureString passphrase, bool publish);
@@ -97,7 +97,7 @@ public interface IKeyServerUpi: IDisposable
   /// <summary>
   /// Try to change the status of a key. The precise effect depends on the
   /// <paramref name="status"/> value and the current status. This is primarily
-  /// intended to swap between <see cref="KeyStatus.WithHeld"/> and 
+  /// intended to swap between <see cref="KeyStatus.Hidden"/> and 
   /// <see cref="KeyStatus.Published"/>, but can also be used to re-lock the
   /// key (forget the actual key value) via <see cref="KeyStatus.Seeded"/> or
   /// even completely forget the key via <see cref="KeyStatus.Unknown"/>.

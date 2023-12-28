@@ -124,6 +124,7 @@ public class KeyServerUpi: IKeyServerUpi
       _listener = listener;
       _server = new KeyServerLogic(
         hostCallbacks,
+        this,
         _keyServerService,
         listener,
         KeyStates);
@@ -153,7 +154,7 @@ public class KeyServerUpi: IKeyServerUpi
     {
       if(_server != null)
       {
-        hostCallbacks = _server.Host;
+        hostCallbacks = _server.Callbacks;
         _server.RequestStop();
       }
       else

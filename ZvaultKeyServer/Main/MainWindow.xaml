@@ -1,0 +1,64 @@
+﻿<mah:MetroWindow
+    x:Class="ZvaultKeyServer.Main.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:local="clr-namespace:ZvaultKeyServer.Main"
+    mc:Ignorable="d"
+    Title="Zvault Key Server"
+    TitleCharacterCasing="Normal"
+    Height="450"
+    Width="800"
+    ResizeMode="CanResizeWithGrip"
+    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <Separator/>
+                <MenuItem Header="_Exit" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="_Server">
+                <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}"/>
+                <MenuItem Header="_Start" Command="{Binding StartServerCommand}"/>
+                <MenuItem Header="_Stop" Command="{Binding StopServerCommand}"/>
+            </MenuItem>
+        </Menu>
+        <StatusBar DockPanel.Dock="Bottom">
+            <!-- Reminder: The panel of a StatusBar is a DockPanel, so you can use DockPanel.Dock! -->
+            <!--<Separator HorizontalAlignment="Right"/>-->
+            <StatusBarItem DockPanel.Dock="Right" Padding="1,0">
+                <!-- Space for grip -->
+                <TextBlock Text="" Width="15"/>
+            </StatusBarItem>
+            <StatusBarItem DockPanel.Dock="Right" Padding="1,0">
+                <Border BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                        Padding="2,1">
+                    <TextBlock Text="{Binding ServerStatusText}" Cursor="Hand">
+                        <TextBlock.InputBindings>
+                            <!-- faux button -->
+                            <MouseBinding Command="{Binding CheckServerStateCommand}" MouseAction="LeftClick"/>
+                        </TextBlock.InputBindings>
+                    </TextBlock>
+                    <!--<Button
+                        Content="{Binding ServerStatusText}"
+                        Command="{Binding CheckServerStateCommand}"
+                        Padding="5,0,5,1"/>-->
+                </Border>
+            </StatusBarItem>
+            <!-- {DynamicResource MahApps.Brushes.Accent2} -->
+            <StatusBarItem HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="1,0">
+                <Border BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                        Padding="2,1">
+                    <TextBlock Text="{Binding StatusMessage}"/>
+                </Border>
+            </StatusBarItem>
+        </StatusBar>
+        <Border
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+
+        </Border>
+    </DockPanel>
+</mah:MetroWindow>

@@ -32,11 +32,11 @@ public enum KeyStatus
   /// publicly accessible to clients. The UI can promote the key
   /// to the published state.
   /// </summary>
-  WithHeld,
+  Hidden,
 
   /// <summary>
   /// The key is known and available to clients. The UI can
-  /// retract the key to the WithHeld state, for instance to implement
+  /// retract the key to the Hidden state, for instance to implement
   /// a time out policy.
   /// </summary>
   Published,

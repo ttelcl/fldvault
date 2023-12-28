@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.KeyServer;
+using FldVault.Upi.Implementation.Keys;
 
 using UdSocketLib.Communication;
 
@@ -30,8 +31,11 @@ public class KeyServerUpi: IKeyServerUpi
   /// <summary>
   /// Create a new KeyServerUpi
   /// </summary>
-  public KeyServerUpi(string? socketName = null)
+  public KeyServerUpi(
+    KeyStateStore keyStates,
+    string? socketName = null)
   {
+    KeyStates = keyStates;
     _keyServerService = new KeyServerService(socketName);
   }
 
@@ -78,8 +82,36 @@ public class KeyServerUpi: IKeyServerUpi
     }
   }
 
+  /// <summary>
+  /// Tracks keys and their associated 
+  /// </summary>
+  public KeyStateStore KeyStates { get; }
+
+  /// <summary>
+  /// True if the server object exists, i.e. ServerState is
+  /// Running or Stopping.
+  /// </summary>
+  public bool ServerActive { get => _server != null; }
+
   /// <inheritdoc/>
-  public ServerStatus StartServer(IKeyServerHost hostCallbacks)
+  public bool WaitForServerStop(int timeout)
+  {
+    if(_server != null)
+    {
+      var result = _server.WaitForStop(timeout);
+      if(result)
+      {
+        _server = null;
+        _listener?.Dispose();
+        _listener = null;
+      }
+      return result;
+    }
+    return true; // There was no server running at all
+  }
+
+  /// <inheritdoc/>
+  public async Task<ServerStatus> StartServer(IKeyServerHost hostCallbacks)
   {
     lock(_lock)
     {
@@ -88,18 +120,41 @@ public class KeyServerUpi: IKeyServerUpi
       {
         return status;
       }
-      throw new NotImplementedException();
+      var listener = _keyServerService.SocketService.StartServer(10);
+      _listener = listener;
+      _server = new KeyServerLogic(
+        hostCallbacks,
+        this,
+        _keyServerService,
+        listener,
+        KeyStates);
     }
-    throw new NotImplementedException("TODO start server thread");
+    await _server.Start();
+    await hostCallbacks.ServerStatusChanged(this, ServerState);
+    return ServerState;
+  }
+
+  /// <summary>
+  /// Make sure the host is made aware of the current server status
+  /// </summary>
+  public async Task SyncServerStatus(IKeyServerHost hostCallbacks, ServerStatus previousStatus)
+  {
+    var status = ServerState;
+    if(status != previousStatus)
+    {
+      await hostCallbacks.ServerStatusChanged(this, status);
+    }
   }
 
   /// <inheritdoc/>
-  public void StopServer()
+  public async void StopServer()
   {
+    IKeyServerHost? hostCallbacks = null;
     lock(_lock)
     {
       if(_server != null)
       {
+        hostCallbacks = _server.Callbacks;
         _server.RequestStop();
       }
       else
@@ -109,6 +164,10 @@ public class KeyServerUpi: IKeyServerUpi
           _listener.RequestStop();
         }
       }
+    }
+    if(hostCallbacks != null)
+    {
+      await hostCallbacks.ServerStatusChanged(this, ServerState);
     }
   }
 
@@ -146,23 +205,6 @@ public class KeyServerUpi: IKeyServerUpi
   public KeyStatus TryUnlockKey(Guid keyId, SecureString passphrase, bool publish)
   {
     throw new NotImplementedException();
-  }
-
-  /// <inheritdoc/>
-  public bool WaitForServerStop(int timeout)
-  {
-    if(_server != null)
-    {
-      var result = _server.WaitForStop(timeout);
-      if(result)
-      {
-        _server = null;
-        _listener?.Dispose();
-        _listener = null;
-      }
-      return result;
-    }
-    return true; // There was no server running at all
   }
 
 }

@@ -13,9 +13,9 @@ namespace FldVault.Upi;
 /// Callback interface for the key server to notify the host
 /// user interface of events. Note that all callbacks are made
 /// on the server thread, so the implementation must be thread
-/// aware. Also note that all callbacks are just notifications
-/// without a return value, so are suitable for forwarding with
-/// IDispatch.Post in WPF and AvaloniaUI.
+/// aware.
+/// All notifications are async to make thread transition easier
+/// to implement.
 /// </summary>
 public interface IKeyServerHost
 {
@@ -30,7 +30,7 @@ public interface IKeyServerHost
   /// <param name="status">
   /// The new status
   /// </param>
-  void ServerStatusChanged(IKeyServerUpi upi, ServerStatus status);
+  Task ServerStatusChanged(IKeyServerUpi upi, ServerStatus status);
 
   /// <summary>
   /// Indicates that the status of a key has changed.
@@ -44,7 +44,7 @@ public interface IKeyServerHost
   /// <param name="status">
   /// The new status.
   /// </param>
-  void KeyStatusChanged(IKeyServerUpi upi, Guid keyId, KeyStatus status);
+  Task KeyStatusChanged(IKeyServerUpi upi, Guid keyId, KeyStatus status);
 
   /// <summary>
   /// Indicates that the server received a request to publish a key
@@ -63,6 +63,6 @@ public interface IKeyServerHost
   /// If not null: the name of a file that uses the requested key. Useful for UI
   /// feedback and possibly for finding a seed for the key.
   /// </param>
-  void KeyLoadRequest(IKeyServerUpi upi, Guid keyId, KeyStatus status, string? contextFile);
+  Task KeyLoadRequest(IKeyServerUpi upi, Guid keyId, KeyStatus status, string? contextFile);
 }
 

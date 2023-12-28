@@ -103,7 +103,7 @@ let usage detail =
     cp ""
   if showSummary "unlock" then
     cp "\fozvlt unlock \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info>\f0|\fcfile.zvlt\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Unlock a key, temporarily storing the raw key (until locked)"
+    cp "  \frDeprecated\f0. Unlock a key, temporarily storing the raw key (until locked)"
   if matchDetail "unlock" then
     cp ""
   if showSummary "lock" then

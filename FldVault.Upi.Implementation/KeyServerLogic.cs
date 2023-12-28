@@ -5,12 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using FldVault.Core.Vaults;
 using FldVault.KeyServer;
+using FldVault.Upi.Implementation.Keys;
 
 using UdSocketLib.Communication;
 using UdSocketLib.Framing;
@@ -31,12 +34,16 @@ public class KeyServerLogic: IDisposable
   private Task? _serverTask;
   private readonly MessageFrameIn _frameIn;
   private readonly MessageFrameOut _frameOut;
+  private readonly Dictionary<int, Func<MessageFrameIn, MessageFrameOut, Task>> _handlers;
 
   /// <summary>
   /// Create a new KeyServerLogic
   /// </summary>
-  /// <param name="host">
+  /// <param name="callbacks">
   /// The host API providing UI callbacks
+  /// </param>
+  /// <param name="owner">
+  /// The UPI owning this server logic
   /// </param>
   /// <param name="api">
   /// The server API implementation
@@ -44,19 +51,34 @@ public class KeyServerLogic: IDisposable
   /// <param name="listener">
   /// The already-opened and listening server socket
   /// </param>
+  /// <param name="keyStates">
+  /// The key state storage
+  /// </param>
   internal KeyServerLogic(
-    IKeyServerHost host,
+    IKeyServerHost callbacks,
+    IKeyServerUpi owner,
     KeyServerService api,
-    UdSocketListener listener)
+    UdSocketListener listener,
+    KeyStateStore keyStates)
   {
-    Host = host;
+    Callbacks = callbacks;
     Api = api;
+    KeyStates = keyStates;
+    Owner = owner;
     _listener = listener;
     _serverStarted = new TaskCompletionSource();
     _serverCompleted = new TaskCompletionSource();
     _stopRequest = new CancellationTokenSource();
     _frameIn = new MessageFrameIn();
     _frameOut = new MessageFrameOut();
+    _handlers = new() {
+      [MessageCodes.KeepAlive] = HandleKeepAlive,
+      [KeyServerMessages.KeyForFileCode] = HandleKeyForFile,
+      [KeyServerMessages.KeyUploadCode] = HandleKeyUpload,
+      [KeyServerMessages.KeyRequestCode] = HandleKeyRequest,
+      [KeyServerMessages.KeyPresenceListCode] = HandleKeyPresenceList,
+      [KeyServerMessages.ServerDiagnosticsCode] = HandleServerDiagnostics,
+    };
   }
 
   /// <summary>
@@ -71,12 +93,22 @@ public class KeyServerLogic: IDisposable
   /// <summary>
   /// The host interface
   /// </summary>
-  public IKeyServerHost Host { get; }
+  public IKeyServerHost Callbacks { get; }
+
+  /// <summary>
+  /// The UPI handling the lifetime of this object
+  /// </summary>
+  public IKeyServerUpi Owner { get; }
 
   /// <summary>
   /// The low level message API implementation
   /// </summary>
   public KeyServerService Api { get; }
+
+  /// <summary>
+  /// The key state store
+  /// </summary>
+  public KeyStateStore KeyStates { get; }
 
   /// <summary>
   /// A cancellation token that is in "cancellation requested" state after
@@ -174,6 +206,10 @@ public class KeyServerLogic: IDisposable
         }
       }
     }
+    catch(OperationCanceledException oce)
+    {
+      Trace.TraceInformation($"Caught OperationCanceledException. {oce.Message}");
+    }
     finally
     {
       _serverCompleted.SetResult();
@@ -190,19 +226,20 @@ public class KeyServerLogic: IDisposable
         var messageCode = _frameIn.MessageCode();
         try
         {
-          switch(messageCode)
+          Trace.TraceInformation($"Received request code {messageCode:X08}");
+          if(_handlers.TryGetValue(messageCode, out var handler))
           {
-            case MessageCodes.KeepAlive:
-              {
-                _frameOut.WriteNoContentMessage(MessageCodes.KeepAlive);
-                break;
-              }
-            // TODO: the other commands ...
-            default:
-              {
-                _frameOut.WriteNoContentMessage(MessageCodes.Unrecognized);
-                break;
-              }
+            _frameOut.Clear();
+            await handler(_frameIn, _frameOut);
+            if(_frameOut.Position == 0)
+            {
+              throw new InvalidOperationException(
+                $"Internal error: handler for {messageCode:X08} did not fill message buffer");
+            }
+          }
+          else
+          {
+            _frameOut.WriteNoContentMessage(MessageCodes.Unrecognized);
           }
         }
         catch(OperationCanceledException)
@@ -222,4 +259,128 @@ public class KeyServerLogic: IDisposable
     }
   }
 
+  /// <summary>
+  /// Handle a "keep alive" message. This message is mostly used for
+  /// debugging, since there is no network connection involved.
+  /// </summary>
+  private Task HandleKeepAlive(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    frameOut.WriteNoContentMessage(MessageCodes.KeepAlive);
+    return Task.CompletedTask;
+  }
+
+  /// <summary>
+  /// Handle a "key for file" request. This request has two purposes: it
+  /// acts as a key request using a target file as argument instead of a key ID.
+  /// It is also used for the side effect of associating a file name with
+  /// a key. And if the key isn't available yet, tagging the key in the UI as
+  /// requiring attention.
+  /// </summary>
+  private async Task HandleKeyForFile(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var fileName = frameIn.ReadKeyForFileRequest();
+    if(String.IsNullOrEmpty(fileName))
+    {
+      frameOut.WriteErrorResponse("Missing file name");
+      return;
+    }
+    if(!File.Exists(fileName))
+    {
+      frameOut.WriteErrorResponse("No such file");
+      return;
+    }
+    if(!Path.IsPathFullyQualified(fileName))
+    {
+      frameOut.WriteErrorResponse("Expecting an absolute file name");
+      return;
+    }
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif == null)
+    {
+      frameOut.WriteErrorResponse("Unrecognized file format");
+      return;
+    }
+    var keyId = pkif.KeyId;
+    var state = KeyStates.GetKey(keyId);
+    state.AssociateFile(fileName, true);
+    var status = state.Status;
+    switch(status)
+    {
+      case KeyStatus.Published:
+        {
+          state.UseKey(frameOut.WriteKeyResponse);
+          break;
+        }
+      case KeyStatus.Seeded:
+      case KeyStatus.Hidden:
+        {
+          frameOut.WriteKeyResponse(null);
+          await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
+          break;
+        }
+      default:
+        {
+          frameOut.WriteErrorResponse("Internal error - unexpected key status");
+          break;
+        }
+    }
+    await Callbacks.KeyStatusChanged(Owner, keyId, status);
+  }
+
+  private async Task HandleKeyRequest(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keyId = frameIn.ReadKeyRequest();
+    var state = KeyStates.GetKey(keyId);
+    var found = false;
+    state.UseKey(bw => {
+      found = bw != null;
+      frameOut.WriteKeyResponse(bw);
+    });
+    if(!found)
+    {
+      await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
+    }
+  }
+
+  private async Task HandleKeyUpload(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keyId = frameIn.ReadKeyUpload(KeyStates.KeyChain);
+    var state = KeyStates.GetKey(keyId);
+    frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode);
+    await Callbacks.KeyStatusChanged(Owner, keyId, state.Status);
+  }
+
+  private async Task HandleKeyPresenceList(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keysRequested = frameIn.ReadKeyPresence();
+    var foundList = new List<Guid>();
+    foreach(var key in keysRequested)
+    {
+      var state = KeyStates.FindKey(key);
+      if(state != null)
+      {
+        if(state.Status == KeyStatus.Published)
+        {
+          foundList.Add(key);
+        }
+        else
+        {
+          await Callbacks.KeyLoadRequest(Owner, key, state.Status, null);
+        }
+      }
+    }
+    frameOut.WriteKeyPresence(foundList);
+  }
+
+  private Task HandleServerDiagnostics(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    frameOut.WriteNoContentMessage(MessageCodes.OkNoContent);
+    var states = KeyStates.AllStates;
+    Trace.TraceInformation($"Diag: {states.Count} states.");
+    foreach(var state in states)
+    {
+      Trace.TraceInformation($"{state.KeyId} ({state.Status})");
+    }
+    return Task.CompletedTask;
+  }
 }

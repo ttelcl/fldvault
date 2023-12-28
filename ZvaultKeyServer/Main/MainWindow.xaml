@@ -6,13 +6,15 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
     xmlns:local="clr-namespace:ZvaultKeyServer.Main"
+    xmlns:keys="clr-namespace:ZvaultKeyServer.Main.Keys"
     mc:Ignorable="d"
     Title="Zvault Key Server"
     TitleCharacterCasing="Normal"
     Height="450"
     Width="800"
     ResizeMode="CanResizeWithGrip"
-    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}">
+    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
+    Loaded="MetroWindow_Loaded">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -58,7 +60,7 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-
+            <keys:KeysView DataContext="{Binding KeysViewModel}" />
         </Border>
     </DockPanel>
 </mah:MetroWindow>

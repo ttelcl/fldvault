@@ -18,6 +18,7 @@ using FldVault.Upi;
 using FldVault.Upi.Implementation;
 using FldVault.Upi.Implementation.Keys;
 
+using ZvaultKeyServer.Main.Keys;
 using ZvaultKeyServer.Server;
 using ZvaultKeyServer.WpfUtilities;
 
@@ -33,6 +34,7 @@ public class MainViewModel: ViewModelBase
     KeyStates = new KeyStateStore(KeyChain);
     HostAdapter = new ServerHostAdapter(this, dispatcher);
     Server = new KeyServerUpi(KeyStates, null);
+    KeysViewModel = new KeysViewModel(KeyStates);
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
@@ -46,6 +48,8 @@ public class MainViewModel: ViewModelBase
   public KeyChain KeyChain { get; }
 
   public KeyStateStore KeyStates { get; }
+
+  public KeysViewModel KeysViewModel { get; }
 
   public ICommand ExitCommand { get; } = new DelegateCommand(p => {
     var w = Application.Current.MainWindow;

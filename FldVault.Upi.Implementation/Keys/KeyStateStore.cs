@@ -101,4 +101,13 @@ public class KeyStateStore
       }
     }
   }
+  
+  /// <summary>
+  /// Check if any key info is known for the key identified
+  /// by the ID
+  /// </summary>
+  public bool HasKey(Guid keyId)
+  {
+    return _states.ContainsKey(keyId);
+  }
 }

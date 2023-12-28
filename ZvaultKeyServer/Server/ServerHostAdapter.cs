@@ -70,6 +70,7 @@ public class ServerHostAdapter: IKeyServerHost
     }
     // TODO
     Trace.TraceInformation($"Callback: KeyStatusChanged {keyId} '{status}'");
+    MainModel.KeysViewModel.SyncModel();
   }
 
   public async Task ServerStatusChanged(

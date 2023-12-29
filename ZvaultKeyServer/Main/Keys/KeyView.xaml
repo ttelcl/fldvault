@@ -13,37 +13,59 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" MinWidth="150"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="Auto" MinWidth="50"/>
         </Grid.ColumnDefinitions>
-        <Grid Grid.Row="0" Grid.Column="0">
+        <!-- #106D8764 -->
+        <Border
+            Grid.Column="0"
+            Grid.Row="0"
+            Grid.RowSpan="2"
+            Padding="5,3"
+            BorderThickness="1"
+            Background="#30CC4400"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="0"
+                    Text="{Binding Status}"/>
+                <TextBlock
+                    Grid.Row="0"
+                    Grid.Column="1"
+                    HorizontalAlignment="Right"
+                    Text="{Binding StampReason}"/>
+                <TextBlock
+                    Grid.Row="1"
+                    Grid.ColumnSpan="2"
+                    Text="{Binding StampText}"/>
+            </Grid>
+        </Border>
+        <Grid
+            Grid.Row="0"
+            Grid.Column="1" >
             <TextBlock
                 Text="{Binding KeyId}"
+                Padding="5,2"
                 FontFamily="Lucida Sans Typewriter"/>
         </Grid>
         <Border
             Grid.Row="1"
-            Grid.Column="0"
+            Grid.Column="1"
+            Padding="5,2"
             BorderThickness="0,0,0,1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent}">
             <TextBlock 
                 Text="{Binding ShortName}"
                 ToolTip="{Binding FolderName}"/>
-        </Border>
-        <!-- #106D8764 -->
-        <Border
-            Grid.Column="1"
-            Grid.Row="0"
-            Grid.RowSpan="2"
-            Padding="5,3"
-            BorderThickness="1"
-            Background="#10CC4400"
-            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <StackPanel Orientation="Vertical">
-                <TextBlock Text="{Binding Status}"/>
-                <TextBlock Text="{Binding StampText}"/>
-                <TextBlock Text="{Binding StampReason}"/>
-            </StackPanel>
         </Border>
     </Grid>
 </UserControl>

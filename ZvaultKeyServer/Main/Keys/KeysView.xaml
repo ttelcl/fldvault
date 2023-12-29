@@ -3,19 +3,34 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+             xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys" 
+             xmlns:componentmodel="clr-namespace:System.ComponentModel;assembly=WindowsBase"
              mc:Ignorable="d" 
              d:DesignHeight="450"
              d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
+    <UserControl.Resources>
+        <!--
+        Based on a heckload of Googling and combining ideas from several pages, including
+        - https://stackoverflow.com/questions/1280704/how-can-i-sort-a-listbox-using-only-xaml-and-no-code-behind
+        - https://stackoverflow.com/questions/20888619/proper-way-to-use-collectionviewsource-in-viewmodel
+        -->
+        <CollectionViewSource
+            x:Key="SortedKeyViewModels"
+            Source="{Binding Keys}">
+            <CollectionViewSource.SortDescriptions>
+                <componentmodel:SortDescription Direction="Descending" PropertyName="Stamp"/>
+            </CollectionViewSource.SortDescriptions>
+        </CollectionViewSource>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" MinHeight="50"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" MinHeight="50"/>
         </Grid.RowDefinitions>
         <!-- Accent4 is #336D8764 -->
         <Border
-            Grid.Row="0"
+            Grid.Row="1"
             Padding="5,3"
             BorderThickness="1"
             Background="#106D8764"
@@ -26,13 +41,19 @@
             </StackPanel>
         </Border>
         <Border
-            Grid.Row="1"
+            Grid.Row="0"
             Padding="5,3"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <!--<TextBlock Text="List zone"/>-->
             <ListBox
-                ItemsSource="{Binding Keys}">
+                ItemsSource="{Binding Source={StaticResource SortedKeyViewModels}}"
+                >
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <local:KeyView/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
             </ListBox>
         </Border>
     </Grid>

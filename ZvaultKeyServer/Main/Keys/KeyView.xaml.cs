@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,14 +16,13 @@ using System.Windows.Shapes;
 namespace ZvaultKeyServer.Main.Keys
 {
   /// <summary>
-  /// Interaction logic for KeysView.xaml
+  /// Interaction logic for KeyView.xaml
   /// </summary>
-  public partial class KeysView: UserControl
+  public partial class KeyView: UserControl
   {
-    public KeysView()
+    public KeyView()
     {
       InitializeComponent();
     }
-
   }
 }

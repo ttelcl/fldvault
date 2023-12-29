@@ -30,6 +30,7 @@ public class KeysViewModel: ViewModelBase
   {
     Model = model;
     Keys = new ObservableCollection<KeyViewModel>();
+    SyncModel();
   }
 
   public KeyStateStore Model { get; }
@@ -102,6 +103,10 @@ public class KeysViewModel: ViewModelBase
     foreach(var vm in newModels)
     {
       Keys.Add(vm);
+    }
+    foreach(var vm in Keys)
+    {
+      vm.SyncModel();
     }
   }
 

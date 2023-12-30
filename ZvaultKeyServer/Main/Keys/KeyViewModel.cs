@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Media;
 
 using FldVault.Upi;
@@ -67,6 +68,7 @@ public class KeyViewModel: ViewModelBase
         RaisePropertyChanged(nameof(StatusIcon));
         RaisePropertyChanged(nameof(StatusForegroundColor));
         RaisePropertyChanged(nameof(StatusBackgroundColor));
+        RaisePropertyChanged(nameof(StatusDescription));
       }
     }
   }
@@ -85,25 +87,21 @@ public class KeyViewModel: ViewModelBase
   }
 
   public Brush StatusForegroundColor {
-    get {
-      return _status switch {
-        KeyStatus.Unknown => Owner.BrushForColor("#CC808080"),
-        KeyStatus.Seeded => Owner.BrushForColor("#EEBB8833"),
-        KeyStatus.Hidden => Owner.BrushForColor("#EE6666DD"),
-        KeyStatus.Published => Owner.BrushForColor("#EE66CC44"),
-        _ => Owner.BrushForColor("#F8FF88FF"),
-      };
-    }
+    get => Owner.ForegroundForStatus(_status);
   }
 
   public Brush StatusBackgroundColor {
+    get => Owner.BackgroundForStatus(_status);
+  }
+
+  public string StatusDescription {
     get {
       return _status switch {
-        KeyStatus.Unknown => Owner.BrushForColor("#33808080"),
-        KeyStatus.Seeded => Owner.BrushForColor("#33BB8833"),
-        KeyStatus.Hidden => Owner.BrushForColor("#336666DD"),
-        KeyStatus.Published => Owner.BrushForColor("#3366CC44"),
-        _ => Owner.BrushForColor("#44FF88FF"),
+        KeyStatus.Unknown => "Key description available, but no information to help unlock it",
+        KeyStatus.Seeded => "Passphrase required to unlock this key",
+        KeyStatus.Hidden => "Key hidden from clients until you unhide it",
+        KeyStatus.Published => "Key available to clients requesting it",
+        _ => "(Unexpected status)",
       };
     }
   }

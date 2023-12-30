@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ZvaultKeyServer"
              xmlns:main="clr-namespace:ZvaultKeyServer.Main"
+             xmlns:converters="clr-namespace:ZvaultKeyServer.Converters"
              xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
              Startup="App_Startup"
              Exit="Application_Exit">
@@ -26,6 +27,7 @@
             <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MahApps.Styles.TabItem}">
                 <Setter Property="mah:HeaderedControlHelper.HeaderFontSize" Value="20"/>
             </Style>
+            <converters:StringMatchVisibilityConverter x:Key="StatusVisible" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

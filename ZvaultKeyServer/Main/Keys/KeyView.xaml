@@ -25,6 +25,7 @@
             Grid.RowSpan="2"
             Padding="5,3"
             Background="{Binding StatusBackgroundColor}"
+            ToolTip="{Binding StatusDescription}"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <Grid>

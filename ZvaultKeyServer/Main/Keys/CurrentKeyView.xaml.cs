@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,19 @@ namespace ZvaultKeyServer.Main.Keys
     public CurrentKeyView()
     {
       InitializeComponent();
+    }
+
+    private void PasswordBox_Bind(object sender, DependencyPropertyChangedEventArgs e)
+    {
+      if(sender is PasswordBox pwb && pwb.DataContext is KeysViewModel kvm)
+      {
+        Trace.TraceInformation("Password control bootstrap succeeded");
+        kvm.BindPasswordBox(pwb);
+      }
+      else
+      {
+        Trace.TraceError("Password control bootstrap failed");
+      }
     }
   }
 }

@@ -60,9 +60,9 @@
         </Border>
         <Border
             Grid.Row="2"
-            Padding="5,3"
             BorderThickness="1"
             Background="#106D8764"
+            Visibility="{Binding CurrentKeyVisible}"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <local:CurrentKeyView DataContext="{Binding CurrentKey}"/>
         </Border>

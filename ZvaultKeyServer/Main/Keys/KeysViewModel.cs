@@ -12,14 +12,17 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
-using FldVault.Core.Vaults;
-using FldVault.Upi.Implementation.Keys;
-
 using Microsoft.Win32;
+
+using FldVault.Core.Vaults;
+using FldVault.Upi;
+using FldVault.Upi.Implementation.Keys;
 
 using ZvaultKeyServer.WpfUtilities;
 
@@ -32,6 +35,7 @@ public class KeysViewModel: ViewModelBase
 {
   private readonly Dictionary<string, SolidColorBrush> _colorCache;
   private readonly BrushConverter _colorConverter;
+  private PasswordBox? _passwordBox;
 
   /// <summary>
   /// Create a new KeysViewModel
@@ -48,6 +52,8 @@ public class KeysViewModel: ViewModelBase
     ImportKeyCommand = new DelegateCommand(p => ImportKey());
     NewKeyCommand = new DelegateCommand(p => NewKey());
     NewVaultCommand = new DelegateCommand(p => NewVault());
+    TryUnlockCommand = new DelegateCommand(p => TryUnlock());
+    ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
     KeysView.CustomSort = new KeyViewModelComparer();
@@ -64,6 +70,10 @@ public class KeysViewModel: ViewModelBase
 
   public ICommand NewVaultCommand { get; }
 
+  public ICommand TryUnlockCommand { get; }
+
+  public ICommand ClearPasswordCommand { get; }
+
   public ObservableCollection<KeyViewModel> Keys { get; }
 
   public /*ICollectionView*/ ListCollectionView KeysView { get; }
@@ -73,10 +83,19 @@ public class KeysViewModel: ViewModelBase
     set {
       if(SetNullableInstanceProperty(ref _currentKey, value))
       {
+        RaisePropertyChanged(nameof(CurrentKeyVisible));
+        if(_passwordBox != null)
+        {
+          _passwordBox.Clear();
+        }
       }
     }
   }
   private KeyViewModel? _currentKey;
+
+  public Visibility CurrentKeyVisible {
+    get => _currentKey == null ? Visibility.Hidden : Visibility.Visible;
+  }
 
   /// <summary>
   /// Find the viewmodel for the key identified by the id.
@@ -132,6 +151,28 @@ public class KeysViewModel: ViewModelBase
       _colorCache[colorText] = color;
     }
     return color;
+  }
+
+  public Brush ForegroundForStatus(KeyStatus status)
+  {
+    return status switch {
+      KeyStatus.Unknown => BrushForColor("#CC808080"),
+      KeyStatus.Seeded => BrushForColor("#EEDD9933"),
+      KeyStatus.Hidden => BrushForColor("#EE6666DD"),
+      KeyStatus.Published => BrushForColor("#EE66CC44"),
+      _ => BrushForColor("#F8FF88FF"),
+    };
+  }
+
+  public Brush BackgroundForStatus(KeyStatus status)
+  {
+    return status switch {
+      KeyStatus.Unknown => BrushForColor("#28808080"),
+      KeyStatus.Seeded => BrushForColor("#28DD9933"),
+      KeyStatus.Hidden => BrushForColor("#286666DD"),
+      KeyStatus.Published => BrushForColor("#2866CC44"),
+      _ => BrushForColor("#44FF88FF"),
+    };
   }
 
   public void SyncModel()
@@ -220,4 +261,50 @@ public class KeysViewModel: ViewModelBase
     StatusHost.StatusMessage = "New Vault - NYI";
   }
 
+  public void TryUnlock()
+  {
+    StatusHost.StatusMessage = "";
+    var key = CurrentKey;
+    if(key == null)
+    {
+      StatusHost.StatusMessage = "Cannot unlock: No current key";
+      return;
+    }
+    if(_passwordBox == null)
+    {
+      StatusHost.StatusMessage = "Cannot unlock: password box not bound (internal error)";
+      return;
+    }
+    if(key.Status != KeyStatus.Seeded)
+    {
+      StatusHost.StatusMessage = "Cannot unlock: key is already unlocked or is not a password-based key";
+      return;
+    }
+    // _passwordBox.SecurePassword returns a copy, so yes: dispose it!
+    using(var secureString = _passwordBox.SecurePassword)
+    {
+      var unlocked = key.Model.TryResolveKey(secureString);
+      if(unlocked)
+      {
+        StatusHost.StatusMessage = $"Successfully unlocked key {key.KeyId}";
+        // No point in keeping the password around anymore
+        _passwordBox.Clear();
+        SyncModel();
+      }
+      else
+      {
+        StatusHost.StatusMessage = $"Incorrect passphrase for {key.KeyId}";
+      }
+    }
+  }
+
+  public void ClearPassword()
+  {
+    _passwordBox?.Clear();
+  }
+
+  internal void BindPasswordBox(PasswordBox pwb)
+  {
+    _passwordBox = pwb;
+  }
 }

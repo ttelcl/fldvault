@@ -1,0 +1,20 @@
+﻿<UserControl x:Class="ZvaultKeyServer.Main.Keys.CurrentKeyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+             mc:Ignorable="d" 
+             d:DesignHeight="150"
+             d:DesignWidth="800"
+             d:DataContext="{d:DesignInstance local:KeyViewModel, IsDesignTimeCreatable=False}">
+    <Grid>
+        <WrapPanel Orientation="Horizontal">
+            <TextBlock Padding="5,0" Text="{Binding KeyId}"/>
+            <TextBlock Padding="5,0" Text="{Binding StampText}"/>
+            <TextBlock Padding="5,0" Text="{Binding StampReason}"/>
+            <TextBlock Padding="5,0" Text="{Binding ShortName}"/>
+            <TextBlock Padding="5,0" Text="{Binding FolderName}"/>
+        </WrapPanel>
+    </Grid>
+</UserControl>

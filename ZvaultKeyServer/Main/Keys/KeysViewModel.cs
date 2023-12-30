@@ -45,6 +45,16 @@ public class KeysViewModel: ViewModelBase
 
   public /*ICollectionView*/ ListCollectionView KeysView { get; }
 
+  public KeyViewModel? CurrentKey {
+    get => _currentKey;
+    set {
+      if(SetNullableInstanceProperty(ref _currentKey, value))
+      {
+      }
+    }
+  }
+  private KeyViewModel? _currentKey;
+
   /// <summary>
   /// Find the viewmodel for the key identified by the id.
   /// Existence state of the viewmodel is synchronized with the raw

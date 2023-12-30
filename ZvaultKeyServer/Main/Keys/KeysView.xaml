@@ -11,36 +11,45 @@
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" MinHeight="40"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto" MinHeight="50"/>
+            <RowDefinition Height="Auto" MinHeight="80"/>
         </Grid.RowDefinitions>
         <!-- Accent4 is #336D8764 -->
         <Border
-            Grid.Row="1"
+            Grid.Row="0"
             Padding="5,3"
             BorderThickness="1"
             Background="#106D8764"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <StackPanel Orientation="Vertical">
-                <TextBlock Text="Edit zone"/>
-                <TextBlock Text="{Binding Keys.Count}"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Padding="5,0" Text="Command zone"/>
+                <TextBlock Padding="5,0" Text="{Binding Keys.Count}"/>
             </StackPanel>
         </Border>
         <Border
-            Grid.Row="0"
+            Grid.Row="1"
             Padding="5,3"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <!--<TextBlock Text="List zone"/>-->
             <ListBox
                 ItemsSource="{Binding KeysView}"
-                >
+                SelectedItem="{Binding CurrentKey}">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
                         <local:KeyView/>
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+        </Border>
+        <Border
+            Grid.Row="2"
+            Padding="5,3"
+            BorderThickness="1"
+            Background="#106D8764"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            <local:CurrentKeyView DataContext="{Binding CurrentKey}"/>
         </Border>
     </Grid>
 </UserControl>

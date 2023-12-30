@@ -11,6 +11,7 @@
     <Grid>
         <WrapPanel Orientation="Horizontal">
             <TextBlock Padding="5,0" Text="{Binding KeyId}"/>
+            <TextBlock Padding="5,0" Text="{Binding Status}"/>
             <TextBlock Padding="5,0" Text="{Binding StampText}"/>
             <TextBlock Padding="5,0" Text="{Binding StampReason}"/>
             <TextBlock Padding="5,0" Text="{Binding ShortName}"/>

@@ -24,7 +24,7 @@ using ZvaultKeyServer.WpfUtilities;
 
 namespace ZvaultKeyServer.Main;
 
-public class MainViewModel: ViewModelBase
+public class MainViewModel: ViewModelBase, IStatusMessage
 {
   public MainViewModel(
     Dispatcher dispatcher,
@@ -34,7 +34,7 @@ public class MainViewModel: ViewModelBase
     KeyStates = new KeyStateStore(KeyChain);
     HostAdapter = new ServerHostAdapter(this, dispatcher);
     Server = new KeyServerUpi(KeyStates, null);
-    KeysViewModel = new KeysViewModel(KeyStates);
+    KeysViewModel = new KeysViewModel(KeyStates, this);
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);

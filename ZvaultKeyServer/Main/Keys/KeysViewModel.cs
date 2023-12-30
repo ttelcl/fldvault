@@ -8,12 +8,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
+using System.Windows.Input;
 
+using FldVault.Core.Vaults;
 using FldVault.Upi.Implementation.Keys;
+
+using Microsoft.Win32;
 
 using ZvaultKeyServer.WpfUtilities;
 
@@ -29,10 +34,15 @@ public class KeysViewModel: ViewModelBase
   /// Create a new KeysViewModel
   /// </summary>
   public KeysViewModel(
-    KeyStateStore model)
+    KeyStateStore model,
+    IStatusMessage statusHost)
   {
     Model = model;
+    StatusHost = statusHost;
     Keys = new ObservableCollection<KeyViewModel>();
+    ImportKeyCommand = new DelegateCommand(p => ImportKey());
+    NewKeyCommand = new DelegateCommand(p => NewKey());
+    NewVaultCommand = new DelegateCommand(p => NewVault());
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
     KeysView.CustomSort = new KeyViewModelComparer();
@@ -40,6 +50,14 @@ public class KeysViewModel: ViewModelBase
   }
 
   public KeyStateStore Model { get; }
+
+  public IStatusMessage StatusHost { get; }
+
+  public ICommand ImportKeyCommand { get; }
+
+  public ICommand NewKeyCommand { get; }
+
+  public ICommand NewVaultCommand { get; }
 
   public ObservableCollection<KeyViewModel> Keys { get; }
 
@@ -134,6 +152,51 @@ public class KeysViewModel: ViewModelBase
       // (but equivalent) one does the trick.
       KeysView.CustomSort = new KeyViewModelComparer();
     }
+  }
+
+  public void ImportKey()
+  {
+    StatusHost.StatusMessage = "Select file(s) to import the key of.";
+    var dialog = new OpenFileDialog() {
+      Filter = "All supported files (*.pass.key-info, *.zvlt)|*.pass.key-info;*.zvlt",
+      Multiselect = true,
+    };
+    if(dialog.ShowDialog() == true)
+    {
+      foreach(var fileName in dialog.FileNames)
+      {
+        var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+        if(pkif == null)
+        {
+          Trace.TraceWarning($"Unsupported file {fileName}");
+          StatusHost.StatusMessage = $"Unsupported file {Path.GetFileName(fileName)}";
+        }
+        else
+        {
+          var state = Model.GetKey(pkif.KeyId);
+          state.AssociateFile(fileName, true);
+          StatusHost.StatusMessage = $"Updated key {pkif.KeyId}";
+          Trace.TraceInformation($"Linked key {pkif.KeyId} to file {fileName}");
+        }
+      }
+      SyncModel();
+    }
+    else
+    {
+      StatusHost.StatusMessage = "Operation canceled";
+    }
+  }
+
+  public void NewKey()
+  {
+    Trace.TraceInformation("New Key - NYI");
+    StatusHost.StatusMessage = "New Key - NYI";
+  }
+
+  public void NewVault()
+  {
+    Trace.TraceInformation("New Vault - NYI");
+    StatusHost.StatusMessage = "New Vault - NYI";
   }
 
 }

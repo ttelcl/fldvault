@@ -12,6 +12,7 @@
     TitleCharacterCasing="Normal"
     Height="450"
     Width="800"
+    MinHeight="360"
     ResizeMode="CanResizeWithGrip"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
     Loaded="MetroWindow_Loaded">

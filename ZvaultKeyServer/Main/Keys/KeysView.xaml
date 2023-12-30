@@ -11,7 +11,7 @@
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" MinHeight="40"/>
+            <RowDefinition Height="Auto" MinHeight="10"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto" MinHeight="80"/>
         </Grid.RowDefinitions>
@@ -23,8 +23,15 @@
             Background="#106D8764"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Padding="5,0" Text="Command zone"/>
-                <TextBlock Padding="5,0" Text="{Binding Keys.Count}"/>
+                <Button Padding="2,1" Margin="2,0" Command="{Binding ImportKeyCommand}">
+                    <TextBlock Padding="2,0" Text="Import Key ..."/>
+                </Button>
+                <Button Padding="2,1" Margin="2,0" Command="{Binding NewKeyCommand}">
+                    <TextBlock Padding="2,0" Text="New Key ..."/>
+                </Button>
+                <Button Padding="2,1" Margin="2,0" Command="{Binding NewVaultCommand}">
+                    <TextBlock Padding="2,0" Text="New Vault + Key ..."/>
+                </Button>
             </StackPanel>
         </Border>
         <Border
@@ -32,7 +39,6 @@
             Padding="5,3"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <!--<TextBlock Text="List zone"/>-->
             <ListBox
                 ItemsSource="{Binding KeysView}"
                 SelectedItem="{Binding CurrentKey}">

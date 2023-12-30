@@ -9,20 +9,6 @@
              d:DesignHeight="450"
              d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
-    <UserControl.Resources>
-        <!--
-        Based on a heckload of Googling and combining ideas from several pages, including
-        - https://stackoverflow.com/questions/1280704/how-can-i-sort-a-listbox-using-only-xaml-and-no-code-behind
-        - https://stackoverflow.com/questions/20888619/proper-way-to-use-collectionviewsource-in-viewmodel
-        -->
-        <CollectionViewSource
-            x:Key="SortedKeyViewModels"
-            Source="{Binding Keys}">
-            <CollectionViewSource.SortDescriptions>
-                <componentmodel:SortDescription Direction="Descending" PropertyName="Stamp"/>
-            </CollectionViewSource.SortDescriptions>
-        </CollectionViewSource>
-    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -47,7 +33,7 @@
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <!--<TextBlock Text="List zone"/>-->
             <ListBox
-                ItemsSource="{Binding Source={StaticResource SortedKeyViewModels}}"
+                ItemsSource="{Binding KeysView}"
                 >
                 <ListBox.ItemTemplate>
                     <DataTemplate>

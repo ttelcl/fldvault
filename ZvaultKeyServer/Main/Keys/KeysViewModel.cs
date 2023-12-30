@@ -3,12 +3,15 @@
  */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Data;
 
 using FldVault.Upi.Implementation.Keys;
 
@@ -30,12 +33,17 @@ public class KeysViewModel: ViewModelBase
   {
     Model = model;
     Keys = new ObservableCollection<KeyViewModel>();
+    // A bit ugly to depend on the actual type
+    KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
+    KeysView.CustomSort = new KeyViewModelComparer();
     SyncModel();
   }
 
   public KeyStateStore Model { get; }
 
   public ObservableCollection<KeyViewModel> Keys { get; }
+
+  public /*ICollectionView*/ ListCollectionView KeysView { get; }
 
   /// <summary>
   /// Find the viewmodel for the key identified by the id.
@@ -93,7 +101,7 @@ public class KeysViewModel: ViewModelBase
     {
       if(!Model.HasKey(vm.KeyId))
       {
-        removedModels.Add(vm);
+        removedModels.Remove(vm);
       }
     }
     foreach(var vm in removedModels)
@@ -104,11 +112,18 @@ public class KeysViewModel: ViewModelBase
     {
       Keys.Add(vm);
     }
+    var needSort = false;
     foreach(var vm in Keys)
     {
-      vm.SyncModel();
+      needSort = vm.SyncModel() || needSort;
+    }
+    if(needSort)
+    {
+      // Forcing a re-sort when only the content of items change
+      // turns out to be tricky. Replacing the sorter with a new
+      // (but equivalent) one does the trick.
+      KeysView.CustomSort = new KeyViewModelComparer();
     }
   }
 
-  
 }

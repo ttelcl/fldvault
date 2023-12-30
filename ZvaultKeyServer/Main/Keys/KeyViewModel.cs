@@ -52,7 +52,7 @@ public class KeyViewModel: ViewModelBase
   public string? FolderName {
     get => String.IsNullOrEmpty(_fullFileName) ? null : Path.GetDirectoryName(_fullFileName);
   }
-  
+
   public KeyStatus Status {
     get => _status;
     set {
@@ -94,8 +94,15 @@ public class KeyViewModel: ViewModelBase
     StampReason = reason;
   }
 
-  public void SyncModel()
+  /// <summary>
+  /// Synchronize the viewmodel to the model.
+  /// </summary>
+  /// <returns>
+  /// True if the time stamp changed (and therefore the sort order)
+  /// </returns>
+  public bool SyncModel()
   {
+    var oldTime = Stamp;
     var files =
       (from kvp in Model.AssociatedFiles
        orderby kvp.Value descending
@@ -106,7 +113,7 @@ public class KeyViewModel: ViewModelBase
     }
     else
     {
-      FullFileName = null; 
+      FullFileName = null;
     }
     // TODO: track files in this model
     Status = Model.Status;
@@ -128,6 +135,44 @@ public class KeyViewModel: ViewModelBase
       reason = "Key Served";
     }
     SetStamp(stamp, reason);
+    return oldTime != Stamp;
   }
 
+}
+
+public class KeyViewModelComparer: IComparer<KeyViewModel>, System.Collections.IComparer
+{
+  private readonly Comparer<DateTimeOffset> _stampComparer
+    = Comparer<DateTimeOffset>.Default;
+
+  public int Compare(KeyViewModel? x, KeyViewModel? y)
+  {
+    if(x == null)
+    {
+      if(y == null)
+      {
+        return 0;
+      }
+      else
+      {
+        return 1;
+      }
+    }
+    else
+    {
+      if(y == null)
+      {
+        return -1;
+      }
+      else
+      {
+        return _stampComparer.Compare(y.Stamp, x.Stamp);
+      }
+    }
+  }
+
+  int System.Collections.IComparer.Compare(object? x, object? y)
+  {
+    return Compare(x as KeyViewModel, y as KeyViewModel);
+  }
 }

@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeyViewModel, IsDesignTimeCreatable=False}">
@@ -13,7 +14,8 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="150"/>
+            <ColumnDefinition Width="Auto" MinWidth="80"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <!-- #106D8764 -->
@@ -31,27 +33,29 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
+                    <ColumnDefinition Width="Auto" MinWidth="24"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock
-                    Grid.Row="0"
+                <iconPacks:PackIconMaterial
                     Grid.Column="0"
-                    Text="{Binding Status}"/>
+                    Grid.Row="0"
+                    Grid.RowSpan="2"
+                    Padding="2"
+                    Margin="0,2,5,2"
+                    Height="32"
+                    Width="32"
+                    VerticalAlignment="Center"
+                    Kind="{Binding StatusIcon}" />
                 <TextBlock
                     Grid.Row="0"
                     Grid.Column="1"
-                    HorizontalAlignment="Right"
-                    Text="{Binding StampReason}"/>
-                <TextBlock
-                    Grid.Row="1"
-                    Grid.ColumnSpan="2"
-                    Text="{Binding StampText}"/>
+                    Text="TBD"/>
             </Grid>
         </Border>
         <Grid
             Grid.Row="0"
-            Grid.Column="1" >
+            Grid.Column="1"
+            Grid.ColumnSpan="2">
             <TextBlock
                 Text="{Binding KeyId}"
                 Padding="5,2"
@@ -60,6 +64,16 @@
         <Border
             Grid.Row="1"
             Grid.Column="1"
+            Padding="5,2"
+            BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent}">
+            <TextBlock
+                Foreground="{DynamicResource MahApps.Brushes.Gray9}"
+                Text="{Binding StampShort}"/>
+        </Border>
+        <Border
+            Grid.Row="1"
+            Grid.Column="2"
             Padding="5,2"
             BorderThickness="0,0,0,1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent}">

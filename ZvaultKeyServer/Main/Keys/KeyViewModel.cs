@@ -58,10 +58,23 @@ public class KeyViewModel: ViewModelBase
     set {
       if(SetValueProperty(ref _status, value))
       {
+        RaisePropertyChanged(nameof(StatusIcon));
       }
     }
   }
   private KeyStatus _status;
+
+  public string StatusIcon {
+    get {
+      return _status switch {
+        KeyStatus.Unknown => "LockQuestion",
+        KeyStatus.Seeded => "LockAlert",
+        KeyStatus.Hidden => "LockOff",
+        KeyStatus.Published => "LockOpen",
+        _ => "HelpRhombusOutline",
+      };
+    }
+  }
 
   public DateTimeOffset Stamp {
     get => _stamp;
@@ -69,6 +82,7 @@ public class KeyViewModel: ViewModelBase
       if(SetValueProperty(ref _stamp, value))
       {
         RaisePropertyChanged(nameof(StampText));
+        RaisePropertyChanged(nameof(StampShort));
       }
     }
   }
@@ -86,6 +100,10 @@ public class KeyViewModel: ViewModelBase
 
   public string StampText {
     get => _stamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+  }
+
+  public string StampShort {
+    get => _stamp.ToLocalTime().ToString("HH:mm:ss", CultureInfo.InvariantCulture);
   }
 
   public void SetStamp(DateTimeOffset stamp, string reason)

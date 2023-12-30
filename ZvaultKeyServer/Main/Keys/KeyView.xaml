@@ -24,8 +24,8 @@
             Grid.Row="0"
             Grid.RowSpan="2"
             Padding="5,3"
+            Background="{Binding StatusBackgroundColor}"
             BorderThickness="1"
-            Background="#30CC4400"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <Grid>
                 <Grid.RowDefinitions>
@@ -45,6 +45,7 @@
                     Height="32"
                     Width="32"
                     VerticalAlignment="Center"
+                    Foreground="{Binding StatusForegroundColor}"
                     Kind="{Binding StatusIcon}" />
                 <TextBlock
                     Grid.Row="0"

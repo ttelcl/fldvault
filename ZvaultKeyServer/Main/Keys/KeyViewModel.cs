@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
@@ -23,13 +24,18 @@ namespace ZvaultKeyServer.Main.Keys;
 /// </summary>
 public class KeyViewModel: ViewModelBase
 {
-  public KeyViewModel(KeyState model)
+  public KeyViewModel(
+    KeysViewModel owner,
+    KeyState model)
   {
+    Owner = owner;
     Model = model;
     SyncModel();
   }
 
   public KeyState Model { get; }
+
+  public KeysViewModel Owner { get; }
 
   public Guid KeyId { get => Model.KeyId; }
 
@@ -59,6 +65,8 @@ public class KeyViewModel: ViewModelBase
       if(SetValueProperty(ref _status, value))
       {
         RaisePropertyChanged(nameof(StatusIcon));
+        RaisePropertyChanged(nameof(StatusForegroundColor));
+        RaisePropertyChanged(nameof(StatusBackgroundColor));
       }
     }
   }
@@ -72,6 +80,30 @@ public class KeyViewModel: ViewModelBase
         KeyStatus.Hidden => "LockOff",
         KeyStatus.Published => "LockOpen",
         _ => "HelpRhombusOutline",
+      };
+    }
+  }
+
+  public Brush StatusForegroundColor {
+    get {
+      return _status switch {
+        KeyStatus.Unknown => Owner.BrushForColor("#CC808080"),
+        KeyStatus.Seeded => Owner.BrushForColor("#EEBB8833"),
+        KeyStatus.Hidden => Owner.BrushForColor("#EE6666DD"),
+        KeyStatus.Published => Owner.BrushForColor("#EE66CC44"),
+        _ => Owner.BrushForColor("#F8FF88FF"),
+      };
+    }
+  }
+
+  public Brush StatusBackgroundColor {
+    get {
+      return _status switch {
+        KeyStatus.Unknown => Owner.BrushForColor("#33808080"),
+        KeyStatus.Seeded => Owner.BrushForColor("#33BB8833"),
+        KeyStatus.Hidden => Owner.BrushForColor("#336666DD"),
+        KeyStatus.Published => Owner.BrushForColor("#3366CC44"),
+        _ => Owner.BrushForColor("#44FF88FF"),
       };
     }
   }

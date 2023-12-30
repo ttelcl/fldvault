@@ -14,6 +14,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 
 using FldVault.Core.Vaults;
 using FldVault.Upi.Implementation.Keys;
@@ -29,6 +30,8 @@ namespace ZvaultKeyServer.Main.Keys;
 /// </summary>
 public class KeysViewModel: ViewModelBase
 {
+  private readonly Dictionary<string, SolidColorBrush> _colorCache;
+  private readonly BrushConverter _colorConverter;
 
   /// <summary>
   /// Create a new KeysViewModel
@@ -37,6 +40,8 @@ public class KeysViewModel: ViewModelBase
     KeyStateStore model,
     IStatusMessage statusHost)
   {
+    _colorCache = new Dictionary<string, SolidColorBrush>();
+    _colorConverter = new BrushConverter();
     Model = model;
     StatusHost = statusHost;
     Keys = new ObservableCollection<KeyViewModel>();
@@ -98,7 +103,7 @@ public class KeysViewModel: ViewModelBase
       }
       else
       {
-        kvm = new KeyViewModel(rawKey);
+        kvm = new KeyViewModel(this, rawKey);
         Keys.Add(kvm);
         return kvm;
       }
@@ -113,6 +118,22 @@ public class KeysViewModel: ViewModelBase
     }
   }
 
+  /// <summary>
+  /// Returns the brush for the color, either created newly or
+  /// from a cache. Supports the syntaxes supported by
+  /// <see cref="BrushConverter"/> for <see cref="SolidColorBrush"/>.
+  /// </summary>
+  public SolidColorBrush BrushForColor(string colorText)
+  {
+    if(!_colorCache.TryGetValue(colorText, out var color))
+    {
+      color = (SolidColorBrush)_colorConverter.ConvertFrom(colorText)!;
+      color.Freeze();
+      _colorCache[colorText] = color;
+    }
+    return color;
+  }
+
   public void SyncModel()
   {
     var newModels = new List<KeyViewModel>();
@@ -122,7 +143,7 @@ public class KeysViewModel: ViewModelBase
     {
       if(!vmIds.Contains(state.KeyId))
       {
-        newModels.Add(new KeyViewModel(state));
+        newModels.Add(new KeyViewModel(this, state));
       }
     }
     foreach(var vm in Keys)

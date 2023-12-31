@@ -80,6 +80,10 @@ public class KeyViewModel: ViewModelBase
       {
         RaisePropertyChanged(nameof(StatusIcon));
         RaisePropertyChanged(nameof(StatusDescription));
+        if(_status == KeyStatus.Published)
+        {
+          AutohideLeft = AutohideSeconds;
+        }
       }
     }
   }
@@ -193,6 +197,103 @@ public class KeyViewModel: ViewModelBase
     }
     SetStamp(stamp, reason);
     return oldTime != Stamp;
+  }
+
+  public string TimeoutText {
+    get {
+      if(AutohideEnabled)
+      {
+        return $"{AutohideLeft} / {AutohideSeconds}";
+      }
+      else
+      {
+        return "(auto-hide disabled)";
+      }
+    }
+  }
+
+  public bool AutohideEnabled {
+    get => _autohideEnabled;
+    set {
+      if(SetValueProperty(ref _autohideEnabled, value))
+      {
+        if(!AutohideEnabled)
+        {
+          ResetTimer();
+        }
+      }
+    }
+  }
+  private bool _autohideEnabled;
+
+  public int AutohideSeconds {
+    get => _autohideSeconds;
+    set {
+      if(SetValueProperty(ref _autohideSeconds, value))
+      {
+        if(AutohideSeconds == 0)
+        {
+          AutohideEnabled = false;
+        }
+        ResetTimer();
+        RaisePropertyChanged(nameof(TimedOut));
+      }
+    }
+  }
+  private int _autohideSeconds;
+
+  public int AutohideLeft {
+    get => _autohideLeft;
+    set {
+      if(SetValueProperty(ref _autohideLeft, value))
+      {
+        RaisePropertyChanged(nameof(TimedOut));
+      }
+    }
+  }
+  public int _autohideLeft = 300;
+
+  public bool TimedOut {
+    get => _autohideLeft == 0 && _autohideSeconds > 0;
+  }
+
+  public void ResetTimer()
+  {
+    if(AutohideSeconds > 0)
+    {
+      AutohideLeft = AutohideSeconds;
+    }
+    else
+    {
+      // dummy value; the import thing is that it is NOT 0
+      AutohideLeft = 300;
+    }
+  }
+
+  private bool IsCurrent()
+  {
+    return Object.ReferenceEquals(Owner.CurrentKey, this);
+  }
+
+  public void TimerTick()
+  {
+    var dontTick =
+      IsCurrent() && Application.Current.MainWindow.IsActive;
+    // Suppress timer ticks if this is the current key and this app is the foreground app
+    // (avoid changing state while editing)
+    if(!dontTick
+      && AutohideEnabled
+      && _autohideLeft>0
+      && Status == KeyStatus.Published)
+    {
+      AutohideLeft = _autohideLeft-1;
+      if(AutohideLeft == 0)
+      {
+        Trace.TraceInformation($"Key {KeyId} timed out");
+        Model.HideKey = true;
+        Status = Model.Status;
+      }
+    }
   }
 
 }

@@ -27,6 +27,8 @@ namespace ZvaultKeyServer.Main;
 
 public class MainViewModel: ViewModelBase, IStatusMessage
 {
+  private readonly DispatcherTimer _timer;
+
   public MainViewModel(
     Dispatcher dispatcher,
     KeyChain keyChain)
@@ -61,7 +63,16 @@ public class MainViewModel: ViewModelBase, IStatusMessage
         StatusMessage = "Unblocking canceled";
       }
     }, p => Server.ServerState == ServerStatus.Blocked);
+    _timer = new DispatcherTimer(DispatcherPriority.Background);
+    _timer.Interval = TimeSpan.FromSeconds(1);
+    _timer.Tick += TimerTick;
+    _timer.Start();
     ServerStatus = Server.ServerState;
+  }
+
+  private void TimerTick(object? sender, EventArgs e)
+  {
+    KeysViewModel.TimerTick();
   }
 
   public static void RegisterColors()

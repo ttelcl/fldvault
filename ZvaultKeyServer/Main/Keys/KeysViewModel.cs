@@ -291,4 +291,11 @@ public class KeysViewModel: ViewModelBase
   }
   private Brush _passwordBackground;
 
+  public void TimerTick()
+  {
+    foreach(var keyview in Keys)
+    {
+      keyview.TimerTick();
+    }
+  }
 }

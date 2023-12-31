@@ -25,7 +25,9 @@
                 <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}"/>
                 <Separator/>
                 <MenuItem Header="_Start" Command="{Binding StartServerCommand}"/>
-                <MenuItem Header="_Stop" Command="{Binding StopServerCommand}"/>
+                <MenuItem Header="St_op" Command="{Binding StopServerCommand}"/>
+                <Separator/>
+                <MenuItem Header="_Fix blocked server" Command="{Binding TryFixServerCommand}"/>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

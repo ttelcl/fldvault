@@ -39,6 +39,28 @@ public class MainViewModel: ViewModelBase, IStatusMessage
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
+    TryFixServerCommand = new DelegateCommand(p => {
+      if(MessageBox.Show(
+        "Are you sure?\n(this WILL crash the other server if there is one)",
+        "Confirmation",
+        MessageBoxButton.OKCancel,
+        MessageBoxImage.Warning) == MessageBoxResult.OK)
+      {
+        if(Server.TryFixSocket())
+        {
+          ServerStatus = Server.ServerState;
+          StatusMessage = "Unblocked server (use Server|Start to start this app's server)";
+        }
+        else
+        {
+          StatusMessage = "Failed to unblock server";
+        }
+      }
+      else
+      {
+        StatusMessage = "Unblocking canceled";
+      }
+    }, p => Server.ServerState == ServerStatus.Blocked);
     ServerStatus = Server.ServerState;
   }
 
@@ -75,6 +97,8 @@ public class MainViewModel: ViewModelBase, IStatusMessage
   public ICommand StartServerCommand { get; }
 
   public ICommand StopServerCommand { get; }
+
+  public ICommand TryFixServerCommand { get; }
 
   public string StatusMessage {
     get => _statusMessage;

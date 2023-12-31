@@ -25,6 +25,7 @@ using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
 
 using ZvaultKeyServer.WpfUtilities;
+using ZvaultKeyServer.Converters;
 
 namespace ZvaultKeyServer.Main.Keys;
 
@@ -33,8 +34,6 @@ namespace ZvaultKeyServer.Main.Keys;
 /// </summary>
 public class KeysViewModel: ViewModelBase
 {
-  private readonly Dictionary<string, SolidColorBrush> _colorCache;
-  private readonly BrushConverter _colorConverter;
   private PasswordBox? _passwordBox;
 
   /// <summary>
@@ -44,8 +43,6 @@ public class KeysViewModel: ViewModelBase
     KeyStateStore model,
     IStatusMessage statusHost)
   {
-    _colorCache = new Dictionary<string, SolidColorBrush>();
-    _colorConverter = new BrushConverter();
     Model = model;
     StatusHost = statusHost;
     Keys = new ObservableCollection<KeyViewModel>();
@@ -137,42 +134,14 @@ public class KeysViewModel: ViewModelBase
     }
   }
 
-  /// <summary>
-  /// Returns the brush for the color, either created newly or
-  /// from a cache. Supports the syntaxes supported by
-  /// <see cref="BrushConverter"/> for <see cref="SolidColorBrush"/>.
-  /// </summary>
-  public SolidColorBrush BrushForColor(string colorText)
-  {
-    if(!_colorCache.TryGetValue(colorText, out var color))
-    {
-      color = (SolidColorBrush)_colorConverter.ConvertFrom(colorText)!;
-      color.Freeze();
-      _colorCache[colorText] = color;
-    }
-    return color;
-  }
-
   public Brush ForegroundForStatus(KeyStatus status)
   {
-    return status switch {
-      KeyStatus.Unknown => BrushForColor("#CC808080"),
-      KeyStatus.Seeded => BrushForColor("#EEDD9933"),
-      KeyStatus.Hidden => BrushForColor("#EE6666DD"),
-      KeyStatus.Published => BrushForColor("#EE66CC44"),
-      _ => BrushForColor("#F8FF88FF"),
-    };
+    return BrushCache.Default.BrushOrDefault($"/Status/Fore/{status}");
   }
 
   public Brush BackgroundForStatus(KeyStatus status)
   {
-    return status switch {
-      KeyStatus.Unknown => BrushForColor("#28808080"),
-      KeyStatus.Seeded => BrushForColor("#28DD9933"),
-      KeyStatus.Hidden => BrushForColor("#286666DD"),
-      KeyStatus.Published => BrushForColor("#2866CC44"),
-      _ => BrushForColor("#44FF88FF"),
-    };
+    return BrushCache.Default.BrushOrDefault($"/Status/Back/{status}");
   }
 
   public void SyncModel()

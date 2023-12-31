@@ -18,6 +18,7 @@ using FldVault.Upi;
 using FldVault.Upi.Implementation;
 using FldVault.Upi.Implementation.Keys;
 
+using ZvaultKeyServer.Converters;
 using ZvaultKeyServer.Main.Keys;
 using ZvaultKeyServer.Server;
 using ZvaultKeyServer.WpfUtilities;
@@ -39,6 +40,20 @@ public class MainViewModel: ViewModelBase, IStatusMessage
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
     ServerStatus = Server.ServerState;
+    RegisterColors();
+  }
+
+  public static void RegisterColors()
+  {
+    var cc = BrushCache.Default;
+    cc.AddAlias("/Status/Fore/Unknown", "#CC808080");
+    cc.AddAlias("/Status/Back/Unknown", "#28808080");
+    cc.AddAlias("/Status/Fore/Seeded", "#EEDD9933");
+    cc.AddAlias("/Status/Back/Seeded", "#28DD9933");
+    cc.AddAlias("/Status/Fore/Hidden", "#EE6666DD");
+    cc.AddAlias("/Status/Back/Hidden", "#286666DD");
+    cc.AddAlias("/Status/Fore/Published", "#EE66CC44");
+    cc.AddAlias("/Status/Back/Published", "#2866CC44");
   }
 
   public ServerHostAdapter HostAdapter { get; }

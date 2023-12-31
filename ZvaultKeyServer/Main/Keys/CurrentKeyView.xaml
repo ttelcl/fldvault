@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
              xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
              xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
              mc:Ignorable="d" 
@@ -66,7 +67,21 @@
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource StatusVisible}, ConverterParameter=Published}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                <TextBlock Text="Placeholder! Published"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="3" Text="Published!"/>
+                    <mah:ToggleSwitch
+                        Grid.Column="0"
+                        IsOn="{Binding ShowKey, Mode=TwoWay}"
+                        OffContent="Hidden"
+                        OnContent="Published"
+                        />
+                </Grid>
             </Border>
             <Border
                 DockPanel.Dock="Top"
@@ -74,7 +89,21 @@
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource StatusVisible}, ConverterParameter=Hidden}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                <TextBlock Text="Placeholder! Hidden"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="3" Text="Hidden!"/>
+                    <mah:ToggleSwitch
+                        Grid.Column="0"
+                        IsOn="{Binding ShowKey, Mode=TwoWay}"
+                        OffContent="Hidden"
+                        OnContent="Published"
+                        />
+                </Grid>
             </Border>
             <WrapPanel Orientation="Horizontal">
                 <TextBlock Padding="5,0" Text="{Binding Status}"/>

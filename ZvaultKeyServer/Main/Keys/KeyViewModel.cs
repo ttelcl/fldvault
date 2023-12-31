@@ -52,6 +52,20 @@ public class KeyViewModel: ViewModelBase
   }
   private string _fullFileName = string.Empty;
 
+  public bool ShowKey {
+    get => _showKey;
+    set {
+      Trace.TraceInformation($"ShowKey -> {value}");
+      Model.HideKey = !value;
+      if(SetValueProperty(ref _showKey, value))
+      {
+        Trace.TraceInformation($"ShowKey Change Notification {Status} -> {Model.Status}");
+        Status = Model.Status;
+      }
+    }
+  }
+  private bool _showKey = false;
+
   public string ShortName {
     get => String.IsNullOrEmpty(_fullFileName) ? "-" : Path.GetFileName(_fullFileName);
   }
@@ -63,6 +77,7 @@ public class KeyViewModel: ViewModelBase
   public KeyStatus Status {
     get => _status;
     set {
+      Trace.TraceInformation($"Status {_status} -> {value}");
       if(SetValueProperty(ref _status, value))
       {
         RaisePropertyChanged(nameof(StatusIcon));
@@ -155,6 +170,7 @@ public class KeyViewModel: ViewModelBase
     }
     // TODO: track files in this model
     Status = Model.Status;
+    ShowKey = !Model.HideKey; // Sync back. Normally HideKey -> Model.HideKey
     var stamp = Model.LastRegistered;
     var reason = "Key Registered";
     if(Model.LastAssociated.HasValue && Model.LastAssociated.Value > stamp)

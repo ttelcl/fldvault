@@ -62,7 +62,7 @@ public class KeyState: IKeyInfo
   /// True if the key is currently hidden (or should be hidden if it were known).
   /// TODO: timeout logic to set this automatically
   /// </summary>
-  public bool HideKey { get; private set; }
+  public bool HideKey { get; set; }
 
   /// <inheritdoc/>
   public DateTimeOffset LastRegistered { get; }

@@ -45,6 +45,7 @@ public class KeysViewModel: ViewModelBase
   {
     Model = model;
     StatusHost = statusHost;
+    PasswordBackground = BrushCache.Default["#44444444"];
     Keys = new ObservableCollection<KeyViewModel>();
     ImportKeyCommand = new DelegateCommand(p => ImportKey());
     NewKeyCommand = new DelegateCommand(p => NewKey());
@@ -252,6 +253,7 @@ public class KeysViewModel: ViewModelBase
       if(unlocked)
       {
         StatusHost.StatusMessage = $"Successfully unlocked key {key.KeyId}";
+        SetPasswordBackground(false);
         // No point in keeping the password around anymore
         _passwordBox.Clear();
         SyncModel();
@@ -259,8 +261,14 @@ public class KeysViewModel: ViewModelBase
       else
       {
         StatusHost.StatusMessage = $"Incorrect passphrase for {key.KeyId}";
+        SetPasswordBackground(true);
       }
     }
+  }
+
+  public void SetPasswordBackground(bool error)
+  {
+    PasswordBackground = BrushCache.Default[error ? "#44663333" : "#44444444"];
   }
 
   public void ClearPassword()
@@ -272,5 +280,15 @@ public class KeysViewModel: ViewModelBase
   {
     _passwordBox = pwb;
   }
+
+  public Brush PasswordBackground {
+    get => _passwordBackground; 
+    set {
+      if(SetInstanceProperty(ref _passwordBackground, value))
+      {
+      }
+    }
+  }
+  private Brush _passwordBackground;
 
 }

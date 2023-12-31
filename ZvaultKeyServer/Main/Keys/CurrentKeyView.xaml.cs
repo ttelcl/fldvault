@@ -43,6 +43,7 @@ namespace ZvaultKeyServer.Main.Keys
     {
       if(sender is PasswordBox pwb && pwb.DataContext is KeysViewModel kvm)
       {
+        kvm.SetPasswordBackground(false);
         if(e.Key == Key.Enter)
         {
           kvm.TryUnlockCommand.Execute(null);

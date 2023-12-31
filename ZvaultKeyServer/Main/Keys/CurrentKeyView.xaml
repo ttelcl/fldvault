@@ -54,12 +54,11 @@
                     </Grid.ColumnDefinitions>
                     <PasswordBox
                         DataContextChanged="PasswordBox_Bind"
-                        KeyDown="PasswordBox_KeyDown"/>
+                        KeyDown="PasswordBox_KeyDown"
+                        mah:TextBoxHelper.ClearTextButton="True"
+                        Background="{Binding PasswordBackground}"/>
                     <Button Grid.Column="1" FontSize="14" Command="{Binding TryUnlockCommand}">
                         <TextBlock Text="Unlock"/>
-                    </Button>
-                    <Button Grid.Column="2" FontSize="14" Command="{Binding ClearPasswordCommand}">
-                        <TextBlock Text="Clear"/>
                     </Button>
                 </Grid>
             </Border>

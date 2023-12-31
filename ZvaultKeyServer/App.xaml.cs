@@ -24,6 +24,7 @@ public partial class App: Application
   private void App_Startup(object sender, StartupEventArgs e)
   {
     Trace.TraceInformation($"App.App_Startup enter");
+    MainViewModel.RegisterColors();
     var mainWindow = new MainWindow();
     MainModel = new MainViewModel(mainWindow.Dispatcher, _keyChain);
     mainWindow.DataContext = MainModel;

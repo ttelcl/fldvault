@@ -51,6 +51,8 @@ public class KeysViewModel: ViewModelBase
     NewVaultCommand = new DelegateCommand(p => NewVault());
     TryUnlockCommand = new DelegateCommand(p => TryUnlock());
     ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
+    PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
+    HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
     KeysView.CustomSort = new KeyViewModelComparer();
@@ -70,6 +72,10 @@ public class KeysViewModel: ViewModelBase
   public ICommand TryUnlockCommand { get; }
 
   public ICommand ClearPasswordCommand { get; }
+
+  public ICommand PublishCurrentKeyCommand { get; }
+
+  public ICommand HideCurrentKeyCommand { get; }
 
   public ObservableCollection<KeyViewModel> Keys { get; }
 
@@ -266,4 +272,5 @@ public class KeysViewModel: ViewModelBase
   {
     _passwordBox = pwb;
   }
+
 }

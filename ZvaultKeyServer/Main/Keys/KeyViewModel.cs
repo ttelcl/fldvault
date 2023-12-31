@@ -55,11 +55,9 @@ public class KeyViewModel: ViewModelBase
   public bool ShowKey {
     get => _showKey;
     set {
-      Trace.TraceInformation($"ShowKey -> {value}");
       Model.HideKey = !value;
       if(SetValueProperty(ref _showKey, value))
       {
-        Trace.TraceInformation($"ShowKey Change Notification {Status} -> {Model.Status}");
         Status = Model.Status;
       }
     }
@@ -145,6 +143,11 @@ public class KeyViewModel: ViewModelBase
   {
     Stamp = stamp;
     StampReason = reason;
+  }
+
+  public void SetCurrentKeyShowState(bool publish)
+  {
+    ShowKey = publish;
   }
 
   /// <summary>

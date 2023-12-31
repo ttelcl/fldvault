@@ -14,7 +14,7 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto" MinWidth="80"/>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -41,16 +41,12 @@
                     Grid.Row="0"
                     Grid.RowSpan="2"
                     Padding="2"
-                    Margin="0,2,5,2"
+                    Margin="0,2,0,2"
                     Height="32"
                     Width="32"
                     VerticalAlignment="Center"
                     Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                     Kind="{Binding StatusIcon}" />
-                <TextBlock
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    Text="TBD"/>
             </Grid>
         </Border>
         <Grid

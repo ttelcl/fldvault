@@ -52,11 +52,13 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <PasswordBox DataContextChanged="PasswordBox_Bind"/>
-                    <Button Grid.Column="1" Command="{Binding TryUnlockCommand}">
+                    <PasswordBox
+                        DataContextChanged="PasswordBox_Bind"
+                        KeyDown="PasswordBox_KeyDown"/>
+                    <Button Grid.Column="1" FontSize="14" Command="{Binding TryUnlockCommand}">
                         <TextBlock Text="Unlock"/>
                     </Button>
-                    <Button Grid.Column="2" Command="{Binding ClearPasswordCommand}">
+                    <Button Grid.Column="2" FontSize="14" Command="{Binding ClearPasswordCommand}">
                         <TextBlock Text="Clear"/>
                     </Button>
                 </Grid>
@@ -70,17 +72,20 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="3" Text="Published!"/>
-                    <mah:ToggleSwitch
+                    <Button
                         Grid.Column="0"
-                        IsOn="{Binding ShowKey, Mode=TwoWay}"
-                        OffContent="Hidden"
-                        OnContent="Published"
-                        />
+                        Width="85"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,0"
+                        Command="{Binding Owner.HideCurrentKeyCommand}"
+                        Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOff" />
+                            <TextBlock Padding="2,0" Text="Hide"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
             <Border
@@ -92,23 +97,24 @@
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="3" Text="Hidden!"/>
-                    <mah:ToggleSwitch
+                    <Button
                         Grid.Column="0"
-                        IsOn="{Binding ShowKey, Mode=TwoWay}"
-                        OffContent="Hidden"
-                        OnContent="Published"
-                        />
+                        Width="85"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,0"
+                        Command="{Binding Owner.PublishCurrentKeyCommand}"
+                        Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
+                            <TextBlock Padding="2,0" Text="Publish"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
             <WrapPanel Orientation="Horizontal">
-                <TextBlock Padding="5,0" Text="{Binding Status}"/>
                 <TextBlock Padding="5,0" Text="{Binding StampText}"/>
-                <TextBlock Padding="5,0" Text="{Binding StampReason}"/>
                 <TextBlock Padding="5,0" Text="{Binding ShortName}"/>
                 <TextBlock Padding="5,0" Text="{Binding FolderName}"/>
             </WrapPanel>

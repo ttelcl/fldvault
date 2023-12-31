@@ -38,5 +38,16 @@ namespace ZvaultKeyServer.Main.Keys
         Trace.TraceError("Password control bootstrap failed");
       }
     }
+
+    private void PasswordBox_KeyDown(object sender, KeyEventArgs e)
+    {
+      if(sender is PasswordBox pwb && pwb.DataContext is KeysViewModel kvm)
+      {
+        if(e.Key == Key.Enter)
+        {
+          kvm.TryUnlockCommand.Execute(null);
+        }
+      }
+    }
   }
 }

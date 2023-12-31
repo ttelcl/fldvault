@@ -19,11 +19,11 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <Separator/>
                 <MenuItem Header="_Exit" Command="{Binding ExitCommand}"/>
             </MenuItem>
             <MenuItem Header="_Server">
                 <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}"/>
+                <Separator/>
                 <MenuItem Header="_Start" Command="{Binding StartServerCommand}"/>
                 <MenuItem Header="_Stop" Command="{Binding StopServerCommand}"/>
             </MenuItem>

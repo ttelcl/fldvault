@@ -26,19 +26,19 @@
                 <Button Padding="2,1" Margin="2,0" Command="{Binding ImportKeyCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconUnicons Padding="2,0" Height="24" Width="24" Kind="Import" />
-                        <TextBlock Padding="2,2" Text="Import Key ..."/>
+                        <TextBlock FontSize="14" Padding="2,2" Text="Import Key ..."/>
                     </StackPanel>
                 </Button>
                 <Button Padding="2,1" Margin="2,0" Command="{Binding NewKeyCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyPlus" />
-                        <TextBlock Padding="2,2" Text="New Key ..."/>
+                        <TextBlock FontSize="14" Padding="2,2" Text="New Key ..."/>
                     </StackPanel>
                 </Button>
                 <Button Padding="2,1" Margin="2,0" Command="{Binding NewVaultCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="FolderKeyOutline" />
-                        <TextBlock Padding="2,2" Text="New Vault + Key ..."/>
+                        <TextBlock FontSize="14" Padding="2,2" Text="New Vault + Key ..."/>
                     </StackPanel>
                 </Button>
             </StackPanel>

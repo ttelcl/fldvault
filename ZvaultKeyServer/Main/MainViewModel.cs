@@ -40,7 +40,6 @@ public class MainViewModel: ViewModelBase, IStatusMessage
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
     ServerStatus = Server.ServerState;
-    RegisterColors();
   }
 
   public static void RegisterColors()

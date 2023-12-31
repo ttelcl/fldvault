@@ -44,12 +44,15 @@ public class PrefixBrushConverter: IValueConverter
       var color = Cache.KnownColor(key);
       if(color == null)
       {
-        Trace.TraceWarning($"Unregistered color: '{key}'");
+        Trace.TraceError($"Unregistered color: '{key}'");
       }
       return color ?? DefaultColor;
     }
     else
     {
+      Trace.TraceError(
+        $"Color conversion error. Target type is {targetType.Name}. " +
+        $"Value = '{value?.ToString()??String.Empty}'");
       return DefaultColor;
     }
   }

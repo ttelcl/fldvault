@@ -134,16 +134,6 @@ public class KeysViewModel: ViewModelBase
     }
   }
 
-  public Brush ForegroundForStatus(KeyStatus status)
-  {
-    return BrushCache.Default.BrushOrDefault($"/Status/Fore/{status}");
-  }
-
-  public Brush BackgroundForStatus(KeyStatus status)
-  {
-    return BrushCache.Default.BrushOrDefault($"/Status/Back/{status}");
-  }
-
   public void SyncModel()
   {
     var newModels = new List<KeyViewModel>();

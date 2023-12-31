@@ -18,13 +18,12 @@
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <!-- #106D8764 -->
         <Border
             Grid.Column="0"
             Grid.Row="0"
             Grid.RowSpan="2"
             Padding="5,3"
-            Background="{Binding StatusBackgroundColor}"
+            Background="{Binding Status, Converter={StaticResource StatusBack}}"
             ToolTip="{Binding StatusDescription}"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
@@ -46,7 +45,7 @@
                     Height="32"
                     Width="32"
                     VerticalAlignment="Center"
-                    Foreground="{Binding StatusForegroundColor}"
+                    Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                     Kind="{Binding StatusIcon}" />
                 <TextBlock
                     Grid.Row="0"

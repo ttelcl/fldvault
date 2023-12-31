@@ -66,8 +66,6 @@ public class KeyViewModel: ViewModelBase
       if(SetValueProperty(ref _status, value))
       {
         RaisePropertyChanged(nameof(StatusIcon));
-        RaisePropertyChanged(nameof(StatusForegroundColor));
-        RaisePropertyChanged(nameof(StatusBackgroundColor));
         RaisePropertyChanged(nameof(StatusDescription));
       }
     }
@@ -84,14 +82,6 @@ public class KeyViewModel: ViewModelBase
         _ => "HelpRhombusOutline",
       };
     }
-  }
-
-  public Brush StatusForegroundColor {
-    get => Owner.ForegroundForStatus(_status);
-  }
-
-  public Brush StatusBackgroundColor {
-    get => Owner.BackgroundForStatus(_status);
   }
 
   public string StatusDescription {

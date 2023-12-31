@@ -65,6 +65,11 @@ public class BrushCache
     return color;
   }
 
+  public SolidColorBrush? KnownColor(string colorText)
+  {
+    return _colorCache.TryGetValue(colorText, out var color) ? color : null;
+  }
+
   /// <summary>
   /// Returns the brush for the color. This indexer is equivalent to
   /// <see cref="BrushForColor(string)"/>
@@ -77,7 +82,7 @@ public class BrushCache
 
   public static BrushCache Default { get; } = new BrushCache();
 
-  public void AddAlias(string alias, SolidColorBrush brush) 
+  public void AddAlias(string alias, SolidColorBrush brush)
   {
     _colorCache[alias] = brush;
   }

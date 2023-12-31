@@ -29,6 +29,8 @@
             </Style>
             <converters:StringMatchVisibilityConverter x:Key="StatusVisible"/>
             <converters:StringBrushConverter x:Key="StringToBrush"/>
+            <converters:PrefixBrushConverter x:Key="StatusFore" Prefix="/Status/Fore/"/>
+            <converters:PrefixBrushConverter x:Key="StatusBack" Prefix="/Status/Back/"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

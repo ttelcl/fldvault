@@ -42,6 +42,7 @@ type private ExtractOptions = {
   ExistPolicy: ExistsHandling
   Files: ExtractFile list
   MetaPolicy: MetaHandling
+  CliPassword: bool
 }
 
 type private VaultContentFile = {
@@ -70,6 +71,8 @@ let runExtract args =
       rest |> parseMore o
     | "-h" :: _ ->
       None
+    | "-cli" :: rest ->
+      rest |> parseMore {o with CliPassword = true}
     | "-vf" :: vault :: rest ->
       rest |> parseMore {o with VaultName = Path.GetFullPath(vault)}
     | vault :: rest when vault.EndsWith(".zvlt") ->
@@ -133,6 +136,7 @@ let runExtract args =
     ExistPolicy = ExistsHandling.Fail
     Files = []
     MetaPolicy = MetaHandling.Auto
+    CliPassword = false
   }
   match oo with
   | Some(o) ->
@@ -156,7 +160,7 @@ let runExtract args =
         File.Delete(outProbe)
     use keyChain = new KeyChain()
     let keyServer = new KeyServerService()
-    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
+    let seedService = KeyUtilities.setupKeySeedService true o.CliPassword (keyServer |> Some)
     KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     use reader = new VaultFileReader(vaultFile, cryptor)

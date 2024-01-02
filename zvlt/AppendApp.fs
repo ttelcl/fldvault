@@ -26,6 +26,7 @@ type private AppendOptions = {
   PathDefault: string
   CompressionDefault: ZvltCompression
   Files: PathFile list
+  CliPassword: bool
 }
 
 type private FileTarget = {
@@ -58,6 +59,8 @@ let runAppend args =
       if o.Files |> List.isEmpty then
         failwith "No files to add specified"
       Some({o with Files = o.Files |> List.rev})
+    | "-cli" :: rest ->
+      rest |> parseMore {o with CliPassword = true}
     | "-vf" :: vault :: rest ->
       rest |> parseMore {o with VaultFile = vault}
     | file :: rest when file.EndsWith(".zvlt") ->
@@ -117,13 +120,14 @@ let runAppend args =
     PathDefault = ""
     Files = []
     CompressionDefault = ZvltCompression.Auto
+    CliPassword = false
   }
   match oo with
   | Some(o) ->
     let vaultFile = VaultFile.Open(o.VaultFile)
     use keyChain = new KeyChain()
     let keyServer = new KeyServerService()
-    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
+    let seedService = KeyUtilities.setupKeySeedService true o.CliPassword (keyServer |> Some)
     KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     use cryptor = vaultFile.CreateCryptor(keyChain)
     let targets = o.Files |> List.map pathFileToFileTarget

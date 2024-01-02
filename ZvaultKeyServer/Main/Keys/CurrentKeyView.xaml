@@ -43,7 +43,7 @@
                 DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
-                Visibility="{Binding Status, Converter={StaticResource StatusVisible}, ConverterParameter=Seeded}"
+                Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Seeded}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid DataContext="{Binding Owner}">
                     <!-- Password entry is handled by KeysView, not KeyView -->
@@ -66,7 +66,7 @@
                 DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
-                Visibility="{Binding Status, Converter={StaticResource StatusVisible}, ConverterParameter=Published}"
+                Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Published}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -91,7 +91,7 @@
                 DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
-                Visibility="{Binding Status, Converter={StaticResource StatusVisible}, ConverterParameter=Hidden}"
+                Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Hidden}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid>
                     <Grid.ColumnDefinitions>

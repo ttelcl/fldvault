@@ -27,7 +27,7 @@
             <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MahApps.Styles.TabItem}">
                 <Setter Property="mah:HeaderedControlHelper.HeaderFontSize" Value="20"/>
             </Style>
-            <converters:StringMatchVisibilityConverter x:Key="StatusVisible"/>
+            <converters:StringMatchVisibilityConverter x:Key="VisibleIfString"/>
             <converters:StringBrushConverter x:Key="StringToBrush"/>
             <converters:PrefixBrushConverter x:Key="StatusFore" Prefix="/Status/Fore/"/>
             <converters:PrefixBrushConverter x:Key="StatusBack" Prefix="/Status/Back/"/>

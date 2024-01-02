@@ -35,12 +35,6 @@
                         <TextBlock FontSize="14" Padding="2,2" Text="New Key ..."/>
                     </StackPanel>
                 </Button>
-                <Button Padding="2,1" Margin="2,0" Command="{Binding NewVaultCommand}">
-                    <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="FolderKeyOutline" />
-                        <TextBlock FontSize="14" Padding="2,2" Text="New Vault + Key ..."/>
-                    </StackPanel>
-                </Button>
             </StackPanel>
         </Border>
         <Border

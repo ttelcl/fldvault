@@ -45,11 +45,10 @@ public class KeysViewModel: ViewModelBase
   {
     Model = model;
     StatusHost = statusHost;
-    PasswordBackground = BrushCache.Default["#44444444"];
+    _passwordBackground = BrushCache.Default["#44444444"];
     Keys = new ObservableCollection<KeyViewModel>();
     ImportKeyCommand = new DelegateCommand(p => ImportKey());
     NewKeyCommand = new DelegateCommand(p => NewKey());
-    NewVaultCommand = new DelegateCommand(p => NewVault());
     TryUnlockCommand = new DelegateCommand(p => TryUnlock());
     ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
     PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
@@ -67,8 +66,6 @@ public class KeysViewModel: ViewModelBase
   public ICommand ImportKeyCommand { get; }
 
   public ICommand NewKeyCommand { get; }
-
-  public ICommand NewVaultCommand { get; }
 
   public ICommand TryUnlockCommand { get; }
 

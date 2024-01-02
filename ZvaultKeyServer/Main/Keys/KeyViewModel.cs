@@ -52,18 +52,6 @@ public class KeyViewModel: ViewModelBase
   }
   private string _fullFileName = string.Empty;
 
-  public bool ShowKey {
-    get => _showKey;
-    set {
-      Model.HideKey = !value;
-      if(SetValueProperty(ref _showKey, value))
-      {
-        Status = Model.Status;
-      }
-    }
-  }
-  private bool _showKey = false;
-
   public string ShortName {
     get => String.IsNullOrEmpty(_fullFileName) ? "-" : Path.GetFileName(_fullFileName);
   }
@@ -75,7 +63,7 @@ public class KeyViewModel: ViewModelBase
   public KeyStatus Status {
     get => _status;
     set {
-      Trace.TraceInformation($"Status {_status} -> {value}");
+      Trace.TraceInformation($"Status({Model.KeyTag}) {_status} -> {value}");
       if(SetValueProperty(ref _status, value))
       {
         RaisePropertyChanged(nameof(StatusIcon));
@@ -145,9 +133,27 @@ public class KeyViewModel: ViewModelBase
 
   public void SetStamp(DateTimeOffset stamp, string reason)
   {
+    var t = stamp.ToLocalTime().ToString("o");
+    Trace.TraceInformation($"Key stamp {Model.KeyTag} : {t} ({reason})");
     Stamp = stamp;
     StampReason = reason;
   }
+
+  public bool ShowKey {
+    get => _showKey;
+    set {
+      Model.HideKey = !value;
+      if(SetValueProperty(ref _showKey, value))
+      {
+        Status = Model.Status;
+        if(value)
+        {
+          ResetTimer();
+        }
+      }
+    }
+  }
+  private bool _showKey = false;
 
   public void SetCurrentKeyShowState(bool publish)
   {
@@ -178,23 +184,8 @@ public class KeyViewModel: ViewModelBase
     // TODO: track files in this model
     Status = Model.Status;
     ShowKey = !Model.HideKey; // Sync back. Normally HideKey -> Model.HideKey
-    var stamp = Model.LastRegistered;
-    var reason = "Key Registered";
-    if(Model.LastAssociated.HasValue && Model.LastAssociated.Value > stamp)
-    {
-      stamp = Model.LastAssociated.Value;
-      reason = "File Registered";
-    }
-    if(Model.LastRequested.HasValue && Model.LastRequested.Value > stamp)
-    {
-      stamp = Model.LastRequested.Value;
-      reason = "Key Requested";
-    }
-    if(Model.LastServed.HasValue && Model.LastServed.Value > stamp)
-    {
-      stamp = Model.LastServed.Value;
-      reason = "Key Served";
-    }
+    var stamp = Model.LastStamp;
+    var reason = Model.LastStampSource;
     SetStamp(stamp, reason);
     return oldTime != Stamp;
   }
@@ -270,6 +261,31 @@ public class KeyViewModel: ViewModelBase
     }
   }
 
+  /// <summary>
+  /// Grace period for autohide timer. The minimum time for the
+  /// time left after the grace period is triggered (e.g. whenever
+  /// the key is successfully served)
+  /// </summary>
+  public int GraceSeconds {
+    get => _graceSeconds;
+    set {
+      if(SetValueProperty(ref _graceSeconds, value))
+      {
+        ApplyGracePeriod();
+      }
+    }
+  }
+  private int _graceSeconds = 15;
+
+  public void ApplyGracePeriod()
+  {
+    if(Status == KeyStatus.Published
+      && _autohideLeft < _graceSeconds)
+    {
+      AutohideLeft = _graceSeconds;
+    }
+  }
+
   private bool IsCurrent()
   {
     return Object.ReferenceEquals(Owner.CurrentKey, this);
@@ -290,8 +306,7 @@ public class KeyViewModel: ViewModelBase
       if(AutohideLeft == 0)
       {
         Trace.TraceInformation($"Key {KeyId} timed out");
-        Model.HideKey = true;
-        Status = Model.Status;
+        SetCurrentKeyShowState(false);
       }
     }
   }

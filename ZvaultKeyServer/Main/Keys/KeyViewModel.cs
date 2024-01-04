@@ -208,6 +208,7 @@ public class KeyViewModel: ViewModelBase
     set {
       if(SetValueProperty(ref _autohideEnabled, value))
       {
+        RaisePropertyChanged(nameof(TimeoutText));
         if(!AutohideEnabled)
         {
           ResetTimer();
@@ -228,10 +229,11 @@ public class KeyViewModel: ViewModelBase
         }
         ResetTimer();
         RaisePropertyChanged(nameof(TimedOut));
+        RaisePropertyChanged(nameof(TimeoutText));
       }
     }
   }
-  private int _autohideSeconds;
+  private int _autohideSeconds = 300;
 
   public int AutohideLeft {
     get => _autohideLeft;
@@ -239,6 +241,7 @@ public class KeyViewModel: ViewModelBase
       if(SetValueProperty(ref _autohideLeft, value))
       {
         RaisePropertyChanged(nameof(TimedOut));
+        RaisePropertyChanged(nameof(TimeoutText));
       }
     }
   }
@@ -293,6 +296,11 @@ public class KeyViewModel: ViewModelBase
 
   public void TimerTick()
   {
+
+    // TODO: implement some proper timer-running-state
+    // (disabled, frozen, running, hidden (==timed-out))
+    // "Hide" === autohide-left = 0
+
     var dontTick =
       IsCurrent() && Application.Current.MainWindow.IsActive;
     // Suppress timer ticks if this is the current key and this app is the foreground app

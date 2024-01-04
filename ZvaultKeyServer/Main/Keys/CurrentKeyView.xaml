@@ -32,13 +32,34 @@
                 Kind="{Binding StatusIcon}" />
         </Border>
         <DockPanel Grid.Column="1">
-            <TextBlock
+            <Grid
                 DockPanel.Dock="Top"
-                Padding="5,5"
-                FontFamily="Lucida Sans Typewriter"
-                Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                 Background="{Binding Status, Converter={StaticResource StatusBack}}"
-                Text="{Binding KeyId}"/>
+                >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Grid.Column="0"
+                    Padding="5,5"
+                    VerticalAlignment="Bottom"
+                    FontFamily="Lucida Sans Typewriter"
+                    Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                    Text="{Binding KeyId}"/>
+                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    <TextBlock
+                        Padding="5,5"
+                        VerticalAlignment="Bottom"
+                        Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                        Text="{Binding StampReason}"/>
+                    <TextBlock
+                        Padding="5,5"
+                        VerticalAlignment="Bottom"
+                        Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                        Text="{Binding StampText}"/>
+                </StackPanel>
+            </Grid>
             <Border
                 DockPanel.Dock="Top"
                 Padding="5,2"
@@ -112,8 +133,20 @@
                     </Button>
                 </Grid>
             </Border>
+            <Border
+                DockPanel.Dock="Top"
+                Padding="5,2"
+                BorderThickness="1"
+                MinHeight="10"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                <StackPanel Orientation="Horizontal">
+                    <mah:ToggleSwitch
+                        IsOn="{Binding AutohideEnabled, Mode=TwoWay}"
+                        OnContent="Auto-hide On"
+                        OffContent="Auto-hide Off"/>
+                </StackPanel>
+            </Border>
             <WrapPanel Orientation="Horizontal">
-                <TextBlock Padding="5,0" Text="{Binding StampText}"/>
                 <TextBlock Padding="5,0" Text="{Binding ShortName}"/>
                 <TextBlock Padding="5,0" Text="{Binding FolderName}"/>
             </WrapPanel>

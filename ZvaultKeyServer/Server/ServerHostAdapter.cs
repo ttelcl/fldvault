@@ -58,10 +58,16 @@ public class ServerHostAdapter: IKeyServerHost
     }
     Trace.TraceInformation(
       $"Callback: KeyLoadRequest {keyId} '{status}' ({contextFile??String.Empty})");
-    var key = MainModel.KeysViewModel.FindKey(keyId);
+    var kvm = MainModel.KeysViewModel;
+    var key = kvm.FindKey(keyId);
     if(key != null)
     {
-      key.SyncModel();
+      var needSort = key.SyncModel();
+      key.ApplyGracePeriod();
+      if(needSort)
+      {
+        kvm.Resort();
+      }
     }
   }
 

@@ -31,6 +31,7 @@ public class KeyViewModel: ViewModelBase
   {
     Owner = owner;
     Model = model;
+    ResetTimer();
     SyncModel();
   }
 
@@ -70,8 +71,9 @@ public class KeyViewModel: ViewModelBase
         RaisePropertyChanged(nameof(StatusDescription));
         if(_status == KeyStatus.Published)
         {
-          AutohideLeft = AutohideSeconds;
+          ResetTimer();
         }
+        SyncAutohideState();
       }
     }
   }
@@ -150,6 +152,7 @@ public class KeyViewModel: ViewModelBase
         {
           ResetTimer();
         }
+        SyncAutohideState();
       }
     }
   }
@@ -213,55 +216,54 @@ public class KeyViewModel: ViewModelBase
         {
           ResetTimer();
         }
+        SyncAutohideState();
       }
     }
   }
-  private bool _autohideEnabled;
+  private bool _autohideEnabled = true;
 
+  /// <summary>
+  /// Number of seconds from a auto-hide reset until automatic hiding.
+  /// The hardcoded minimum for this is 20 seconds; the initial value
+  /// is 300 seconds (5 minutes)
+  /// </summary>
   public int AutohideSeconds {
     get => _autohideSeconds;
     set {
+      if(value < 20)
+      {
+        value = 20;
+      }
       if(SetValueProperty(ref _autohideSeconds, value))
       {
-        if(AutohideSeconds == 0)
-        {
-          AutohideEnabled = false;
-        }
         ResetTimer();
-        RaisePropertyChanged(nameof(TimedOut));
         RaisePropertyChanged(nameof(TimeoutText));
+        SyncAutohideState();
       }
     }
   }
-  private int _autohideSeconds = 300;
+  private int _autohideSeconds = 30; //TEMPORARY! Should be 300
 
+  /// <summary>
+  /// The number of seconds left until the key will auto-hide, if that
+  /// is enabled with <see cref="AutohideEnabled"/>. The value varies
+  /// from <see cref="AutohideSeconds"/> downto 0.
+  /// </summary>
   public int AutohideLeft {
     get => _autohideLeft;
     set {
       if(SetValueProperty(ref _autohideLeft, value))
       {
-        RaisePropertyChanged(nameof(TimedOut));
         RaisePropertyChanged(nameof(TimeoutText));
+        SyncAutohideState();
       }
     }
   }
-  public int _autohideLeft = 300;
-
-  public bool TimedOut {
-    get => _autohideLeft == 0 && _autohideSeconds > 0;
-  }
+  private int _autohideLeft = 300;
 
   public void ResetTimer()
   {
-    if(AutohideSeconds > 0)
-    {
-      AutohideLeft = AutohideSeconds;
-    }
-    else
-    {
-      // dummy value; the import thing is that it is NOT 0
-      AutohideLeft = 300;
-    }
+    AutohideLeft = AutohideSeconds;
   }
 
   /// <summary>
@@ -294,24 +296,69 @@ public class KeyViewModel: ViewModelBase
     return Object.ReferenceEquals(Owner.CurrentKey, this);
   }
 
+  public AutohideState AutohideStatus {
+    get => _autohideStatus; 
+    set {
+      if(SetValueProperty(ref _autohideStatus, value))
+      {
+      }
+    }
+  }
+  private AutohideState _autohideStatus;
+
+  public AutohideState SyncAutohideState()
+  {
+    var status = GetAutohideState();
+    AutohideStatus = status;
+    return status;
+  }
+
+  public AutohideState GetAutohideState()
+  {
+    var keyStatus = Model.Status;
+    switch(keyStatus)
+    {
+      case KeyStatus.Published:
+        {
+          if(!AutohideEnabled)
+          {
+            return AutohideState.Disabled;
+          }
+          if(AutohideLeft <= 0)
+          {
+            Trace.TraceError("Auto-hide state is in a transitional state (probably an error)");
+            return AutohideState.Hiding;
+          }
+          if(IsCurrent() && Application.Current.MainWindow.IsActive)
+          {
+            return AutohideState.Paused;
+          }
+          return AutohideState.Running;
+        }
+      case KeyStatus.Hidden:
+        {
+          return AutohideState.Hidden;
+        }
+      case KeyStatus.Seeded:
+      case KeyStatus.Unknown:
+        {
+          return AutohideState.Inactive;
+        }
+      default:
+        {
+          throw new InvalidOperationException(
+            $"Unrecognized key status {keyStatus}");
+        }
+    }
+  }
+
   public void TimerTick()
   {
-
-    // TODO: implement some proper timer-running-state
-    // (disabled, frozen, running, hidden (==timed-out))
-    // "Hide" === autohide-left = 0
-
-    var dontTick =
-      IsCurrent() && Application.Current.MainWindow.IsActive;
-    // Suppress timer ticks if this is the current key and this app is the foreground app
-    // (avoid changing state while editing)
-    if(!dontTick
-      && AutohideEnabled
-      && _autohideLeft>0
-      && Status == KeyStatus.Published)
+    SyncAutohideState();
+    if(AutohideStatus == AutohideState.Running)
     {
       AutohideLeft = _autohideLeft-1;
-      if(AutohideLeft == 0)
+      if(AutohideLeft <= 0)
       {
         Trace.TraceInformation($"Key {KeyId} timed out");
         SetCurrentKeyShowState(false);

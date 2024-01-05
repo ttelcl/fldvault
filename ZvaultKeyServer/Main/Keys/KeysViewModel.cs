@@ -55,7 +55,7 @@ public class KeysViewModel: ViewModelBase
     HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
-    KeysView.CustomSort = new KeyViewModelComparer();
+    Resort();
     SyncModel();
   }
 
@@ -175,8 +175,13 @@ public class KeysViewModel: ViewModelBase
       // Forcing a re-sort when only the content of items change
       // turns out to be tricky. Replacing the sorter with a new
       // (but equivalent) one does the trick.
-      KeysView.CustomSort = new KeyViewModelComparer();
+      Resort();
     }
+  }
+
+  public void Resort()
+  {
+    KeysView.CustomSort = new KeyViewModelComparer();
   }
 
   public void ImportKey()

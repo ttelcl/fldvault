@@ -78,14 +78,18 @@ public class MainViewModel: ViewModelBase, IStatusMessage
   public static void RegisterColors()
   {
     var cc = BrushCache.Default;
-    cc.AddAlias("/Status/Fore/Unknown", "#CC808080");
-    cc.AddAlias("/Status/Back/Unknown", "#28808080");
-    cc.AddAlias("/Status/Fore/Seeded", "#EEDD9933");
+    cc.AddAlias("/Status/Back/Unknown", "#28A0A0A0");
     cc.AddAlias("/Status/Back/Seeded", "#28DD9933");
-    cc.AddAlias("/Status/Fore/Hidden", "#EE6666DD");
-    cc.AddAlias("/Status/Back/Hidden", "#286666DD");
-    cc.AddAlias("/Status/Fore/Published", "#EE66CC44");
+    cc.AddAlias("/Status/Back/Hidden", "#288888EE");
     cc.AddAlias("/Status/Back/Published", "#2866CC44");
+    cc.AddAlias("/Status/Fore/Unknown", "#EEA0A0A0");
+    cc.AddAlias("/Status/Fore/Seeded", "#EEDD9933");
+    cc.AddAlias("/Status/Fore/Hidden", "#EE8888EE");
+    cc.AddAlias("/Status/Fore/Published", "#EE66CC44");
+    cc.AddAlias("/Status/Full/Unknown", "#FFA0A0A0");
+    cc.AddAlias("/Status/Full/Seeded", "#FFd29233");
+    cc.AddAlias("/Status/Full/Hidden", "#FF6262d3");
+    cc.AddAlias("/Status/Full/Published", "#FF62c342");
   }
 
   public ServerHostAdapter HostAdapter { get; }

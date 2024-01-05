@@ -8,7 +8,8 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeyViewModel, IsDesignTimeCreatable=False}">
-    <Grid>
+    <Grid Background="#8222">
+        <!-- The semi-transparent near-black background dampens the "list selected element" color -->
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="*"/>
@@ -56,6 +57,7 @@
             Grid.ColumnSpan="2">
             <TextBlock
                 Text="{Binding KeyId}"
+                Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                 Padding="5,2"
                 FontFamily="Lucida Sans Typewriter"/>
         </Grid>
@@ -83,9 +85,24 @@
             Grid.Row="0"
             Grid.Column="3"
             Padding="5,2"
-            BorderThickness="0,0,0,1"
+            BorderThickness="0,0,0,0"            
             BorderBrush="{DynamicResource MahApps.Brushes.Accent}">
-            <TextBlock HorizontalAlignment="Right" Text="{Binding TimeoutText}"/>
+            <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                <TextBlock
+                    Padding="5,0"
+                    Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                    Text="{Binding AutohideStatus}"/>
+                <TextBlock Padding="5,0" Text="{Binding TimeoutText}"/>
+                <!-- https://stackoverflow.com/a/17908249/271323 for the Style="{x:Null}" -->
+                <ProgressBar
+                    Style="{x:Null}"
+                    Maximum="{Binding AutohideSeconds}"
+                    Value="{Binding AutohideLeft}"
+                    Width="100"
+                    Background="{Binding Source=Hidden, Converter={StaticResource StatusFull}}"
+                    Foreground="{Binding Source=Published, Converter={StaticResource StatusFull}}"
+                    />
+            </StackPanel>
         </Border>
         <Border
             Grid.Row="1"

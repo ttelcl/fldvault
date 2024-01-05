@@ -128,22 +128,33 @@
                         Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
                         <StackPanel Orientation="Horizontal">
                             <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
-                            <TextBlock Padding="2,0" Text="Publish"/>
+                            <TextBlock Padding="2,0" Text="Unhide"/>
                         </StackPanel>
                     </Button>
                 </Grid>
             </Border>
             <Border
                 DockPanel.Dock="Top"
-                Padding="5,2"
+                Padding="5,0"
                 BorderThickness="1"
-                MinHeight="10"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <StackPanel Orientation="Horizontal">
-                    <mah:ToggleSwitch
-                        IsOn="{Binding AutohideEnabled, Mode=TwoWay}"
-                        OnContent="Auto-hide On"
-                        OffContent="Auto-hide Off"/>
+                    <Border
+                        BorderThickness="0,0,1,0"
+                        BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                Text="Auto-hide:"
+                                FontSize="{DynamicResource MahApps.Font.Size.ToggleSwitch}"
+                                VerticalAlignment="Center"
+                                Padding="5,0"/>
+                            <mah:ToggleSwitch
+                                Padding="5,0"
+                                IsOn="{Binding AutohideEnabled, Mode=TwoWay}"
+                                OnContent="On"
+                                OffContent="Off"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
             <WrapPanel Orientation="Horizontal">

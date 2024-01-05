@@ -31,6 +31,8 @@ public class KeyViewModel: ViewModelBase
   {
     Owner = owner;
     Model = model;
+    _autohideSeconds = Owner.DefaultTimeout;
+    _timeoutValue = SecondsToText(_autohideSeconds);
     ResetTimer();
     SyncModel();
   }
@@ -243,13 +245,41 @@ public class KeyViewModel: ViewModelBase
       }
       if(SetValueProperty(ref _autohideSeconds, value))
       {
+        TimeoutValue = SecondsToText(value);
         ResetTimer();
         RaisePropertyChanged(nameof(TimeoutText));
         SyncAutohideState();
       }
     }
   }
-  private int _autohideSeconds = 30; //TEMPORARY! Should be 300
+  private int _autohideSeconds; // Initialized in constructor based on Owner.DefaultTimerSetting
+
+  public static string SecondsToText(int seconds)
+  {
+    var minutes = seconds / 60;
+    seconds %= 60;
+    return $"{minutes}:{seconds:D2}";
+  }
+
+  /// <summary>
+  /// Equivalent to AutohideSeconds, but as minutes:seconds text
+  /// </summary>
+  public string TimeoutValue {
+    get => _timeoutValue;
+    set {
+      var parts = value.Split(':');
+      if(parts.Length == 2) // else: IGNORE
+      {
+        var minutes = Int32.Parse(parts[0]);
+        var seconds = Int32.Parse(parts[1]);
+        if(SetInstanceProperty(ref _timeoutValue, value))
+        {
+          AutohideSeconds = seconds + 60 * minutes;
+        }
+      }
+    }
+  }
+  private string _timeoutValue;
 
   /// <summary>
   /// The number of seconds left until the key will auto-hide, if that
@@ -270,11 +300,7 @@ public class KeyViewModel: ViewModelBase
   private int _autohideLeft = 300;
 
   public string AutohideLeftText {
-    get {
-      var seconds = AutohideLeft % 60;
-      var minutes = AutohideLeft / 60;
-      return $"{minutes}:{seconds:D2}";
-    }
+    get => SecondsToText(AutohideLeft);
   }
 
   public void ResetTimer()

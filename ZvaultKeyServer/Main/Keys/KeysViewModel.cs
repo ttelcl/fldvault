@@ -53,6 +53,7 @@ public class KeysViewModel: ViewModelBase
     ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
     PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
     HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
+    DefaultTimeout = 180;
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
     Resort();
@@ -97,6 +98,8 @@ public class KeysViewModel: ViewModelBase
   public Visibility CurrentKeyVisible {
     get => _currentKey == null ? Visibility.Collapsed : Visibility.Visible;
   }
+
+  public int DefaultTimeout { get; }
 
   /// <summary>
   /// Find the viewmodel for the key identified by the id.

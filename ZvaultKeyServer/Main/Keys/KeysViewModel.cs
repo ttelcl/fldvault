@@ -95,7 +95,7 @@ public class KeysViewModel: ViewModelBase
   private KeyViewModel? _currentKey;
 
   public Visibility CurrentKeyVisible {
-    get => _currentKey == null ? Visibility.Hidden : Visibility.Visible;
+    get => _currentKey == null ? Visibility.Collapsed : Visibility.Visible;
   }
 
   /// <summary>

@@ -262,11 +262,20 @@ public class KeyViewModel: ViewModelBase
       if(SetValueProperty(ref _autohideLeft, value))
       {
         RaisePropertyChanged(nameof(TimeoutText));
+        RaisePropertyChanged(nameof(AutohideLeftText));
         SyncAutohideState();
       }
     }
   }
   private int _autohideLeft = 300;
+
+  public string AutohideLeftText {
+    get {
+      var seconds = AutohideLeft % 60;
+      var minutes = AutohideLeft / 60;
+      return $"{minutes}:{seconds:D2}";
+    }
+  }
 
   public void ResetTimer()
   {
@@ -318,10 +327,10 @@ public class KeyViewModel: ViewModelBase
   public string AutohideStatusText {
     get {
       return AutohideStatus switch {
-        AutohideState.Inactive => "Key is not yet loaded",
+        AutohideState.Inactive => "Key not loaded",
         AutohideState.Disabled => "Auto-hide disabled",
-        AutohideState.Paused => "Auto-hide timer paused",
-        AutohideState.Running => "Auto-hide timer running",
+        AutohideState.Paused => "Auto-hide paused",
+        AutohideState.Running => "Auto-hide in",
         AutohideState.Hiding => "(auto-hiding soon)",
         AutohideState.Hidden => "Key hidden from clients",
         _ => $"'{AutohideStatus}'",

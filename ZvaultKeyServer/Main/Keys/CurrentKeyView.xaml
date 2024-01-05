@@ -142,18 +142,11 @@
                     <Border
                         BorderThickness="0,0,1,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock
-                                Text="Auto-hide:"
-                                FontSize="{DynamicResource MahApps.Font.Size.ToggleSwitch}"
-                                VerticalAlignment="Center"
-                                Padding="5,0"/>
-                            <mah:ToggleSwitch
-                                Padding="5,0"
-                                IsOn="{Binding AutohideEnabled, Mode=TwoWay}"
-                                OnContent="On"
-                                OffContent="Off"/>
-                        </StackPanel>
+                        <mah:ToggleSwitch
+                            Padding="5,0"
+                            IsOn="{Binding AutohideEnabled, Mode=TwoWay}"
+                            OnContent="Auto-hide On"
+                            OffContent="Auto-hide Off"/>
                     </Border>
                 </StackPanel>
             </Border>

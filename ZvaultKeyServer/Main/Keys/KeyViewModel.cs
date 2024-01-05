@@ -188,7 +188,14 @@ public class KeyViewModel: ViewModelBase
     Status = Model.Status;
     ShowKey = !Model.HideKey; // Sync back. Normally HideKey -> Model.HideKey
     var stamp = Model.LastStamp;
-    var reason = Model.LastStampSource;
+    var reason =
+      Model.LastStampSource switch {
+        "LastRequested" => "Key Requested",
+        "LastAssociated" => "File Associated",
+        "LastServed" => "Key Served",
+        "LastRegistered" => "Key Referenced",
+        _ => $"'{Model.LastStampSource}'"
+      };
     SetStamp(stamp, reason);
     return oldTime != Stamp;
   }
@@ -301,10 +308,32 @@ public class KeyViewModel: ViewModelBase
     set {
       if(SetValueProperty(ref _autohideStatus, value))
       {
+        RaisePropertyChanged(nameof(AutohideIsCounting));
+        RaisePropertyChanged(nameof(AutohideStatusText));
       }
     }
   }
   private AutohideState _autohideStatus;
+
+  public string AutohideStatusText {
+    get {
+      return AutohideStatus switch {
+        AutohideState.Inactive => "Key is not yet loaded",
+        AutohideState.Disabled => "Auto-hide disabled",
+        AutohideState.Paused => "Auto-hide timer paused",
+        AutohideState.Running => "Auto-hide timer running",
+        AutohideState.Hiding => "(auto-hiding soon)",
+        AutohideState.Hidden => "Key hidden from clients",
+        _ => $"'{AutohideStatus}'",
+      };
+    }
+  }
+
+  public bool AutohideIsCounting {
+    get => Model.Status == KeyStatus.Published
+      && AutohideEnabled
+      && AutohideLeft > 0;
+  }
 
   public AutohideState SyncAutohideState()
   {

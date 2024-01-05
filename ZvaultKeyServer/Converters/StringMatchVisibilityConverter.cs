@@ -29,15 +29,15 @@ public class StringMatchVisibilityConverter: IValueConverter
 
   public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
   {
-    if(targetType == typeof(Visibility) && value is KeyStatus status)
+    if(targetType == typeof(Visibility) && value != null)
     {
       if(parameter is String p)
       {
-        return p == status.ToString() ? MatchValue : MismatchValue;
+        return p == value.ToString() ? MatchValue : MismatchValue;
       }
-      if(parameter is KeyStatus ksp)
+      else
       {
-        return ksp == status ? MatchValue : MismatchValue;
+        return parameter == value ? MatchValue : MismatchValue;
       }
     }
     return MismatchValue;

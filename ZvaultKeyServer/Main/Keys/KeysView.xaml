@@ -11,9 +11,9 @@
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" MinHeight="10"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto" MinHeight="80"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <!-- Accent4 is #336D8764 -->
         <Border
@@ -40,6 +40,7 @@
         <Border
             Grid.Row="1"
             Padding="5,3"
+            MinHeight="200"
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <ListBox
@@ -56,9 +57,11 @@
             Grid.Row="2"
             BorderThickness="1"
             Background="#106D8764"
-            Visibility="{Binding CurrentKeyVisible}"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <local:CurrentKeyView DataContext="{Binding CurrentKey}"/>
+            <Grid
+                Visibility="{Binding CurrentKeyVisible}">
+                <local:CurrentKeyView DataContext="{Binding CurrentKey}"/>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

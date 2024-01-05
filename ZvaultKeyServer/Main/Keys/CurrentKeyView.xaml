@@ -157,10 +157,9 @@
                     </Border>
                 </StackPanel>
             </Border>
-            <WrapPanel Orientation="Horizontal">
-                <TextBlock Padding="5,0" Text="{Binding ShortName}"/>
-                <TextBlock Padding="5,0" Text="{Binding FolderName}"/>
-            </WrapPanel>
+            <Grid MinHeight="20">
+                <!-- empty filler -->
+            </Grid>
         </DockPanel>
     </Grid>
 </UserControl>

@@ -148,6 +148,21 @@
                             OnContent="Auto-hide On"
                             OffContent="Auto-hide Off"/>
                     </Border>
+                    <Border
+                        BorderThickness="0,0,1,0"
+                        Padding="5,0"
+                        BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock
+                                VerticalAlignment="Center"
+                                Text="Timeout: "/>
+                            <ComboBox
+                                MinWidth="80"
+                                HorizontalContentAlignment="Right"
+                                SelectedValue="{Binding TimeoutValue, Mode=TwoWay}"
+                                ItemsSource="{Binding Owner.TimeoutValues}"/>
+                        </StackPanel>
+                    </Border>
                 </StackPanel>
             </Border>
             <Grid MinHeight="20">

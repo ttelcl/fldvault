@@ -35,6 +35,7 @@ namespace ZvaultKeyServer.Main.Keys;
 public class KeysViewModel: ViewModelBase
 {
   private PasswordBox? _passwordBox;
+  private string[] _timeoutValues;
 
   /// <summary>
   /// Create a new KeysViewModel
@@ -54,6 +55,14 @@ public class KeysViewModel: ViewModelBase
     PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
     HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
     DefaultTimeout = 180;
+    _timeoutValues = [
+      "0:30",
+      "1:00",
+      "3:00",
+      "5:00",
+      "10:00",
+      "30:00",
+    ];
     // A bit ugly to depend on the actual type
     KeysView = (ListCollectionView)CollectionViewSource.GetDefaultView(Keys);
     Resort();
@@ -100,6 +109,8 @@ public class KeysViewModel: ViewModelBase
   }
 
   public int DefaultTimeout { get; }
+
+  public IReadOnlyList<string> TimeoutValues { get => _timeoutValues; }
 
   /// <summary>
   /// Find the viewmodel for the key identified by the id.

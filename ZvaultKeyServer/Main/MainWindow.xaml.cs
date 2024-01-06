@@ -28,18 +28,18 @@ public partial class MainWindow: MetroWindow
 
   protected override void OnClosing(CancelEventArgs e)
   {
-    var result = MessageBox.Show(
-      "Are you sure you want to terminate the key server?\nThis will discard all keys from memory.",
-      "Confirmation",
-      MessageBoxButton.OKCancel,
-      MessageBoxImage.Warning);
-    if(result != MessageBoxResult.OK)
+    if(DataContext is MainViewModel mainViewModel)
     {
-      e.Cancel = true;
-    }
-    else
-    {
-      if(DataContext is MainViewModel mainViewModel)
+      var cancel = mainViewModel.KeyStates.AnyKeys && (MessageBox.Show(
+        "Are you sure you want to terminate the key server?\nThis will discard all keys from memory.",
+        "Confirmation",
+        MessageBoxButton.OKCancel,
+        MessageBoxImage.Warning) != MessageBoxResult.OK);
+      if(cancel)
+      {
+        e.Cancel = true;
+      }
+      else
       {
         mainViewModel.OnClosing(e);
       }

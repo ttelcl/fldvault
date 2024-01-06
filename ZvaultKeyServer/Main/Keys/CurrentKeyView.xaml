@@ -94,18 +94,31 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button
-                        Grid.Column="0"
-                        Width="85"
-                        FontSize="14"
-                        Padding="2,1" Margin="2,0"
-                        Command="{Binding Owner.HideCurrentKeyCommand}"
-                        Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOff" />
-                            <TextBlock Padding="2,0" Text="Hide"/>
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" Grid.Column="0">
+                        <Button
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            Command="{Binding Owner.HideCurrentKeyCommand}"
+                            Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOff" />
+                                <TextBlock Padding="2,0" Text="Hide"/>
+                            </StackPanel>
+                        </Button>
+                        <Button
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            ToolTip="Reset timer"
+                            Command="{Binding ResetTimeoutCommand}"
+                            Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Restore" />
+                                <TextBlock Padding="2,0" Text="Reset"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
             <Border
@@ -138,8 +151,9 @@
                 Padding="5,0"
                 BorderThickness="1"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                <StackPanel Orientation="Horizontal">
+                <DockPanel >
                     <Border
+                        DockPanel.Dock="Left"
                         BorderThickness="0,0,1,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <mah:ToggleSwitch
@@ -149,6 +163,7 @@
                             OffContent="Auto-hide Off"/>
                     </Border>
                     <Border
+                        DockPanel.Dock="Left"
                         BorderThickness="0,0,1,0"
                         Padding="5,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
@@ -163,7 +178,28 @@
                                 ItemsSource="{Binding Owner.TimeoutValues}"/>
                         </StackPanel>
                     </Border>
-                </StackPanel>
+                    <Border
+                        DockPanel.Dock="Right"
+                        BorderThickness="1,0,0,0"
+                        Padding="5,0"
+                        BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                        <Button
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            ToolTip="Delete key from this server"
+                            Command="{Binding Owner.DeleteCurrentKeyCommand}"
+                            Foreground="#eeff5577">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="DeleteForever" />
+                                <TextBlock Padding="2,0" Text="Delete ..."/>
+                            </StackPanel>
+                        </Button>
+                    </Border>
+                    <Grid>
+                        <!-- Dummy -->
+                    </Grid>
+                </DockPanel>
             </Border>
             <Grid MinHeight="20">
                 <!-- empty filler -->

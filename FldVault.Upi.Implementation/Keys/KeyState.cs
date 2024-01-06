@@ -68,6 +68,17 @@ public class KeyState: IKeyInfo
   }
 
   /// <summary>
+  /// Remove this key info's raw key if it exists
+  /// </summary>
+  /// <returns>
+  /// True if the key existed and was removed, false if not.
+  /// </returns>
+  public bool UnloadKey()
+  {
+    return KeyChain.DeleteKey(KeyId);
+  }
+
+  /// <summary>
   /// True if the key is currently hidden (or should be hidden if it were known).
   /// TODO: timeout logic to set this automatically
   /// </summary>

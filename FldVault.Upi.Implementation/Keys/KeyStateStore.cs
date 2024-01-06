@@ -91,6 +91,22 @@ public class KeyStateStore
   }
 
   /// <summary>
+  /// Remove a key state by id
+  /// </summary>
+  public KeyState? RemoveKey(Guid keyId)
+  {
+    lock(_lock)
+    {
+      var key = FindKey(keyId);
+      if(key != null)
+      {
+        _states.Remove(keyId);
+      }
+      return key;
+    }
+  }
+
+  /// <summary>
   /// Return a list containing all States
   /// </summary>
   public IReadOnlyList<KeyState> AllStates {
@@ -101,7 +117,19 @@ public class KeyStateStore
       }
     }
   }
-  
+
+  /// <summary>
+  /// Returns true if there are any keys at all
+  /// </summary>
+  public bool AnyKeys {
+    get {
+      lock(_lock)
+      {
+        return _states.Count > 0;
+      }
+    }
+  }
+
   /// <summary>
   /// Check if any key info is known for the key identified
   /// by the ID

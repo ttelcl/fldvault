@@ -54,6 +54,8 @@ public class KeysViewModel: ViewModelBase
     ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
     PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
     HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
+    ResetTimeoutCommand = new DelegateCommand(p => CurrentKey?.ResetTimer());
+    DeleteCurrentKeyCommand = new DelegateCommand(p => DeleteCurrentKey(), p => CurrentKey != null);
     DefaultTimeout = 180;
     _timeoutValues = [
       "0:30",
@@ -84,6 +86,10 @@ public class KeysViewModel: ViewModelBase
   public ICommand PublishCurrentKeyCommand { get; }
 
   public ICommand HideCurrentKeyCommand { get; }
+
+  public ICommand ResetTimeoutCommand { get; }
+
+  public ICommand DeleteCurrentKeyCommand { get; }
 
   public ObservableCollection<KeyViewModel> Keys { get; }
 
@@ -149,6 +155,27 @@ public class KeysViewModel: ViewModelBase
         Keys.Remove(kvm);
       }
       return kvm;
+    }
+  }
+
+  public void DeleteCurrentKey()
+  {
+    var currentKey = CurrentKey;
+    if(currentKey != null)
+    {
+      if(MessageBox.Show(
+        $"Are you sure you want to remove this key from this server?",
+        "Confirmation",
+        MessageBoxButton.YesNo,
+        MessageBoxImage.Warning) == MessageBoxResult.Yes)
+      {
+        currentKey.UnloadKey();
+        CurrentKey = null;
+        Keys.Remove(currentKey);
+        KeysView.Remove(currentKey);
+        Model.RemoveKey(currentKey.KeyId);
+        SyncModel();
+      }
     }
   }
 

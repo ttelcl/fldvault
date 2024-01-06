@@ -11,8 +11,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 
+using FldVault.Core.Crypto;
 using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
 
@@ -33,9 +35,17 @@ public class KeyViewModel: ViewModelBase
     Model = model;
     _autohideSeconds = Owner.DefaultTimeout;
     _timeoutValue = SecondsToText(_autohideSeconds);
+    ResetTimeoutCommand = new DelegateCommand(
+      p => ResetTimer(),
+      p => AutohideEnabled);
+    UnloadKeyCommand = new DelegateCommand(p => UnloadKey());
     ResetTimer();
     SyncModel();
   }
+
+  public ICommand ResetTimeoutCommand { get; }
+
+  public ICommand UnloadKeyCommand { get; }
 
   public KeyState Model { get; }
 
@@ -306,6 +316,14 @@ public class KeyViewModel: ViewModelBase
   public void ResetTimer()
   {
     AutohideLeft = AutohideSeconds;
+  }
+
+  public void UnloadKey()
+  {
+    if(Model.UnloadKey())
+    {
+      SyncModel();
+    }
   }
 
   /// <summary>

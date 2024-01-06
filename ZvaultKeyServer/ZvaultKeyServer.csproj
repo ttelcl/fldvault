@@ -10,7 +10,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="Assets\zvault-256.ico" />
+    <None Remove="Assets\zvault-256.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\zvault-256.ico" />
+    <Resource Include="Assets\zvault-256.png" />
   </ItemGroup>
 
   <ItemGroup>

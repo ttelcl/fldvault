@@ -15,6 +15,7 @@
     Width="800"
     MinHeight="360"
     ResizeMode="CanResizeWithGrip"
+    Icon="pack://application:,,,/ZvaultKeyServer;component/assets/zvault-256.ico"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
     Loaded="MetroWindow_Loaded">
     <DockPanel>

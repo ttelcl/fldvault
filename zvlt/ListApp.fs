@@ -15,6 +15,7 @@ open CommonTools
 type private ListOptions = {
   VaultFile: string
   PublicOnly: bool
+  CliPassword: bool
 }
 
 let private formatLocal (stamp: DateTime) =
@@ -32,6 +33,8 @@ let runList args =
     | "-pub" :: rest
     | "-public" :: rest ->
       rest |> parseMore {o with PublicOnly = true}
+    | "-cli" :: rest ->
+      rest |> parseMore {o with CliPassword = true}
     | "-vf" :: file :: rest ->
       rest |> parseMore {o with VaultFile = file}
     | file :: rest when file.EndsWith(".zvlt") ->
@@ -45,6 +48,7 @@ let runList args =
   let oo = args |> parseMore {
     VaultFile = null
     PublicOnly = false
+    CliPassword = false
   }
   match oo with
   | Some(o) ->
@@ -59,7 +63,7 @@ let runList args =
       cp $"Key ID \fy{vaultFile.KeyId}\f0."
     use keyChain = new KeyChain()
     let keyServer = new KeyServerService()
-    let seedService = KeyUtilities.setupKeySeedService true true (keyServer |> Some)
+    let seedService = KeyUtilities.setupKeySeedService true o.CliPassword (keyServer |> Some)
     if o.PublicOnly |> not then
       KeyUtilities.hatchKeyIntoChain seedService vaultFile keyChain
     let fileElements =

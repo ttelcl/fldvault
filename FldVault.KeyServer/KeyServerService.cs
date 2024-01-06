@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.Vaults;
 
 using UdSocketLib.Communication;
 using UdSocketLib.Framing;
@@ -92,6 +93,62 @@ public class KeyServerService
         case KeyServerMessages.KeyResponseCode:
           frameIn.ReadKeyResponse(keyChain);
           return true;
+        default:
+          throw new InvalidOperationException(
+            $"Unexpected response from server: 0x{messageCode:X08}");
+      }
+    }
+  }
+
+  /// <summary>
+  /// Register a *.zvlt or *.pass.key-info file in the server, associating it
+  /// with its key. Also looks up that key if available (adding it to the key chain)
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the file to register
+  /// </param>
+  /// <param name="keyChain">
+  /// The key chain to add the key in case it is already available in the server
+  /// </param>
+  /// <returns>
+  /// True if the key already existed, false if not.
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if the server rejected the file name.
+  /// </exception>
+  public bool RegisterFileSync(string fileName, KeyChain keyChain)
+  {
+    if(!ServerAvailable)
+    {
+      return false;
+    }
+    using(var client = SocketService.ConnectClientSync())
+    {
+      if(client == null)
+      {
+        return false;
+      }
+      var frameOut = new MessageFrameOut();
+      frameOut.WriteKeyForFileRequest(fileName);
+      client.SendFrameSync(frameOut);
+      var frameIn = new MessageFrameIn();
+      var receiveOk = client.TryFillFrameSync(frameIn);
+      if(!receiveOk)
+      {
+        return false;
+      }
+      var messageCode = frameIn.MessageCode();
+      switch(messageCode)
+      {
+        case KeyServerMessages.KeyNotFoundCode:
+          return false;
+        case KeyServerMessages.KeyResponseCode:
+          frameIn.ReadKeyResponse(keyChain);
+          return true;
+        case MessageCodes.ErrorText:
+          var error = frameIn.ReadError() ?? "Unknown error";
+          throw new InvalidOperationException(
+            $"Server rejected the registration: {error}");
         default:
           throw new InvalidOperationException(
             $"Unexpected response from server: 0x{messageCode:X08}");

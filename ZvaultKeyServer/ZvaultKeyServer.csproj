@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\zvault-256.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\zvault-256.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\zvault-256.ico" />
+    <Resource Include="Assets\zvault-256.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="4.11.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
+    <ProjectReference Include="..\FldVault.Upi.Implementation\FldVault.Upi.Implementation.csproj" />
+    <ProjectReference Include="..\FldVault.Upi\FldVault.Upi.csproj" />
+    <ProjectReference Include="..\UdSocketLib\UdSocketLib.csproj" />
+  </ItemGroup>
+
+</Project>

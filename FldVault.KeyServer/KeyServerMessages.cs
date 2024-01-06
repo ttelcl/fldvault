@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -75,6 +76,13 @@ public static class KeyServerMessages
   public const int ServerDiagnosticsCode = 0x00010005;
 
   /// <summary>
+  /// Request single file key by file name (the server figures out what key belongs
+  /// to the file). The payload is a (length-prefixed) string containing the name
+  /// of the file.
+  /// </summary>
+  public const int KeyForFileCode = 0x10010006;
+
+  /// <summary>
   /// Read the key to look up from the key request message in the frame
   /// </summary>
   /// <param name="frame">
@@ -108,6 +116,48 @@ public static class KeyServerMessages
   }
 
   /// <summary>
+  /// Read the file name to find the key for. The file name is not validated by
+  /// this method (the caller should do so).
+  /// </summary>
+  public static string ReadKeyForFileRequest(this MessageFrameIn frame)
+  {
+    frame
+      .Rewind()
+      .ValidateI32(KeyForFileCode, "Internal error: Incorrect message code")
+      .TakeString(out var fileName);
+    return fileName;
+  }
+
+  /// <summary>
+  /// Write a key-for-file request.
+  /// </summary>
+  /// <param name="frame">
+  /// The frame to write the request to
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the existing file. The full path will be sent in the request.
+  /// </param>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if the file name is not valid or the file does not exist.
+  /// </exception>
+  public static void WriteKeyForFileRequest(this MessageFrameOut frame, string fileName)
+  {
+    if(String.IsNullOrEmpty(fileName))
+    {
+      throw new InvalidOperationException("No file name given");
+    }
+    if(!File.Exists(fileName))
+    {
+      throw new InvalidOperationException("Expecting the name of an existing file");
+    }
+    fileName = Path.GetFullPath(fileName);
+    frame
+      .Clear()
+      .AppendI32(KeyForFileCode)
+      .AppendString(fileName);
+  }
+
+  /// <summary>
   /// Write the response to the key lookup request into the frame (whether the lookup was 
   /// successful or failed)
   /// </summary>
@@ -118,7 +168,7 @@ public static class KeyServerMessages
   /// If the key lookup succeeded: the key buffer holding the key.
   /// If the key lookup failed: null
   /// </param>
-  public static void WriteKeyResponse(this MessageFrameOut frame, KeyBuffer? key)
+  public static void WriteKeyResponse(this MessageFrameOut frame, IBytesWrapper? key)
   {
     if(key == null)
     {
@@ -142,7 +192,7 @@ public static class KeyServerMessages
   /// <param name="key">
   /// The key to write
   /// </param>
-  public static void WriteKeyUpload(this MessageFrameOut frame, KeyBuffer key)
+  public static void WriteKeyUpload(this MessageFrameOut frame, IBytesWrapper key)
   {
     frame
       .Clear()

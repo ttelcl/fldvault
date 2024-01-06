@@ -165,7 +165,6 @@ public class PassphraseKeyResolver: IKeyKindSeedService
       return true;
     }
 
-
     /// <summary>
     /// Returns a singleton containing this seed itself if T is <see cref="PassphraseKeyInfoFile"/>,
     /// an empty collection otherwise

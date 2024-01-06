@@ -1,0 +1,61 @@
+﻿<UserControl x:Class="ZvaultKeyServer.Main.Keys.NewKeyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+             mc:Ignorable="d"
+             d:DesignHeight="50"
+             d:DesignWidth="500"
+             d:DataContext="{d:DesignInstance local:NewKeyViewModel, IsDesignTimeCreatable=False}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <PasswordBox
+            Grid.Row="0"
+            mah:TextBoxHelper.ClearTextButton="True"
+            mah:TextBoxHelper.Watermark="Enter New passphrase"
+            DataContextChanged="PasswordBoxPrimary_DataContextChanged"/>
+        <PasswordBox
+            Grid.Row="1"
+            mah:TextBoxHelper.ClearTextButton="True"
+            mah:TextBoxHelper.Watermark="Re-enter passphrase"
+            DataContextChanged="PasswordBoxVerify_DataContextChanged"/>
+        <DockPanel
+            Grid.Row="2">
+            <Button
+                DockPanel.Dock="Right"
+                FontSize="14"
+                MinWidth="85"
+                Padding="2,1" Margin="2,0"
+                Command="{Binding CancelCommand}"
+                IsCancel="False">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Cancel" />
+                    <TextBlock Padding="2,0" Text="Cancel"/>
+                </StackPanel>
+            </Button>
+            <Button
+                DockPanel.Dock="Right"
+                FontSize="14"
+                MinWidth="85"
+                Padding="2,1" Margin="2,0"
+                Command="{Binding SubmitCommand}"
+                Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}"
+                IsCancel="False">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="KeyPlus" />
+                    <TextBlock Padding="2,0" Text="Submit"/>
+                </StackPanel>
+            </Button>
+            <Grid>
+                <!-- dummy filler -->
+            </Grid>
+        </DockPanel>
+    </Grid>
+</UserControl>

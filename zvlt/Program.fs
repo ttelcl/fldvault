@@ -52,6 +52,8 @@ let rec run arglist =
     rest |> KeyApp.runLockKey
   | "extract" :: rest ->
     rest |> ExtractApp.runExtract
+  | "register" :: rest ->
+    rest |> FileRegisterApp.run
   | x :: _ ->
     cp $"\frUnknown or incomplete command: {x}"
     1

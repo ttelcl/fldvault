@@ -61,3 +61,9 @@ let checkKeyPresences (kss: KeyServerService) keyIds =
 let checkKeyPresence1 kss keyId =
   let hashset = [| keyId |] |> checkKeyPresences kss
   keyId |> hashset.Contains
+
+let announceFile (kss: KeyServerService) keyChain fileName =
+  if kss.ServerAvailable |> not then
+    failwith "The key server is not running"
+  let existing = kss.RegisterFileSync(fileName, keyChain)
+  existing

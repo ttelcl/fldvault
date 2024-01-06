@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
+    <ProjectReference Include="..\FldVault.Upi\FldVault.Upi.csproj" />
+    <ProjectReference Include="..\UdSocketLib\UdSocketLib.csproj" />
+  </ItemGroup>
+
+</Project>

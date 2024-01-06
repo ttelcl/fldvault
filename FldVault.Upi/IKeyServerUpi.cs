@@ -28,9 +28,10 @@ public interface IKeyServerUpi: IDisposable
   /// the server thread.
   /// </param>
   /// <returns>
-  /// The new server status (<see cref="ServerStatus.Running"/> if successful)
+  /// The new server status (<see cref="ServerStatus.Running"/> if successful or
+  /// already running)
   /// </returns>
-  ServerStatus StartServer(IKeyServerHost hostCallbacks);
+  Task<ServerStatus> StartServer(IKeyServerHost hostCallbacks);
 
   /// <summary>
   /// Retrieve the current server status
@@ -46,6 +47,7 @@ public interface IKeyServerUpi: IDisposable
   /// <summary>
   /// Wait for the server stop request to complete.
   /// If necessary this call includes a call to <see cref="StopServer"/>.
+  /// A call to this method is required to clean up resources!
   /// </summary>
   /// <param name="timeout">
   /// The maximum time in milliseconds to wait for the stop procedure to complete
@@ -87,7 +89,7 @@ public interface IKeyServerUpi: IDisposable
   /// The new status or failure reason. <see cref="KeyStatus.Unknown"/> indicates
   /// the key is not known or cannot be unlocked with a passphrase.
   /// <see cref="KeyStatus.Seeded"/> indicates the passphrase was wrong.
-  /// <see cref="KeyStatus.WithHeld"/> or <see cref="KeyStatus.Published"/> indicate
+  /// <see cref="KeyStatus.Hidden"/> or <see cref="KeyStatus.Published"/> indicate
   /// either a successful unlock, or that the key was already unlocked.
   /// </returns>
   KeyStatus TryUnlockKey(Guid keyId, SecureString passphrase, bool publish);
@@ -95,7 +97,7 @@ public interface IKeyServerUpi: IDisposable
   /// <summary>
   /// Try to change the status of a key. The precise effect depends on the
   /// <paramref name="status"/> value and the current status. This is primarily
-  /// intended to swap between <see cref="KeyStatus.WithHeld"/> and 
+  /// intended to swap between <see cref="KeyStatus.Hidden"/> and 
   /// <see cref="KeyStatus.Published"/>, but can also be used to re-lock the
   /// key (forget the actual key value) via <see cref="KeyStatus.Seeded"/> or
   /// even completely forget the key via <see cref="KeyStatus.Unknown"/>.
@@ -109,7 +111,7 @@ public interface IKeyServerUpi: IDisposable
   /// <returns>
   /// The actual new status
   /// </returns>
-  KeyStatus ChangeStatus(Guid keyId, KeyStatus status);
+  KeyStatus ChangeKeyStatus(Guid keyId, KeyStatus status);
 
   /// <summary>
   /// In case the key is unknown, try to find a key seed for it based

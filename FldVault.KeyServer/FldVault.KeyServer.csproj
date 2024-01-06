@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.Upi\FldVault.Upi.csproj" />
     <ProjectReference Include="..\UdSocketLib\UdSocketLib.csproj" />
   </ItemGroup>
 

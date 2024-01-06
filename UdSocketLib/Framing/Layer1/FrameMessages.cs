@@ -134,4 +134,25 @@ public static class FrameMessages
     }
   }
 
+  /// <summary>
+  /// If the frame contains an error response (<see cref="MessageCodes.ErrorText"/>),
+  /// return that message. Return null otherwise
+  /// </summary>
+  public static string? ReadError(this MessageFrameIn frame)
+  {
+    frame.Rewind();
+    if(frame.Length >= 6)
+    {
+      var messageCode = frame.ReadI32();
+      switch(messageCode)
+      {
+        case MessageCodes.ErrorText:
+          return frame.ReadString();
+        default:
+          return null;
+      }
+    }
+    return null;
+  }
+
 }

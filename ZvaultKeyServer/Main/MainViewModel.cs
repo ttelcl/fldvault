@@ -77,6 +77,9 @@ public class MainViewModel: ViewModelBase, IStatusMessage
 
   public static void RegisterColors()
   {
+    /*
+     * Olive = rgb(94, 115, 87) = #5e7357
+     */
     var cc = BrushCache.Default;
     cc.AddAlias("/Status/Back/Unknown", "#28A0A0A0");
     cc.AddAlias("/Status/Back/Seeded", "#28DD9933");

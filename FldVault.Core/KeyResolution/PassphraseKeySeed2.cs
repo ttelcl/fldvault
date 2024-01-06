@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
@@ -19,7 +20,7 @@ namespace FldVault.Core.KeyResolution;
 /// Implements <see cref="IParameterKeySeed{TParam}"/> for
 /// a passphrase based seed
 /// </summary>
-public class PassphraseKeySeed2: IParameterKeySeed<SecureString>
+public class PassphraseKeySeed2: IParameterKeySeed<SecureString>, IKeySeed, IKeySeed<PassphraseKeyInfoFile>
 {
   /// <summary>
   /// Create a new PassphraseKeySeed2
@@ -70,5 +71,27 @@ public class PassphraseKeySeed2: IParameterKeySeed<SecureString>
         return false;
       }
     }
+  }
+
+  /// <inheritdoc/>
+  public PassphraseKeyInfoFile KeyDetail { get => KeyInfo; }
+
+  bool IKeySeed.TryResolveKey(KeyChain keyChain)
+  {
+    // This seed requires a passphrase to be passed in, which this
+    // method does not support.
+    return false;
+  }
+
+  /// <inheritdoc/>
+  public bool WriteAsBlock(Stream stream)
+  {
+    KeyInfo.WriteBlock(stream);
+    return true;
+  }
+
+  IEnumerable<IKeySeed<T>> IKeySeed.TryAdapt<T>()
+  {
+    return (this is IKeySeed<T> cast) ? new[] { cast } : Enumerable.Empty<IKeySeed<T>>();
   }
 }

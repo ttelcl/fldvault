@@ -100,6 +100,9 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" Grid.Column="0">
                         <Button
@@ -125,6 +128,21 @@
                                 <TextBlock Padding="2,0" Text="Reset"/>
                             </StackPanel>
                         </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Grid.Column="2">
+                        <Button
+                            MinWidth="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            Foreground="#EEd6ded3"
+                            Command="{Binding NewVaultCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="FileKey" />
+                                <TextBlock Padding="2,0" Text="New Vault &#x2026;"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Grid.Column="4">
                         <Button
                             Width="85"
                             FontSize="14"
@@ -150,6 +168,7 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" Grid.Column="0">
                         <Button
@@ -164,6 +183,8 @@
                                 <TextBlock Padding="2,0" Text="Unhide"/>
                             </StackPanel>
                         </Button>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Grid.Column="2">
                         <Button
                             Width="85"
                             FontSize="14"
@@ -215,7 +236,7 @@
                     <Border
                         DockPanel.Dock="Right"
                         BorderThickness="1,0,0,0"
-                        Padding="5,0"
+                        Padding="5,0,0,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <Button
                             Width="85"

@@ -15,8 +15,13 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.KeyResolution;
+using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
 using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
+
+using Microsoft.Win32;
 
 using ZvaultKeyServer.WpfUtilities;
 
@@ -41,6 +46,9 @@ public class KeyViewModel: ViewModelBase
     UnloadKeyCommand = new DelegateCommand(
       p => UnloadKey(),
       p => Owner.Model.KeyChain.ContainsKey(KeyId));
+    NewVaultCommand = new DelegateCommand(
+      p => NewVault(),
+      p => Status == KeyStatus.Published);
     ResetTimer();
     SyncModel();
   }
@@ -48,6 +56,8 @@ public class KeyViewModel: ViewModelBase
   public ICommand ResetTimeoutCommand { get; }
 
   public ICommand UnloadKeyCommand { get; }
+
+  public ICommand NewVaultCommand { get; }
 
   public KeyState Model { get; }
 
@@ -326,6 +336,41 @@ public class KeyViewModel: ViewModelBase
     if(Model.UnloadKey())
     {
       SyncModel();
+    }
+  }
+
+  public void NewVault()
+  {
+    if(Model.Seed is IKeySeed keyseed)
+    {
+      var prefix = KeyId.ToString().Substring(0, 8);
+      var dialog = new SaveFileDialog() {
+        Filter = "Z-Vault files (*.zvlt)|*.zvlt",
+        OverwritePrompt = true,
+        CheckPathExists = true,
+        DefaultExt = ".zvlt",
+        FileName = $"new-vault.{prefix}.zvlt"
+      };
+      if(dialog.ShowDialog() == true)
+      {
+        var fileName = dialog.FileName;
+        if(File.Exists(fileName))
+        {
+          MessageBox.Show(
+            "That file already exists; Aborting.",
+            "Error",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+          return;
+        }
+        var vf = VaultFile.OpenOrCreate(fileName, keyseed);
+        Model.AssociateFile(fileName, false);
+        SyncModel();
+      }
+    }
+    else
+    {
+      MessageBox.Show("Creating a vault for this type of key is not yet supported");
     }
   }
 

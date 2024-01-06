@@ -30,7 +30,7 @@ namespace FldVault.Core.Crypto
     // https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
     private const int __iterationCount = 600000;
     private static readonly HashAlgorithmName __algorithm = HashAlgorithmName.SHA256;
-    
+
     /// <summary>
     /// The number of bytes generated for the salt
     /// </summary>
@@ -301,6 +301,45 @@ namespace FldVault.Core.Crypto
       else
       {
         return pk;
+      }
+    }
+
+    /// <summary>
+    /// Return a new <see cref="PassphraseKey"/> from a passphrase
+    /// and a newly generated salt.
+    /// Both arguments contain the passphrase and must be equal.
+    /// </summary>
+    /// <param name="ssPrimary">
+    /// The primary passphrase
+    /// </param>
+    /// <param name="ssVerify">
+    /// The re-entered passphrase which must be equal to <paramref name="ssPrimary"/>
+    /// </param>
+    /// <returns>
+    /// The newly created <see cref="PassphraseKey"/> if both arguments were
+    /// equal or null otherwise.
+    /// </returns>
+    public static PassphraseKey? TryNewFromSecureStringPair(
+      SecureString ssPrimary,
+      SecureString ssVerify)
+    {
+      using(var cbc1 = UnpackSecureString(ssPrimary))
+      using(var cbc2 = UnpackSecureString(ssVerify))
+      {
+        if(cbc1.Length != cbc2.Length)
+        {
+          return null;
+        }
+        var span1 = cbc1.Span();
+        var span2 = cbc2.Span();
+        for(var i = 0; i < cbc1.Length; i++)
+        {
+          if(span1[i] != span2[i])
+          {
+            return null;
+          }
+        }
+        return FromCharacters(cbc1);
       }
     }
 

@@ -54,7 +54,7 @@ public class VaultCryptor: IDisposable
     VaultStamp = vaultStamp;
     NonceGenerator = nonceGenerator ?? new NonceGenerator();
     _aesgcm =
-      keySource.TryMapKey(keyId, (kid, ibw) => new AesGcm(ibw.Bytes))
+      keySource.TryMapKey(keyId, (kid, ibw) => new AesGcm(ibw.Bytes, 16))
       ?? throw new ArgumentException("The key was not found in the chain");
   }
 

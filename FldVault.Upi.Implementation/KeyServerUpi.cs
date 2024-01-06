@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
@@ -79,6 +80,35 @@ public class KeyServerUpi: IKeyServerUpi
             : ServerStatus.Stopping;
         }
       }
+    }
+  }
+
+  /// <summary>
+  /// Attempt to fix a blocked server
+  /// </summary>
+  /// <returns>
+  /// True if the attempt succeeded. False if no attempt was made
+  /// (<see cref="ServerState"/> was not <see cref="ServerStatus.Blocked"/>),
+  /// or the attempt failed
+  /// </returns>
+  public bool TryFixSocket()
+  {
+    if(ServerState == ServerStatus.Blocked)
+    {
+      try
+      {
+        File.Delete(_keyServerService.SocketPath);
+        return true;
+      }
+      catch(Exception ex)
+      {
+        Trace.TraceError($"Failed to fix the blocked socket: {ex}");
+        return false;
+      }
+    }
+    else
+    {
+      return false;
     }
   }
 

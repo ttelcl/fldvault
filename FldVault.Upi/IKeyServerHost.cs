@@ -47,7 +47,7 @@ public interface IKeyServerHost
   Task KeyStatusChanged(IKeyServerUpi upi, Guid keyId, KeyStatus status);
 
   /// <summary>
-  /// Indicates that the server received a request to publish a key
+  /// Indicates that the server received a request to publish a key or served a key
   /// </summary>
   /// <param name="upi">
   /// The server interface
@@ -57,7 +57,7 @@ public interface IKeyServerHost
   /// </param>
   /// <param name="status">
   /// The current status of the key (useful to distinguish an unlock request from
-  /// a reactivate request)
+  /// a reactivate request from a serve notification)
   /// </param>
   /// <param name="contextFile">
   /// If not null: the name of a file that uses the requested key. Useful for UI

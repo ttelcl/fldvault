@@ -1,0 +1,112 @@
+﻿<UserControl x:Class="ZvaultKeyServer.Main.Keys.KeyView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+             xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800"
+             d:DataContext="{d:DesignInstance local:KeyViewModel, IsDesignTimeCreatable=False}">
+    <Border
+        BorderThickness="0,0,0,1"
+        BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+        <Grid Background="#8222">
+            <!-- The semi-transparent near-black background dampens the "list selected element" color -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Border
+                Grid.Column="0"
+                Grid.Row="0"
+                Grid.RowSpan="2"
+                Padding="5,3"
+                Background="{Binding Status, Converter={StaticResource StatusBack}}"
+                ToolTip="{Binding StatusDescription}"
+                BorderThickness="1,1,1,0"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="24"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <iconPacks:PackIconMaterial
+                        Grid.Column="0"
+                        Grid.Row="0"
+                        Grid.RowSpan="2"
+                        Padding="2"
+                        Margin="0,2,0,2"
+                        Height="32"
+                        Width="32"
+                        VerticalAlignment="Center"
+                        Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                        Kind="{Binding StatusIcon}" />
+                </Grid>
+            </Border>
+            <Grid
+                Grid.Row="0"
+                Grid.Column="1">
+                <TextBlock
+                    Text="{Binding KeyId}"
+                    Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                    Padding="5,2"
+                    FontFamily="Lucida Sans Typewriter"/>
+            </Grid>
+            <Border
+                Grid.Row="1"
+                Grid.Column="1"
+                Padding="5,2">
+                <TextBlock 
+                    Text="{Binding ShortName}"
+                    ToolTip="{Binding FolderName}"/>
+            </Border>
+            <Border
+                Grid.Row="0"
+                Grid.Column="2"
+                Padding="5,2"
+                BorderBrush="{DynamicResource MahApps.Brushes.Accent}">
+                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                    <TextBlock
+                        Padding="5,0"
+                        Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                        Text="{Binding AutohideStatusText}"/>
+                    <TextBlock
+                        Padding="5,0"
+                        Text="{Binding AutohideLeftText}"
+                        Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <!-- <TextBlock Padding="5,0" Text="{Binding TimeoutText}"/> -->
+                    <!-- https://stackoverflow.com/a/17908249/271323 for the Style="{x:Null}" -->
+                    <ProgressBar
+                        Style="{x:Null}"
+                        Maximum="{Binding AutohideSeconds}"
+                        Value="{Binding AutohideLeft}"
+                        Width="100"
+                        Background="{Binding Source=Hidden, Converter={StaticResource StatusFull}}"
+                        Foreground="{Binding Source=Published, Converter={StaticResource StatusFull}}"
+                        Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </StackPanel>
+            </Border>
+            <Border
+                Grid.Row="1"
+                Grid.Column="2"
+                Padding="5,2"
+                HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Last activity:"/>
+                    <TextBlock Padding="5,0" Text="{Binding StampReason}"/>
+                    <TextBlock Padding="5,0" Text="{Binding StampShort}"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Border>
+</UserControl>

@@ -14,6 +14,7 @@ let usage detail =
   if showSummary "key-new" then
     cp "\fozvlt key-new \fg-p\f0 [\fg-dv \fc<directory>\f0]"
     cp "  Create a new key (\fb*.key-info\f0) in the given directory."
+    cp "  \fyRecommendation\f0: use the GUI key server instead, if available."
     cp "  \fkCurrently only passphrase based keys are supported\f0."
   if matchDetail "key-new" then
     cp "  \fg-p\fx\f0               Indicates the new key uses a passphrase"
@@ -50,18 +51,20 @@ let usage detail =
     cp "  [neither \fg-key\f0, \fg-kf\f0 nor \fg-p\f0 nor \fg-null\f0]  Take the key from the one existing \fb*.key-info\f0 file."
     cp ""
   if showSummary "list" then
-    cp "\fozvlt list \f0[\fg-vf\f0] \fc<file.zvlt>\f0 \fg-public\f0"
+    cp "\fozvlt list \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-public\f0] [\fg-cli\f0]"
     cp "  List files stored in the vault"
   if matchDetail "list" then
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to list the contents of."
     cp "  \fg-public\fx\f0          Only provide public information."
+    cp "  \fg-cli\fx\f0             Enable entering password via CLI (if key server is not available)."
     cp ""
   if showSummary "append" then
-    cp "\fozvlt append \f0[\fg-vf\f0] \fc<file.zvlt>\f0 {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
+    cp "\fozvlt append \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-cli\f0] {[\fg-p \fc<path>\f0] [\fg-z [\fcauto\f0|\fcoff\f0|\fcon\f0]] \fg-f \fc<file>\f0} [\fg-n \fc<name>\f0]"
     cp "  Append a file to a vault (encrypting it)."
   if matchDetail "append" then
     cp "  For each file added, if \fc<file>.meta.json\f0 exists, it is used to fill additional metadata"
     cp "  (ignoring fields 'size', 'name' and 'stamp')"
+    cp "  \fg-cli\fx\f0             Enable entering password via CLI (if key server is not available)."
     cp "  \fg-vf \fc<file.zvlt>\f0  The name of the existing vault file to append the file to."
     cp "  \fg-f \fc<file>\f0        The name of the file to append. Repeatable. \fkThe original path is ignored\f0."
     cp "  \fx\fx\fx                 The file (but not the folder) can include wildcards."
@@ -73,9 +76,10 @@ let usage detail =
     cp ""
   if showSummary "extract" then
     cp "\fozvlt extract \f0[\fg-vf\f0] \fc<file.zvlt>\f0 [\fg-od \fc<out-dir>\f0] [\fg-same\f0] [\fg-meta \fcauto\f0|\fcnone\f0|\fcall\f0|\fconly\f0|\fcview\f0]"
-    cp "[\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0]"
+    cp "[\fg-all\f0] {\fg-f \fc<file>\f0|\fg-id \fc<id>\f0} [\fg-n \fc<name>\f0] [\fg-cli\f0]"
     cp "  Extract file(s) from a vault file into the \fcout-dir\f0"
   if matchDetail "extract" then
+    cp "  \fg-cli\fx\f0             Enable entering password via CLI (if key server is not available)."
     cp "  \fg-vf \fc<file.zvlt>\f0  The vault file to extract content from"
     cp "  \fg-od \fc<out-dir>\f0    The directory to extract to. File names with paths are resolved"
     cp "  \fx    \fx         \fx    relative to this. Default: current directory"
@@ -98,7 +102,7 @@ let usage detail =
     cp ""
   if showSummary "status" then
     cp "\fozvlt status \f0[\fg-key \fc<id>\f0|[\fg-kf\f0] \fc<file.key-info\f0|\fcfile.zvlt>\f0] [\fg-dv \fc<directory>\f0]"
-    cp "  Check the unlock status of a key (without otherwise checking it)"
+    cp "  Check the unlock and server status of a key (without otherwise checking it)"
   if matchDetail "status" then
     cp ""
   if showSummary "unlock" then

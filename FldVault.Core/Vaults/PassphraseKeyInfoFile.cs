@@ -233,7 +233,7 @@ public class PassphraseKeyInfoFile
   /// </returns>
   public static PassphraseKeyInfoFile? TryFromFile(string fileName)
   {
-    if(fileName.EndsWith(".pass.keyinfo"))
+    if(fileName.EndsWith(".pass.key-info"))
     {
       return ReadFrom(fileName);
     }

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,7 +33,10 @@ public class KeyState: IKeyInfo
   {
     KeyChain = keyChain;
     KeyId = keyId;
-    LastRegistered = DateTime.Now;
+    KeyTag = keyId.ToString()[..8];
+    _lastRegistered = DateTimeOffset.UtcNow;
+    LastStamp = _lastRegistered;
+    LastStampSource = nameof(LastRegistered);
     _associatedFiles = new Dictionary<string, DateTimeOffset>();
   }
 
@@ -43,6 +47,11 @@ public class KeyState: IKeyInfo
 
   /// <inheritdoc/>
   public Guid KeyId { get; }
+
+  /// <summary>
+  /// An abbreviated KeyId in string form
+  /// </summary>
+  public string KeyTag { get; }
 
   /// <inheritdoc/>
   public KeyStatus Status { 
@@ -59,22 +68,83 @@ public class KeyState: IKeyInfo
   }
 
   /// <summary>
-  /// True if the key is currently hidden (or should be hidden if it were known).
-  /// TODO: timeout logic to set this automatically
+  /// Remove this key info's raw key if it exists
   /// </summary>
-  public bool HideKey { get; private set; }
+  /// <returns>
+  /// True if the key existed and was removed, false if not.
+  /// </returns>
+  public bool UnloadKey()
+  {
+    return KeyChain.DeleteKey(KeyId);
+  }
+
+  /// <summary>
+  /// True if the key is currently hidden (or should be hidden if it were known).
+  /// </summary>
+  public bool HideKey { get; set; }
 
   /// <inheritdoc/>
-  public DateTimeOffset LastRegistered { get; }
+  public DateTimeOffset LastRegistered { 
+    get => _lastRegistered;
+    set {
+      _lastRegistered = value;
+      SetLastStamp(value);
+    }
+  }
+  private DateTimeOffset _lastRegistered;
 
   /// <inheritdoc/>
-  public DateTimeOffset? LastRequested { get; private set; }
+  public DateTimeOffset? LastRequested {
+    get => _lastRequested;
+    private set {
+      _lastRequested = value;
+      SetLastStamp(value);
+    }
+  }
+  private DateTimeOffset? _lastRequested;
 
   /// <inheritdoc/>
-  public DateTimeOffset? LastServed { get; private set; }
+  public DateTimeOffset? LastServed {
+    get => _lastServed;
+    private set {
+      _lastServed = value;
+      SetLastStamp(value);
+    } 
+  }
+  private DateTimeOffset? _lastServed;
 
   /// <inheritdoc/>
-  public DateTimeOffset? LastAssociated { get; private set; }
+  public DateTimeOffset? LastAssociated { 
+    get => _lastAssociated;
+    private set {
+      _lastAssociated = value;
+      SetLastStamp(value);
+    }
+  }
+  private DateTimeOffset? _lastAssociated;
+
+  /// <summary>
+  /// The most recent of <see cref="LastRegistered"/>, <see cref="LastRequested"/>,
+  /// <see cref="LastServed"/> and <see cref="LastServed"/>
+  /// </summary>
+  public DateTimeOffset LastStamp { get; private set; }
+
+  /// <summary>
+  /// The source property for <see cref="LastStamp"/>
+  /// </summary>
+  public string LastStampSource { get; private set; }
+
+  private void SetLastStamp(
+    DateTimeOffset? value,
+    [CallerMemberName] string propertyName = "INVALID")
+  {
+    if(value.HasValue)
+    {
+      Trace.TraceInformation($"LastStamp({KeyTag}/{propertyName}) <- {value.Value.ToLocalTime():o}");
+      LastStamp = value.Value;
+      LastStampSource = propertyName;
+    }
+  }
 
   /// <inheritdoc/>
   public IReadOnlyDictionary<string, DateTimeOffset> AssociatedFiles {

@@ -309,12 +309,15 @@ public class KeyServerLogic: IDisposable
       case KeyStatus.Published:
         {
           state.UseKey(frameOut.WriteKeyResponse);
+          // The callback is also used for serve notification!
+          await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
           break;
         }
       case KeyStatus.Seeded:
       case KeyStatus.Hidden:
         {
-          frameOut.WriteKeyResponse(null);
+          // frameOut.WriteKeyResponse(null);
+          state.UseKey(frameOut.WriteKeyResponse); // equivalent to frameOut.WriteKeyResponse(null) plus tracking
           await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
           break;
         }
@@ -336,10 +339,8 @@ public class KeyServerLogic: IDisposable
       found = bw != null;
       frameOut.WriteKeyResponse(bw);
     });
-    if(!found)
-    {
-      await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
-    }
+    // sent not only when not found ("load request") but also when found ("serve notification")
+    await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
   }
 
   private async Task HandleKeyUpload(MessageFrameIn frameIn, MessageFrameOut frameOut)

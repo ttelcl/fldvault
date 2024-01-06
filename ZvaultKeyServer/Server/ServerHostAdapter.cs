@@ -50,14 +50,25 @@ public class ServerHostAdapter: IKeyServerHost
   public async Task KeyLoadRequest(
     IKeyServerUpi upi, Guid keyId, KeyStatus status, string? contextFile)
   {
+    var now = DateTimeOffset.UtcNow;
     await Dispatcher.SwitchToUi();
     if(Stopping)
     {
       return;
     }
-    // TODO
     Trace.TraceInformation(
       $"Callback: KeyLoadRequest {keyId} '{status}' ({contextFile??String.Empty})");
+    var kvm = MainModel.KeysViewModel;
+    var key = kvm.FindKey(keyId);
+    if(key != null)
+    {
+      var needSort = key.SyncModel();
+      key.ApplyGracePeriod();
+      if(needSort)
+      {
+        kvm.Resort();
+      }
+    }
   }
 
   public async Task KeyStatusChanged(
@@ -68,8 +79,9 @@ public class ServerHostAdapter: IKeyServerHost
     {
       return;
     }
-    // TODO
     Trace.TraceInformation($"Callback: KeyStatusChanged {keyId} '{status}'");
+    var kvm = MainModel.KeysViewModel;
+    kvm.SyncModel();
   }
 
   public async Task ServerStatusChanged(

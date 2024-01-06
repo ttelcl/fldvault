@@ -5,24 +5,51 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     xmlns:local="clr-namespace:ZvaultKeyServer.Main"
+    xmlns:keys="clr-namespace:ZvaultKeyServer.Main.Keys"
     mc:Ignorable="d"
     Title="Zvault Key Server"
     TitleCharacterCasing="Normal"
     Height="450"
     Width="800"
+    MinHeight="360"
     ResizeMode="CanResizeWithGrip"
-    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}">
+    Icon="pack://application:,,,/ZvaultKeyServer;component/assets/zvault-256.ico"
+    d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
+    Loaded="MetroWindow_Loaded">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <Separator/>
-                <MenuItem Header="_Exit" Command="{Binding ExitCommand}"/>
+                <MenuItem Header="_Exit" Command="{Binding ExitCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="ExitToApp" />
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
             <MenuItem Header="_Server">
-                <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}"/>
-                <MenuItem Header="_Start" Command="{Binding StartServerCommand}"/>
-                <MenuItem Header="_Stop" Command="{Binding StopServerCommand}"/>
+                <MenuItem Header="_Check Status" Command="{Binding CheckServerStateCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="Refresh" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Start" Command="{Binding StartServerCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="Play" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="St_op" Command="{Binding StopServerCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="Stop" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="_Fix blocked server" Command="{Binding TryFixServerCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="Tools" />
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">
@@ -57,8 +84,10 @@
         </StatusBar>
         <Border
             BorderThickness="1"
-            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            AllowDrop="True"
+            Drop="ZvaultServer_Drop">
+            <keys:KeysView DataContext="{Binding KeysViewModel}" />
         </Border>
     </DockPanel>
 </mah:MetroWindow>

@@ -12,7 +12,7 @@ open ColorPrint
 open CommonTools
 open FldVault.KeyServer
 
-/// Get a PassphraseKeyInfoFile instance from a *.pass.keyinfo or *.zvlt file
+/// Get a PassphraseKeyInfoFile instance from a *.pass.key-info or *.zvlt file
 let getPassKeyInfoFromFile (fileName: string) =
   if fileName.EndsWith(".pass.key-info", StringComparison.InvariantCultureIgnoreCase) then
     PassphraseKeyInfoFile.ReadFrom(fileName)
@@ -58,13 +58,13 @@ let addConditional condition (adder: KeySeedService -> KeySeedService) (ks: KeyS
 
 let setupKeySeedService useUnlock usePassphrase keyserver =
   let svc = minimalKeySeedService()
-  if useUnlock then
-    svc |> addUnlockKeySeedService |> ignore
   match keyserver with
   | Some(kss) ->
     svc |> addKeyServerSeedService kss |> ignore
   | None ->
     ()
+  if useUnlock then
+    svc |> addUnlockKeySeedService |> ignore
   if usePassphrase then
     svc |> addPassphraseKeySeedService |> ignore
   svc |> completeKeySeedService
@@ -74,7 +74,7 @@ let hatchKeyIntoChain (seedService: IKeySeedService) vaultFile keyChain =
   if seed = null then
     failwith $"Insufficient information to locate key '{vaultFile.KeyId}'"
   if seed.TryResolveKey(keyChain) |> not then
-    failwith $"Key not found or not available: '{vaultFile.KeyId}'"
+    failwith $"Key not found or not available (may require '-cli'): '{vaultFile.KeyId}'"
 
 let trySeedFromKeyInfoFile (seedService: IKeySeedService) keyInfoFile =
   keyInfoFile |> seedService.TryCreateFromKeyInfoFile

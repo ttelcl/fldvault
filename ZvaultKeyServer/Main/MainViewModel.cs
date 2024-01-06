@@ -18,13 +18,17 @@ using FldVault.Upi;
 using FldVault.Upi.Implementation;
 using FldVault.Upi.Implementation.Keys;
 
+using ZvaultKeyServer.Converters;
+using ZvaultKeyServer.Main.Keys;
 using ZvaultKeyServer.Server;
 using ZvaultKeyServer.WpfUtilities;
 
 namespace ZvaultKeyServer.Main;
 
-public class MainViewModel: ViewModelBase
+public class MainViewModel: ViewModelBase, IStatusMessage
 {
+  private readonly DispatcherTimer _timer;
+
   public MainViewModel(
     Dispatcher dispatcher,
     KeyChain keyChain)
@@ -33,10 +37,62 @@ public class MainViewModel: ViewModelBase
     KeyStates = new KeyStateStore(KeyChain);
     HostAdapter = new ServerHostAdapter(this, dispatcher);
     Server = new KeyServerUpi(KeyStates, null);
+    KeysViewModel = new KeysViewModel(KeyStates, this);
     CheckServerStateCommand = new DelegateCommand(p => { CheckStatus(); });
     StartServerCommand = new DelegateCommand(p => { StartServer(); }, p => CanStartServer);
     StopServerCommand = new DelegateCommand(p => { StopServer(); }, p => CanStopServer);
+    TryFixServerCommand = new DelegateCommand(p => {
+      if(MessageBox.Show(
+        "Are you sure?\n(this WILL crash the other server if there is one)",
+        "Confirmation",
+        MessageBoxButton.OKCancel,
+        MessageBoxImage.Warning) == MessageBoxResult.OK)
+      {
+        if(Server.TryFixSocket())
+        {
+          ServerStatus = Server.ServerState;
+          StatusMessage = "Unblocked server (use Server|Start to start this app's server)";
+        }
+        else
+        {
+          StatusMessage = "Failed to unblock server";
+        }
+      }
+      else
+      {
+        StatusMessage = "Unblocking canceled";
+      }
+    }, p => Server.ServerState == ServerStatus.Blocked);
+    _timer = new DispatcherTimer(DispatcherPriority.Background);
+    _timer.Interval = TimeSpan.FromSeconds(1);
+    _timer.Tick += TimerTick;
+    _timer.Start();
     ServerStatus = Server.ServerState;
+  }
+
+  private void TimerTick(object? sender, EventArgs e)
+  {
+    KeysViewModel.TimerTick();
+  }
+
+  public static void RegisterColors()
+  {
+    /*
+     * Olive = rgb(94, 115, 87) = #5e7357
+     */
+    var cc = BrushCache.Default;
+    cc.AddAlias("/Status/Back/Unknown", "#28A0A0A0");
+    cc.AddAlias("/Status/Back/Seeded", "#28DD9933");
+    cc.AddAlias("/Status/Back/Hidden", "#288888EE");
+    cc.AddAlias("/Status/Back/Published", "#2866CC44");
+    cc.AddAlias("/Status/Fore/Unknown", "#EEA0A0A0");
+    cc.AddAlias("/Status/Fore/Seeded", "#EEDD9933");
+    cc.AddAlias("/Status/Fore/Hidden", "#EE8888EE");
+    cc.AddAlias("/Status/Fore/Published", "#EE66CC44");
+    cc.AddAlias("/Status/Full/Unknown", "#FFA0A0A0");
+    cc.AddAlias("/Status/Full/Seeded", "#FFd29233");
+    cc.AddAlias("/Status/Full/Hidden", "#FF6262d3");
+    cc.AddAlias("/Status/Full/Published", "#FF62c342");
   }
 
   public ServerHostAdapter HostAdapter { get; }
@@ -46,6 +102,8 @@ public class MainViewModel: ViewModelBase
   public KeyChain KeyChain { get; }
 
   public KeyStateStore KeyStates { get; }
+
+  public KeysViewModel KeysViewModel { get; }
 
   public ICommand ExitCommand { get; } = new DelegateCommand(p => {
     var w = Application.Current.MainWindow;
@@ -57,6 +115,8 @@ public class MainViewModel: ViewModelBase
   public ICommand StartServerCommand { get; }
 
   public ICommand StopServerCommand { get; }
+
+  public ICommand TryFixServerCommand { get; }
 
   public string StatusMessage {
     get => _statusMessage;

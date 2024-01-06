@@ -289,7 +289,7 @@ public class KeysViewModel: ViewModelBase
       StatusHost.StatusMessage = "Cannot unlock: key is already unlocked or is not a password-based key";
       return;
     }
-    // _passwordBox.SecurePassword returns a copy, so yes: dispose it!
+    // _passwordBox.SecurePassword returns a copy, so yes: dispose it after use!
     using(var secureString = _passwordBox.SecurePassword)
     {
       var unlocked = key.Model.TryResolveKey(secureString);
@@ -299,10 +299,16 @@ public class KeysViewModel: ViewModelBase
         SetPasswordBackground(false);
         // No point in keeping the password around anymore
         _passwordBox.Clear();
+        key.ResetTimer();
         SyncModel();
       }
       else
       {
+        MessageBox.Show(
+          "Passphrase incorrect.",
+          "Error",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
         StatusHost.StatusMessage = $"Incorrect passphrase for {key.KeyId}";
         SetPasswordBackground(true);
       }

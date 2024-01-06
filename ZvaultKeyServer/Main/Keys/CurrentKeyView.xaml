@@ -77,6 +77,7 @@
                         DataContextChanged="PasswordBox_Bind"
                         KeyDown="PasswordBox_KeyDown"
                         mah:TextBoxHelper.ClearTextButton="True"
+                        mah:TextBoxHelper.Watermark="Enter passphrase"
                         Background="{Binding PasswordBackground}"/>
                     <Button Grid.Column="1" FontSize="14" Command="{Binding TryUnlockCommand}">
                         <TextBlock Text="Unlock"/>
@@ -118,6 +119,18 @@
                                 <TextBlock Padding="2,0" Text="Reset"/>
                             </StackPanel>
                         </Button>
+                        <Button
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            ToolTip="Unload Key"
+                            Command="{Binding UnloadKeyCommand}"
+                            Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
+                                <TextBlock Padding="2,0" Text="Unload"/>
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -132,18 +145,32 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <Button
-                        Grid.Column="0"
-                        Width="85"
-                        FontSize="14"
-                        Padding="2,1" Margin="2,0"
-                        Command="{Binding Owner.PublishCurrentKeyCommand}"
-                        Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
-                        <StackPanel Orientation="Horizontal">
-                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
-                            <TextBlock Padding="2,0" Text="Unhide"/>
-                        </StackPanel>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" Grid.Column="0">
+                        <Button
+                            Grid.Column="0"
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            Command="{Binding Owner.PublishCurrentKeyCommand}"
+                            Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
+                                <TextBlock Padding="2,0" Text="Unhide"/>
+                            </StackPanel>
+                        </Button>
+                        <Button
+                            Width="85"
+                            FontSize="14"
+                            Padding="2,1" Margin="2,0"
+                            ToolTip="Unload Key"
+                            Command="{Binding UnloadKeyCommand}"
+                            Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
+                                <TextBlock Padding="2,0" Text="Unload"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </Border>
             <Border

@@ -38,7 +38,9 @@ public class KeyViewModel: ViewModelBase
     ResetTimeoutCommand = new DelegateCommand(
       p => ResetTimer(),
       p => AutohideEnabled);
-    UnloadKeyCommand = new DelegateCommand(p => UnloadKey());
+    UnloadKeyCommand = new DelegateCommand(
+      p => UnloadKey(),
+      p => Owner.Model.KeyChain.ContainsKey(KeyId));
     ResetTimer();
     SyncModel();
   }
@@ -316,6 +318,7 @@ public class KeyViewModel: ViewModelBase
   public void ResetTimer()
   {
     AutohideLeft = AutohideSeconds;
+    Model.HideKey = false;
   }
 
   public void UnloadKey()

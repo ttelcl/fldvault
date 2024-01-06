@@ -12,7 +12,7 @@ open ColorPrint
 open CommonTools
 open FldVault.KeyServer
 
-/// Get a PassphraseKeyInfoFile instance from a *.pass.keyinfo or *.zvlt file
+/// Get a PassphraseKeyInfoFile instance from a *.pass.key-info or *.zvlt file
 let getPassKeyInfoFromFile (fileName: string) =
   if fileName.EndsWith(".pass.key-info", StringComparison.InvariantCultureIgnoreCase) then
     PassphraseKeyInfoFile.ReadFrom(fileName)

@@ -6,7 +6,12 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\zvault-256.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\zvault-256.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />

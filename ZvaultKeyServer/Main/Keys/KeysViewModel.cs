@@ -56,6 +56,7 @@ public class KeysViewModel: ViewModelBase
     HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
     ResetTimeoutCommand = new DelegateCommand(p => CurrentKey?.ResetTimer());
     DeleteCurrentKeyCommand = new DelegateCommand(p => DeleteCurrentKey(), p => CurrentKey != null);
+    HideAllCommand = new DelegateCommand(p => HideAll());
     DefaultTimeout = 180;
     _timeoutValues = [
       "0:30",
@@ -90,6 +91,8 @@ public class KeysViewModel: ViewModelBase
   public ICommand ResetTimeoutCommand { get; }
 
   public ICommand DeleteCurrentKeyCommand { get; }
+
+  public ICommand HideAllCommand { get; }
 
   public ObservableCollection<KeyViewModel> Keys { get; }
 
@@ -331,7 +334,7 @@ public class KeysViewModel: ViewModelBase
   }
 
   public Brush PasswordBackground {
-    get => _passwordBackground; 
+    get => _passwordBackground;
     set {
       if(SetInstanceProperty(ref _passwordBackground, value))
       {
@@ -346,5 +349,14 @@ public class KeysViewModel: ViewModelBase
     {
       keyview.TimerTick();
     }
+  }
+
+  public void HideAll()
+  {
+    foreach(var keyview in Keys)
+    {
+      keyview.Model.HideKey = true;
+    }
+    SyncModel();
   }
 }

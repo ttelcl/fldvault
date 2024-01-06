@@ -10,7 +10,6 @@
              d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeysViewModel, IsDesignTimeCreatable=False}">
     <DockPanel>
-        <!-- Accent4 is #336D8764 -->
         <Border
             DockPanel.Dock="Top"
             Padding="5,3"
@@ -28,6 +27,16 @@
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyPlus" />
                         <TextBlock FontSize="14" Padding="2,2" Text="New Key ..."/>
+                    </StackPanel>
+                </Button>
+                <Button Padding="2,1" Margin="2,0" Command="{Binding HideAllCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}"
+                            Padding="2,0" Height="24" Width="24" Kind="EyeOff" />
+                        <TextBlock
+                            Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}"
+                            FontSize="14" Padding="2,2" Text="Hide All"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

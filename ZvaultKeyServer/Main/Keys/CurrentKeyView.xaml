@@ -37,17 +37,23 @@
                 Background="{Binding Status, Converter={StaticResource StatusBack}}"
                 >
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock
+                <!-- Use a TextBox that looks like a TextBlock - that way the key id can be copied -->
+                <TextBox
                     Grid.Column="0"
                     Padding="5,5"
-                    VerticalAlignment="Bottom"
+                    VerticalContentAlignment="Bottom"
+                    Background="#22000000"
+                    BorderThickness="0"
+                    IsReadOnly="True"
+                    TextWrapping="Wrap"
                     FontFamily="Lucida Sans Typewriter"
                     Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
-                    Text="{Binding KeyId}"/>
-                <StackPanel Orientation="Horizontal" Grid.Column="1">
+                    Text="{Binding KeyId, Mode=OneWay}"/>
+                <StackPanel Orientation="Horizontal" Grid.Column="2">
                     <TextBlock
                         Padding="5,5"
                         VerticalAlignment="Bottom"
@@ -199,7 +205,8 @@
                                 VerticalAlignment="Center"
                                 Text="Timeout: "/>
                             <ComboBox
-                                MinWidth="80"
+                                MinWidth="64"
+                                BorderThickness="0"
                                 HorizontalContentAlignment="Right"
                                 SelectedValue="{Binding TimeoutValue, Mode=TwoWay}"
                                 ItemsSource="{Binding Owner.TimeoutValues}"/>

@@ -262,25 +262,30 @@ public class KeysViewModel: ViewModelBase
     {
       foreach(var fileName in dialog.FileNames)
       {
-        var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
-        if(pkif == null)
-        {
-          Trace.TraceWarning($"Unsupported file {fileName}");
-          StatusHost.StatusMessage = $"Unsupported file {Path.GetFileName(fileName)}";
-        }
-        else
-        {
-          var state = Model.GetKey(pkif.KeyId);
-          state.AssociateFile(fileName, true);
-          StatusHost.StatusMessage = $"Updated key {pkif.KeyId}";
-          Trace.TraceInformation($"Linked key {pkif.KeyId} to file {fileName}");
-        }
+        LinkFile(fileName);
       }
       SyncModel();
     }
     else
     {
       StatusHost.StatusMessage = "Operation canceled";
+    }
+  }
+
+  public void LinkFile(string fileName)
+  {
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif == null)
+    {
+      Trace.TraceWarning($"Unsupported file {fileName}");
+      StatusHost.StatusMessage = $"Unsupported file {Path.GetFileName(fileName)}";
+    }
+    else
+    {
+      var state = Model.GetKey(pkif.KeyId);
+      state.AssociateFile(fileName, true);
+      StatusHost.StatusMessage = $"Updated key {pkif.KeyId}";
+      Trace.TraceInformation($"Linked key {pkif.KeyId} to file {fileName}");
     }
   }
 

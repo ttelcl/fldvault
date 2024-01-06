@@ -84,7 +84,9 @@
         </StatusBar>
         <Border
             BorderThickness="1"
-            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            AllowDrop="True"
+            Drop="ZvaultServer_Drop">
             <keys:KeysView DataContext="{Binding KeysViewModel}" />
         </Border>
     </DockPanel>

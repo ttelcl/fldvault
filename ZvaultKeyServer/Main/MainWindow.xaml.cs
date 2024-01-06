@@ -58,4 +58,20 @@ public partial class MainWindow: MetroWindow
       }
     }
   }
+
+  private void ZvaultServer_Drop(object sender, DragEventArgs e)
+  {
+    if(e.Data.GetDataPresent(DataFormats.FileDrop)
+      && DataContext is MainViewModel mvm
+      && mvm.KeysViewModel != null)
+    {
+      var kvm = mvm.KeysViewModel;
+      var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+      foreach(var file in files)
+      {
+        kvm.LinkFile(file);
+      }
+      kvm.SyncModel();
+    }
+  }
 }

@@ -42,6 +42,16 @@
             </StackPanel>
         </Border>
         <Border
+            DockPanel.Dock="Top"
+            Padding="5,3"
+            BorderThickness="1"
+            MinHeight="42"
+            Background="#306D8764"
+            Visibility="{Binding NewKeyPaneVisible}"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            <local:NewKeyView DataContext="{Binding NewKeyPane}" />
+        </Border>
+        <Border
             DockPanel.Dock="Bottom"
             BorderThickness="1"
             Background="#106D8764"

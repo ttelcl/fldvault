@@ -117,6 +117,29 @@ public class KeysViewModel: ViewModelBase
     get => _currentKey == null ? Visibility.Collapsed : Visibility.Visible;
   }
 
+  public NewKeyViewModel? NewKeyPane { 
+    get => _newKeyPane; 
+    set {
+      var oldPane = _newKeyPane;
+      if(SetNullableInstanceProperty(ref _newKeyPane, value))
+      {
+        _newKeyPane?.ClearPasswords();
+        oldPane?.Unbind();
+        RaisePropertyChanged(nameof(NewKeyPaneVisible));
+      }
+    }
+  }
+  private NewKeyViewModel? _newKeyPane;
+
+  public Visibility NewKeyPaneVisible {
+    get => _newKeyPane == null ? Visibility.Collapsed : Visibility.Visible;
+  }
+
+  public void NewKey()
+  {
+    NewKeyPane = new NewKeyViewModel(this);
+  }
+
   public int DefaultTimeout { get; }
 
   public IReadOnlyList<string> TimeoutValues { get => _timeoutValues; }
@@ -259,18 +282,6 @@ public class KeysViewModel: ViewModelBase
     {
       StatusHost.StatusMessage = "Operation canceled";
     }
-  }
-
-  public void NewKey()
-  {
-    Trace.TraceInformation("New Key - NYI");
-    StatusHost.StatusMessage = "New Key - NYI";
-  }
-
-  public void NewVault()
-  {
-    Trace.TraceInformation("New Vault - NYI");
-    StatusHost.StatusMessage = "New Vault - NYI";
   }
 
   public void TryUnlock()

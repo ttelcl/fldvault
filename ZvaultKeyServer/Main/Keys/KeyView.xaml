@@ -67,8 +67,8 @@
                 Grid.Column="1"
                 Padding="5,2">
                 <TextBlock 
-                    Text="{Binding ShortName}"
-                    ToolTip="{Binding FolderName}"/>
+                    Text="{Binding KeyFiles.NewestFile.FileShort}"
+                    ToolTip="{Binding KeyFiles.NewestFile.Folder}"/>
             </Border>
             <Border
                 Grid.Row="0"

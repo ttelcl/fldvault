@@ -49,6 +49,7 @@ public class KeyViewModel: ViewModelBase
     NewVaultCommand = new DelegateCommand(
       p => NewVault(),
       p => Status == KeyStatus.Published);
+    KeyFiles = new();
     ResetTimer();
     SyncModel();
   }
@@ -65,7 +66,12 @@ public class KeyViewModel: ViewModelBase
 
   public Guid KeyId { get => Model.KeyId; }
 
-  public string? FullFileName {
+  public KeyFileInfos KeyFiles { get; }
+
+  /// <summary>
+  /// -> KeyFiles.NewestFile.FullName
+  /// </summary>
+  public string? FullFileName { 
     get => _fullFileName;
     set {
       if(SetInstanceProperty(ref _fullFileName, value ?? String.Empty))
@@ -77,10 +83,16 @@ public class KeyViewModel: ViewModelBase
   }
   private string _fullFileName = string.Empty;
 
+  /// <summary>
+  /// -> KeyFiles.NewestFile.ShortName
+  /// </summary>
   public string ShortName {
     get => String.IsNullOrEmpty(_fullFileName) ? "-" : Path.GetFileName(_fullFileName);
   }
 
+  /// <summary>
+  /// -> KeyFiles.NewestFile.FolderName
+  /// </summary>
   public string? FolderName {
     get => String.IsNullOrEmpty(_fullFileName) ? null : Path.GetDirectoryName(_fullFileName);
   }
@@ -208,7 +220,7 @@ public class KeyViewModel: ViewModelBase
     {
       FullFileName = null;
     }
-    // TODO: track files in this model
+    KeyFiles.Resynchronize(files);
     Status = Model.Status;
     ShowKey = !Model.HideKey; // Sync back. Normally HideKey -> Model.HideKey
     var stamp = Model.LastStamp;

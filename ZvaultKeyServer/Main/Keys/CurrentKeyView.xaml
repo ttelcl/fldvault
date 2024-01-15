@@ -11,14 +11,17 @@
              d:DesignWidth="800"
              d:DataContext="{d:DesignInstance local:KeyViewModel, IsDesignTimeCreatable=False}">
     <Grid
-        MinHeight="100">
+        MinHeight="120">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" MinWidth="30"/>
+            <ColumnDefinition Width="420"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Border
-            Grid.Row="0"
-            Grid.Column="0"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="100"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="2"
             Padding="3,3"
             Background="{Binding Status, Converter={StaticResource StatusBack}}"
             VerticalAlignment="Stretch"
@@ -31,43 +34,41 @@
                 Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                 Kind="{Binding StatusIcon}" />
         </Border>
-        <DockPanel Grid.Column="1">
-            <Grid
-                DockPanel.Dock="Top"
-                Background="{Binding Status, Converter={StaticResource StatusBack}}"
-                >
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <!-- Use a TextBox that looks like a TextBlock - that way the key id can be copied -->
-                <TextBox
-                    Grid.Column="0"
+        <Grid Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2"
+            Background="{Binding Status, Converter={StaticResource StatusBack}}"
+            >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <!-- Use a TextBox that looks like a TextBlock - that way the key id can be copied -->
+            <TextBox
+                Grid.Column="0"
+                Padding="5,5"
+                VerticalContentAlignment="Bottom"
+                Background="#22000000"
+                BorderThickness="0"
+                IsReadOnly="True"
+                TextWrapping="Wrap"
+                FontFamily="Lucida Sans Typewriter"
+                Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                Text="{Binding KeyId, Mode=OneWay}"/>
+            <StackPanel Orientation="Horizontal" Grid.Column="2">
+                <TextBlock
                     Padding="5,5"
-                    VerticalContentAlignment="Bottom"
-                    Background="#22000000"
-                    BorderThickness="0"
-                    IsReadOnly="True"
-                    TextWrapping="Wrap"
-                    FontFamily="Lucida Sans Typewriter"
-                    Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
-                    Text="{Binding KeyId, Mode=OneWay}"/>
-                <StackPanel Orientation="Horizontal" Grid.Column="2">
-                    <TextBlock
-                        Padding="5,5"
-                        VerticalAlignment="Bottom"
-                        Foreground="{StaticResource MahApps.Brushes.Gray5}"
-                        Text="{Binding StampReason}"/>
-                    <TextBlock
-                        Padding="5,5"
-                        VerticalAlignment="Bottom"
-                        Foreground="{StaticResource MahApps.Brushes.Gray5}"
-                        Text="{Binding StampText}"/>
-                </StackPanel>
-            </Grid>
-            <Border
-                DockPanel.Dock="Top"
+                    VerticalAlignment="Bottom"
+                    Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                    Text="{Binding StampReason}"/>
+                <TextBlock
+                    Padding="5,5"
+                    VerticalAlignment="Bottom"
+                    Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                    Text="{Binding StampText}"/>
+            </StackPanel>
+        </Grid>
+        <DockPanel Grid.Column="1" Grid.Row="1">
+            <Border DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Seeded}"
@@ -88,7 +89,7 @@
                     <Button
                         Grid.Column="1"
                         FontSize="14"
-                        MinWidth="85"
+                        MinWidth="96"
                         Padding="2,1" Margin="2,0"
                         Command="{Binding TryUnlockCommand}"
                         Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
@@ -99,8 +100,7 @@
                     </Button>
                 </Grid>
             </Border>
-            <Border
-                DockPanel.Dock="Top"
+            <Border DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Published}"
@@ -121,7 +121,7 @@
                             Command="{Binding Owner.HideCurrentKeyCommand}"
                             Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
                             <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOff" />
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="EyeOff" />
                                 <TextBlock Padding="2,0" Text="Hide"/>
                             </StackPanel>
                         </Button>
@@ -153,7 +153,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Grid.Column="4">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Unload Key"
@@ -167,8 +167,7 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            <Border
-                DockPanel.Dock="Top"
+            <Border DockPanel.Dock="Top"
                 Padding="5,2"
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Hidden}"
@@ -188,14 +187,14 @@
                             Command="{Binding Owner.PublishCurrentKeyCommand}"
                             Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
                             <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Eye" />
                                 <TextBlock Padding="2,0" Text="Unhide"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Grid.Column="2">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Unload Key"
@@ -209,8 +208,7 @@
                     </StackPanel>
                 </Grid>
             </Border>
-            <Border
-                DockPanel.Dock="Top"
+            <Border DockPanel.Dock="Top"
                 Padding="5,0"
                 BorderThickness="1"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
@@ -244,11 +242,11 @@
                     </Border>
                     <Border
                         DockPanel.Dock="Right"
-                        BorderThickness="1,0,0,0"
+                        BorderThickness="0,0,0,0"
                         Padding="5,0,0,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Delete key from this server"
@@ -265,9 +263,23 @@
                     </Grid>
                 </DockPanel>
             </Border>
-            <Grid MinHeight="20">
+            <Grid MinHeight="10">
                 <!-- empty filler -->
             </Grid>
         </DockPanel>
+        <Border Grid.Column="2" Grid.Row="1" Grid.RowSpan="2"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+            <ScrollViewer>
+                <ItemsControl
+                ItemsSource="{Binding KeyFiles.Files}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <local:KeyFileInfoView/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
     </Grid>
 </UserControl>

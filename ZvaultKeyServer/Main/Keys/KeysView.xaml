@@ -67,6 +67,7 @@
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <ListBox
+                ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                 ItemsSource="{Binding KeysView}"
                 SelectedItem="{Binding CurrentKey}">
                 <ListBox.ItemTemplate>

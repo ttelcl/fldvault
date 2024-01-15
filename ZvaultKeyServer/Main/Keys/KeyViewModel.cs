@@ -49,6 +49,7 @@ public class KeyViewModel: ViewModelBase
     NewVaultCommand = new DelegateCommand(
       p => NewVault(),
       p => Status == KeyStatus.Published);
+    KeyFiles = new(this);
     ResetTimer();
     SyncModel();
   }
@@ -65,7 +66,12 @@ public class KeyViewModel: ViewModelBase
 
   public Guid KeyId { get => Model.KeyId; }
 
-  public string? FullFileName {
+  public KeyFileInfos KeyFiles { get; }
+
+  /// <summary>
+  /// -> KeyFiles.NewestFile.FullName
+  /// </summary>
+  public string? FullFileName { 
     get => _fullFileName;
     set {
       if(SetInstanceProperty(ref _fullFileName, value ?? String.Empty))
@@ -77,10 +83,16 @@ public class KeyViewModel: ViewModelBase
   }
   private string _fullFileName = string.Empty;
 
+  /// <summary>
+  /// -> KeyFiles.NewestFile.ShortName
+  /// </summary>
   public string ShortName {
     get => String.IsNullOrEmpty(_fullFileName) ? "-" : Path.GetFileName(_fullFileName);
   }
 
+  /// <summary>
+  /// -> KeyFiles.NewestFile.FolderName
+  /// </summary>
   public string? FolderName {
     get => String.IsNullOrEmpty(_fullFileName) ? null : Path.GetDirectoryName(_fullFileName);
   }
@@ -93,6 +105,7 @@ public class KeyViewModel: ViewModelBase
       {
         RaisePropertyChanged(nameof(StatusIcon));
         RaisePropertyChanged(nameof(StatusDescription));
+        RaisePropertyChanged(nameof(IsPublished));
         if(_status == KeyStatus.Published)
         {
           ResetTimer();
@@ -103,13 +116,17 @@ public class KeyViewModel: ViewModelBase
   }
   private KeyStatus _status;
 
+  public bool IsPublished {
+    get => Status == KeyStatus.Published;
+  }
+
   public string StatusIcon {
     get {
       return _status switch {
         KeyStatus.Unknown => "LockQuestion",
         KeyStatus.Seeded => "LockAlert",
-        KeyStatus.Hidden => "LockOff",
-        KeyStatus.Published => "LockOpen",
+        KeyStatus.Hidden => "EyeOff",
+        KeyStatus.Published => "Eye",
         _ => "HelpRhombusOutline",
       };
     }
@@ -208,7 +225,7 @@ public class KeyViewModel: ViewModelBase
     {
       FullFileName = null;
     }
-    // TODO: track files in this model
+    KeyFiles.Resynchronize(files);
     Status = Model.Status;
     ShowKey = !Model.HideKey; // Sync back. Normally HideKey -> Model.HideKey
     var stamp = Model.LastStamp;
@@ -422,7 +439,7 @@ public class KeyViewModel: ViewModelBase
         AutohideState.Inactive => "Key not loaded",
         AutohideState.Disabled => "Auto-hide disabled",
         AutohideState.Paused => "Auto-hide paused",
-        AutohideState.Running => "Auto-hide in",
+        AutohideState.Running => "Auto-hiding in:",
         AutohideState.Hiding => "(auto-hiding soon)",
         AutohideState.Hidden => "Key hidden from clients",
         _ => $"'{AutohideStatus}'",

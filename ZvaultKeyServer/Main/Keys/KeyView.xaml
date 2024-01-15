@@ -66,9 +66,29 @@
                 Grid.Row="1"
                 Grid.Column="1"
                 Padding="5,2">
-                <TextBlock 
-                    Text="{Binding ShortName}"
-                    ToolTip="{Binding FolderName}"/>
+                <ItemsControl
+                    ItemsSource="{Binding KeyFiles.Files}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel IsItemsHost="True" Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                d:DataContext="{d:DesignInstance local:KeyFileInfo, IsDesignTimeCreatable=False}"
+                                Padding="5,0"
+                                Margin="0,0"
+                                BorderThickness="1,0,1,0"
+                                BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                                <TextBlock
+                                    Foreground="{StaticResource MahApps.Brushes.Gray6}"
+                                    Text="{Binding FileShort}"
+                                    ToolTip="{Binding Folder}"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Border>
             <Border
                 Grid.Row="0"
@@ -84,16 +104,25 @@
                         Padding="5,0"
                         Text="{Binding AutohideLeftText}"
                         Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <!-- <TextBlock Padding="5,0" Text="{Binding TimeoutText}"/> -->
                     <!-- https://stackoverflow.com/a/17908249/271323 for the Style="{x:Null}" -->
                     <ProgressBar
                         Style="{x:Null}"
                         Maximum="{Binding AutohideSeconds}"
                         Value="{Binding AutohideLeft}"
-                        Width="100"
+                        Width="80"
                         Background="{Binding Source=Hidden, Converter={StaticResource StatusFull}}"
                         Foreground="{Binding Source=Published, Converter={StaticResource StatusFull}}"
                         Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <Button
+                        Style="{DynamicResource MahApps.Styles.Button.Circle}"
+                        Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
+                        Padding="1,1,3,1"
+                        Margin="2,0,0,0"
+                        ToolTip="Reset Timer"
+                        Command="{Binding ResetTimeoutCommand}"
+                        Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <iconPacks:PackIconMaterial Height="14" Width="14" Kind="Restore" />
+                    </Button>
                 </StackPanel>
             </Border>
             <Border

@@ -1,0 +1,42 @@
+﻿<UserControl
+    x:Class="ZvaultKeyServer.Main.Keys.KeyFileInfoView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:ZvaultKeyServer.Main.Keys"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    mc:Ignorable="d" 
+    d:DesignHeight="250" 
+    d:DesignWidth="500"
+    d:DataContext="{d:DesignInstance local:KeyFileInfo, IsDesignTimeCreatable=False}">
+    <Border
+        BorderThickness="0,0,0,1"
+        Padding="2"
+        BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Grid.Column="0"
+                Padding="5,1"
+                Foreground="{StaticResource MahApps.Brushes.Gray6}"
+                Text="{Binding MentionTimeShort}"
+                ToolTip="{Binding MentionTimeFull}"/>
+            <TextBlock
+                Grid.Column="1"
+                Padding="5,1"
+                Text="{Binding FileShort}"
+                TextTrimming="CharacterEllipsis"
+                ToolTip="{Binding Folder}"/>
+            <TextBlock
+                Grid.Column="2"
+                Padding="5,1"
+                Text="(...)"/>
+        </Grid>
+    </Border>
+</UserControl>

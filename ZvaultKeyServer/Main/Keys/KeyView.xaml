@@ -104,7 +104,6 @@
                         Padding="5,0"
                         Text="{Binding AutohideLeftText}"
                         Visibility="{Binding AutohideIsCounting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    <!-- <TextBlock Padding="5,0" Text="{Binding TimeoutText}"/> -->
                     <!-- https://stackoverflow.com/a/17908249/271323 for the Style="{x:Null}" -->
                     <ProgressBar
                         Style="{x:Null}"

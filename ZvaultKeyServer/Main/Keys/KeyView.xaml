@@ -66,9 +66,29 @@
                 Grid.Row="1"
                 Grid.Column="1"
                 Padding="5,2">
-                <TextBlock 
-                    Text="{Binding KeyFiles.NewestFile.FileShort}"
-                    ToolTip="{Binding KeyFiles.NewestFile.Folder}"/>
+                <ItemsControl
+                    ItemsSource="{Binding KeyFiles.Files}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel IsItemsHost="True" Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                d:DataContext="{d:DesignInstance local:KeyFileInfo, IsDesignTimeCreatable=False}"
+                                Padding="5,0"
+                                Margin="0,0"
+                                BorderThickness="1,0,1,0"
+                                BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                                <TextBlock
+                                    Foreground="{StaticResource MahApps.Brushes.Gray6}"
+                                    Text="{Binding FileShort}"
+                                    ToolTip="{Binding Folder}"/>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </Border>
             <Border
                 Grid.Row="0"

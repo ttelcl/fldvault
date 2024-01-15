@@ -434,7 +434,7 @@ public class KeyViewModel: ViewModelBase
         AutohideState.Inactive => "Key not loaded",
         AutohideState.Disabled => "Auto-hide disabled",
         AutohideState.Paused => "Auto-hide paused",
-        AutohideState.Running => "Auto-hide in",
+        AutohideState.Running => "Auto-hiding in:",
         AutohideState.Hiding => "(auto-hiding soon)",
         AutohideState.Hidden => "Key hidden from clients",
         _ => $"'{AutohideStatus}'",

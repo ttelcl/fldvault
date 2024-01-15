@@ -26,6 +26,9 @@ public class KeyFileInfo: ViewModelBase
 
   public string Folder { get => Path.GetDirectoryName(FullPath)!; }
 
+  /// <summary>
+  /// The short name of the file (the name without directory)
+  /// </summary>
   public string FileShort { get => Path.GetFileName(FullPath); }
 
   public DateTimeOffset MentionTime { 

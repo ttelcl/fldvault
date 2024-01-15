@@ -89,7 +89,7 @@
                     <Button
                         Grid.Column="1"
                         FontSize="14"
-                        MinWidth="85"
+                        MinWidth="96"
                         Padding="2,1" Margin="2,0"
                         Command="{Binding TryUnlockCommand}"
                         Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
@@ -121,7 +121,7 @@
                             Command="{Binding Owner.HideCurrentKeyCommand}"
                             Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
                             <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOff" />
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="EyeOff" />
                                 <TextBlock Padding="2,0" Text="Hide"/>
                             </StackPanel>
                         </Button>
@@ -153,7 +153,7 @@
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Grid.Column="4">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Unload Key"
@@ -187,14 +187,14 @@
                             Command="{Binding Owner.PublishCurrentKeyCommand}"
                             Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
                             <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockOpen" />
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Eye" />
                                 <TextBlock Padding="2,0" Text="Unhide"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Grid.Column="2">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Unload Key"
@@ -246,7 +246,7 @@
                         Padding="5,0,0,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <Button
-                            Width="85"
+                            Width="96"
                             FontSize="14"
                             Padding="2,1" Margin="2,0"
                             ToolTip="Delete key from this server"

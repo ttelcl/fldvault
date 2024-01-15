@@ -16,10 +16,14 @@ namespace ZvaultKeyServer.Main.Keys;
 
 public class KeyFileInfos: ViewModelBase
 {
-  public KeyFileInfos()
+  public KeyFileInfos(
+    KeyViewModel owner)
   {
     _files = [];
+    Owner = owner;
   }
+
+  public KeyViewModel Owner { get; }
 
   public ObservableCollection<KeyFileInfo> Files {
     get => _files;

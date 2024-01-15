@@ -49,7 +49,7 @@ public class KeyViewModel: ViewModelBase
     NewVaultCommand = new DelegateCommand(
       p => NewVault(),
       p => Status == KeyStatus.Published);
-    KeyFiles = new();
+    KeyFiles = new(this);
     ResetTimer();
     SyncModel();
   }
@@ -105,6 +105,7 @@ public class KeyViewModel: ViewModelBase
       {
         RaisePropertyChanged(nameof(StatusIcon));
         RaisePropertyChanged(nameof(StatusDescription));
+        RaisePropertyChanged(nameof(IsPublished));
         if(_status == KeyStatus.Published)
         {
           ResetTimer();
@@ -115,13 +116,17 @@ public class KeyViewModel: ViewModelBase
   }
   private KeyStatus _status;
 
+  public bool IsPublished {
+    get => Status == KeyStatus.Published;
+  }
+
   public string StatusIcon {
     get {
       return _status switch {
         KeyStatus.Unknown => "LockQuestion",
         KeyStatus.Seeded => "LockAlert",
-        KeyStatus.Hidden => "LockOff",
-        KeyStatus.Published => "LockOpen",
+        KeyStatus.Hidden => "EyeOff",
+        KeyStatus.Published => "Eye",
         _ => "HelpRhombusOutline",
       };
     }

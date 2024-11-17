@@ -56,9 +56,11 @@ let run args =
         1
       else
         try
-          if keyServer.RegisterFileSync(file, keyChain) then
-            cp "\fGThe key is already known at the server\f0."
-          else
+          let registration = keyServer.RegisterFileSync(file, keyChain) |> Option.ofNullable
+          match registration with
+          | Some(keyId) ->
+            cp $"\fGThe key is already known at the server\f0 (\fg{keyId}\f0)."
+          | None ->
             cp "\fgRegistered the file with the server\f0. The key is \fynot\f0 yet available."
           0
         with

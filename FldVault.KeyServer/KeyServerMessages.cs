@@ -31,6 +31,7 @@ public static class KeyServerMessages
 
   /// <summary>
   /// Response message code for a successful key request. The payload is the 32 byte raw key.
+  /// (The Key ID can be calculated from that if not already known)
   /// </summary>
   public const int KeyResponseCode = 0x10010001;
 
@@ -78,7 +79,8 @@ public static class KeyServerMessages
   /// <summary>
   /// Request single file key by file name (the server figures out what key belongs
   /// to the file). The payload is a (length-prefixed) string containing the name
-  /// of the file.
+  /// of the file. Potential responses: <see cref="KeyResponseCode"/>,
+  /// <see cref="KeyNotFoundCode"/> or <see cref="MessageCodes.ErrorText"/>.
   /// </summary>
   public const int KeyForFileCode = 0x10010006;
 

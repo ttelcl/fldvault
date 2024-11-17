@@ -21,8 +21,8 @@ using UdSocketLib.Framing.Layer1;
 namespace FldVault.KeyServer;
 
 /// <summary>
-/// The top level key server API.
-/// This does not include the actual running instance object. 
+/// The top level key server API, used by clients to communicate
+/// with an instance of the key server.
 /// </summary>
 public class KeyServerService
 {

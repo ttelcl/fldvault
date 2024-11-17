@@ -309,7 +309,7 @@ public class KeyServerLogic: IDisposable
       case KeyStatus.Published:
         {
           state.UseKey(frameOut.WriteKeyResponse);
-          // The callback is also used for serve notification!
+          // The callback is also used for server notification!
           await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
           break;
         }

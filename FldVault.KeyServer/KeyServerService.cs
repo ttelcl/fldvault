@@ -79,10 +79,10 @@ public class KeyServerService
       {
         return false;
       }
-      var frameOut = new MessageFrameOut();
+      using var frameOut = new MessageFrameOut();
       frameOut.WriteKeyRequest(keyId);
       client.SendFrameSync(frameOut);
-      var frameIn = new MessageFrameIn();
+      using var frameIn = new MessageFrameIn();
       var receiveOk = client.TryFillFrameSync(frameIn);
       if(!receiveOk)
       {
@@ -130,10 +130,10 @@ public class KeyServerService
     }
     using(var client = await SocketService.ConnectClientAsync(cancellationToken))
     {
-      var frameOut = new MessageFrameOut();
+      using var frameOut = new MessageFrameOut();
       frameOut.WriteKeyRequest(keyId);
       await client.SendFrameAsync(frameOut, cancellationToken);
-      var frameIn = new MessageFrameIn();
+      using var frameIn = new MessageFrameIn();
       var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
       if(!receiveOk)
       {
@@ -184,10 +184,10 @@ public class KeyServerService
       {
         return null;
       }
-      var frameOut = new MessageFrameOut();
+      using var frameOut = new MessageFrameOut();
       frameOut.WriteKeyForFileRequest(fileName);
       client.SendFrameSync(frameOut);
-      var frameIn = new MessageFrameIn();
+      using var frameIn = new MessageFrameIn();
       var receiveOk = client.TryFillFrameSync(frameIn);
       if(!receiveOk)
       {
@@ -236,10 +236,10 @@ public class KeyServerService
     }
     using(var client = await SocketService.ConnectClientAsync(cancellationToken))
     {
-      var frameOut = new MessageFrameOut();
+      using var frameOut = new MessageFrameOut();
       frameOut.WriteKeyForFileRequest(fileName);
       await client.SendFrameAsync(frameOut, cancellationToken);
-      var frameIn = new MessageFrameIn();
+      using var frameIn = new MessageFrameIn();
       var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
       if(!receiveOk)
       {
@@ -315,6 +315,55 @@ public class KeyServerService
       }
     }
     return result;
+  }
+
+  /// <summary>
+  /// Check which of the keys in <paramref name="keyIds"/> are present in the server,
+  /// and return a HashSet of those that are.
+  /// Returns an empty list if no key server was detected.
+  /// </summary>
+  /// <param name="keyIds">
+  /// The key IDs to check
+  /// </param>
+  /// <param name="cancellationToken"></param>
+  /// <returns>
+  /// A HashSet containing a subset of the keys in <paramref name="keyIds"/>
+  /// </returns>
+  public async Task<HashSet<Guid>> CheckKeyPresenceAsync(
+    IEnumerable<Guid> keyIds,
+    CancellationToken cancellationToken)
+  {
+    var result = new HashSet<Guid>();
+    if(!ServerAvailable)
+    {
+      return result;
+    }
+    using(var frameOut = new MessageFrameOut())
+    {
+      var keyCount = frameOut.WriteKeyPresence(keyIds);
+      if(keyCount == 0)
+      {
+        return result;
+      }
+      using var client = SocketService.ConnectClientSync();
+      await client.SendFrameAsync(frameOut, cancellationToken);
+      using var frameIn = new MessageFrameIn();
+      var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
+      if(!receiveOk)
+      {
+        return result;
+      }
+      var messageCode = frameIn.MessageCode();
+      switch(messageCode)
+      {
+        case KeyServerMessages.KeyPresenceListCode:
+          var r2 = frameIn.ReadKeyPresence().ToHashSet();
+          return r2;
+        default:
+          throw new InvalidOperationException(
+            $"Unexpected response from server: 0x{messageCode:X08}");
+      }
+    }
   }
 
   /// <summary>

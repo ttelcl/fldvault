@@ -166,22 +166,23 @@ public class KeyServerService
   /// The key chain to add the key in case it is already available in the server
   /// </param>
   /// <returns>
-  /// True if the key already existed, false if not.
+  /// The key ID if the key already existed, null if not (even if the file was already
+  /// registered).
   /// </returns>
   /// <exception cref="InvalidOperationException">
   /// Thrown if the server rejected the file name.
   /// </exception>
-  public bool RegisterFileSync(string fileName, KeyChain keyChain)
+  public Guid? RegisterFileSync(string fileName, KeyChain keyChain)
   {
     if(!ServerAvailable)
     {
-      return false;
+      return null;
     }
     using(var client = SocketService.ConnectClientSync())
     {
       if(client == null)
       {
-        return false;
+        return null;
       }
       var frameOut = new MessageFrameOut();
       frameOut.WriteKeyForFileRequest(fileName);
@@ -190,16 +191,15 @@ public class KeyServerService
       var receiveOk = client.TryFillFrameSync(frameIn);
       if(!receiveOk)
       {
-        return false;
+        return null;
       }
       var messageCode = frameIn.MessageCode();
       switch(messageCode)
       {
         case KeyServerMessages.KeyNotFoundCode:
-          return false;
+          return null;
         case KeyServerMessages.KeyResponseCode:
-          frameIn.ReadKeyResponse(keyChain);
-          return true;
+          return frameIn.ReadKeyResponse(keyChain);
         case MessageCodes.ErrorText:
           var error = frameIn.ReadError() ?? "Unknown error";
           throw new InvalidOperationException(

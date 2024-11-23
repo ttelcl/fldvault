@@ -49,7 +49,7 @@
                 Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}"
                 IsCancel="False">
                 <StackPanel Orientation="Horizontal">
-                    <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="KeyPlus" />
+                    <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="KeyStar" />
                     <TextBlock Padding="2,0" Text="Submit"/>
                 </StackPanel>
             </Button>

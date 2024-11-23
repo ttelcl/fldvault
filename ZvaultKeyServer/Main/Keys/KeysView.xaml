@@ -19,13 +19,13 @@
             <StackPanel Orientation="Horizontal">
                 <Button Padding="2,1" Margin="2,0" Command="{Binding ImportKeyCommand}">
                     <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconUnicons Padding="2,0" Height="24" Width="24" Kind="Import" />
+                        <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyArrowRight" />
                         <TextBlock FontSize="14" Padding="2,2" Text="Import Key ..."/>
                     </StackPanel>
                 </Button>
                 <Button Padding="2,1" Margin="2,0" Command="{Binding NewKeyCommand}">
                     <StackPanel Orientation="Horizontal">
-                        <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyPlus" />
+                        <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyStar" />
                         <TextBlock FontSize="14" Padding="2,2" Text="New Key ..."/>
                     </StackPanel>
                 </Button>

@@ -31,7 +31,7 @@ There are a small number of predefined kinds that have a standardized meaning.
 * The Group Start and Group End are empty marker blocks that indicate that
 the blocks in between belong together in some way.
 * Some groups have a custom start indicator, with some characters,
-of which the last is '(' (0x28 as first byte). The implied group
+of which the last is '(' (0x28 as MSB byte). The implied group
 terminator indicates the end of such groups
 
 ## Blocks in *.zvlt files

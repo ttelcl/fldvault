@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
+using FldVault.Upi;
 
 using UdSocketLib.Communication;
 using UdSocketLib.Framing;
@@ -66,18 +67,22 @@ public class KeyServerService
   /// <param name="keyChain">
   /// The buffer where the key is stored if found.
   /// </param>
-  /// <returns></returns>
-  public bool LookupKeySync(Guid keyId, KeyChain keyChain)
+  /// <returns>
+  /// <see cref="KeyPresence.Unavailable"/> if the key was not found or not present,
+  /// <see cref="KeyPresence.Present"/> if the key was found and available to clients,
+  /// <see cref="KeyPresence.Cloaked"/> if the key was found but cloaked to clients.
+  /// </returns>
+  public KeyPresence LookupKeySync(Guid keyId, KeyChain keyChain)
   {
     if(!ServerAvailable)
     {
-      return false;
+      return KeyPresence.Unavailable;
     }
     using(var client = SocketService.ConnectClientSync())
     {
       if(client == null)
       {
-        return false;
+        return KeyPresence.Unavailable;
       }
       using var frameOut = new MessageFrameOut();
       frameOut.WriteKeyRequest(keyId);
@@ -86,16 +91,18 @@ public class KeyServerService
       var receiveOk = client.TryFillFrameSync(frameIn);
       if(!receiveOk)
       {
-        return false;
+        return KeyPresence.Unavailable;
       }
       var messageCode = frameIn.MessageCode();
       switch(messageCode)
       {
         case KeyServerMessages.KeyNotFoundCode:
-          return false;
+          return KeyPresence.Unavailable;
+        case KeyServerMessages.KeyNotAllowedCode:
+          return KeyPresence.Cloaked;
         case KeyServerMessages.KeyResponseCode:
           frameIn.ReadKeyResponse(keyChain);
-          return true;
+          return KeyPresence.Present;
         default:
           throw new InvalidOperationException(
             $"Unexpected response from server: 0x{messageCode:X08}");
@@ -118,15 +125,17 @@ public class KeyServerService
   /// Cancellation token
   /// </param>
   /// <returns>
-  /// True if the key was found, false if not. An exception is thrown in
-  /// error conditions.
+  /// <see cref="KeyPresence.Unavailable"/> if the key was not found or not present,
+  /// <see cref="KeyPresence.Present"/> if the key was found and available to clients,
+  /// <see cref="KeyPresence.Cloaked"/> if the key was found but cloaked to clients.
+  /// An exception is thrown in error conditions.
   /// </returns>
-  public async Task<bool> LookupKeyAsync(
+  public async Task<KeyPresence> LookupKeyAsync(
     Guid keyId, KeyChain keyChain, CancellationToken cancellationToken)
   {
     if(!ServerAvailable)
     {
-      return false;
+      return KeyPresence.Unavailable;
     }
     using(var client = await SocketService.ConnectClientAsync(cancellationToken))
     {
@@ -137,16 +146,18 @@ public class KeyServerService
       var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
       if(!receiveOk)
       {
-        return false;
+        return KeyPresence.Unavailable;
       }
       var messageCode = frameIn.MessageCode();
       switch(messageCode)
       {
         case KeyServerMessages.KeyNotFoundCode:
-          return false;
+          return KeyPresence.Unavailable;
+        case KeyServerMessages.KeyNotAllowedCode:
+          return KeyPresence.Cloaked;
         case KeyServerMessages.KeyResponseCode:
           frameIn.ReadKeyResponse(keyChain);
-          return true;
+          return KeyPresence.Present;
         default:
           throw new InvalidOperationException(
             $"Unexpected response from server: 0x{messageCode:X08}");

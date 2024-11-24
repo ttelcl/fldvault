@@ -93,7 +93,7 @@ public class KeyServerSeedService: IKeySeedService
       using(var chain2 = new KeyChain())
       {
         var ok = _owner.ServerService.LookupKeySync(KeyId, chain2);
-        if(ok)
+        if(ok == KeyPresence.Present)
         {
           chain2.CopyAllTo(keyChain);
           return true;

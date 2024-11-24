@@ -14,7 +14,7 @@ namespace FldVault.Upi;
 /// <summary>
 /// The various states a key in the key server can be in
 /// </summary>
-public enum KeyStatus
+public enum KeyStatus: byte
 {
   /// <summary>
   /// No information about the key is known

@@ -394,7 +394,8 @@ public class KeyViewModel: ViewModelBase
   /// <summary>
   /// Grace period for autohide timer. The minimum time for the
   /// time left after the grace period is triggered (e.g. whenever
-  /// the key is successfully served)
+  /// the key is successfully served).
+  /// NO LONGER USED (left in case I change my mind)
   /// </summary>
   public int GraceSeconds {
     get => _graceSeconds;
@@ -405,14 +406,19 @@ public class KeyViewModel: ViewModelBase
       }
     }
   }
-  private int _graceSeconds = 15;
+  private int _graceSeconds = 90;
 
   public void ApplyGracePeriod()
   {
-    if(Status == KeyStatus.Published
-      && _autohideLeft < _graceSeconds)
+    var graceSeconds = /*_graceSeconds*/ AutohideSeconds * 2 / 3 ;
+    if(graceSeconds > AutohideSeconds)
     {
-      AutohideLeft = _graceSeconds;
+      graceSeconds = AutohideSeconds;
+    }
+    if(Status == KeyStatus.Published
+      && _autohideLeft < graceSeconds)
+    {
+      AutohideLeft = graceSeconds;
     }
   }
 

@@ -343,7 +343,7 @@ public class KeyServerLogic: IDisposable
       found = bw != null;
       frameOut.WriteKeyResponse(bw);
     });
-    // sent not only when not found ("load request") but also when found ("serve notification")
+    // sent not only when not found ("load request") but also when served ("serve notification")
     await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
   }
 

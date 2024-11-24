@@ -41,6 +41,12 @@ public static class KeyServerMessages
   public const int KeyNotFoundCode = MessageCodes.NotFound;
 
   /// <summary>
+  /// Response message code indicating the key is known, but requires decloaking
+  /// by the user.
+  /// </summary>
+  public const int KeyNotAllowedCode = 0x00000403;
+
+  /// <summary>
   /// Key upload "request". The content is the 32 bytes of the key. Expected response
   /// <see cref="KeyUploadedCode"/> (== <see cref="MessageCodes.OkNoContent"/>)
   /// </summary>
@@ -168,13 +174,20 @@ public static class KeyServerMessages
   /// </param>
   /// <param name="key">
   /// If the key lookup succeeded: the key buffer holding the key.
-  /// If the key lookup failed: null
+  /// If the key lookup failed: null.
+  /// If the key exists but is cloaked: an empty key buffer.
   /// </param>
   public static void WriteKeyResponse(this MessageFrameOut frame, IBytesWrapper? key)
   {
     if(key == null)
     {
       frame.WriteNoContentMessage(KeyNotFoundCode);
+    }
+    else if(key.Bytes.Length == 0)
+    {
+      frame
+        .Clear()
+        .AppendI32(KeyNotAllowedCode);
     }
     else
     {

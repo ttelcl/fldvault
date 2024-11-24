@@ -314,10 +314,14 @@ public class KeyServerLogic: IDisposable
           break;
         }
       case KeyStatus.Seeded:
+        {
+          state.UseKey(frameOut.WriteKeyResponse); // equivalent to frameOut.WriteKeyResponse(null) plus tracking
+          await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
+          break;
+        }
       case KeyStatus.Hidden:
         {
-          // frameOut.WriteKeyResponse(null);
-          state.UseKey(frameOut.WriteKeyResponse); // equivalent to frameOut.WriteKeyResponse(null) plus tracking
+          state.UseKey(frameOut.WriteKeyResponse); // triggers special response (cloaked state)
           await Callbacks.KeyLoadRequest(Owner, keyId, status, fileName);
           break;
         }

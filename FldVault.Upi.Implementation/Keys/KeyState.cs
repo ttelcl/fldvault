@@ -257,10 +257,14 @@ public class KeyState: IKeyInfo
       if(!HideKey)
       {
         KeyChain.TryUseKey(KeyId, (_, bw) => { key = bw; });
+        if(key != null)
+        {
+          LastServed = now;
+        }
       }
-      if(key != null)
+      else
       {
-        LastServed = now;
+        key = SimpleBytesWrapper.Empty;
       }
     }
     keyUser(key);

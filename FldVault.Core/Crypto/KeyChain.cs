@@ -117,6 +117,37 @@ public class KeyChain: IDisposable
   }
 
   /// <summary>
+  /// Put a copy of the key in <paramref name="keyBytes"/> in this chain
+  /// if it isn't there already.
+  /// </summary>
+  /// <param name="keyBytes">
+  /// A <see cref="CryptoBuffer{T}"/> containing the 32 bytes of the key.
+  /// </param>
+  /// <returns>
+  /// True if the key was added, false if it was already present.
+  /// </returns>
+  /// <exception cref="ArgumentOutOfRangeException"></exception>
+  public KeyBuffer PutCopy(CryptoBuffer<byte> keyBytes)
+  {
+    if(keyBytes.Length != 32)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(keyBytes),
+        "Expecting a 32 byte (256 bit) buffer as argument");
+    }
+    lock(_lock)
+    {
+      var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+      if(!_store.ContainsKey(keyId))
+      {
+        var copy = new KeyBuffer(keyBytes.Span());
+        _store.Add(copy.GetId(), copy);
+      }
+      return _store[keyId];
+    }
+  }
+
+  /// <summary>
   /// Try to find the key, and if found, invoke <paramref name="keyAction"/> and return true.
   /// If not found return false.
   /// This method allows using a key in an action, without copying the key to a temporary buffer.

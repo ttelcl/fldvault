@@ -145,6 +145,30 @@ public class VaultFileReader: IDisposable
     cryptor.Decrypt(associatedData, nonce, authTagOut, ciphertext, plaintext);
   }
 
+  /// <summary>
+  /// Import the child key described by <paramref name="kte"/> into the
+  /// <paramref name="keyChain"/> using this reader's cryptor.
+  /// </summary>
+  /// <param name="keyChain">
+  /// The key chain to import the key into
+  /// </param>
+  /// <param name="kte">
+  /// The decription of the key to import (created from a block read from this reader)
+  /// </param>
+  /// <returns>
+  /// True if the key was imported, false if it was already present in the key chain.
+  /// </returns>
+  /// <exception cref="ArgumentException"></exception>
+  public bool ImportChildKey(KeyChain keyChain, KeyTransformEntry kte)
+  {
+    if(kte.Vault.KeyId != Vault.KeyId)
+    {
+      throw new ArgumentException(
+        "The key does not match the vault file");
+    }
+    return kte.ImportKey(keyChain, CheckCryptor());
+  }
+
   private void CheckDisposed()
   {
     if(_disposed)

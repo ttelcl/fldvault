@@ -216,3 +216,22 @@ This is just the generic "implied group terminator"
 | --- |
 | Kind | '`)   `' (3 spaces) | 0x20202029 |
 | Block Size | 4 bytes | 8 |
+
+
+### Key transformation block
+
+Used to store one key encrypted by another key.
+
+| Name | Format | Notes |
+| --- |
+| Kind | 'KTRX' | 0x5852544B |
+| Block Size | 4 bytes | 84 |
+| Target Key ID | 16 bytes | The key GUID of the target key |
+| Nonce | 12 bytes | AES-GCM nonce |
+| Auth Tag | 16 bytes | The resulting authentication tag |
+| CipherText | 32 bytes | The ciphertext (the encrypted target key) |
+
+The "associated data" is the target key ID (16 bytes). Making the
+target key ID part of the header (and "signing" it by making it part
+of the associated data) allows determining the target key ID without
+decoding it; that allows building key dependency trees.

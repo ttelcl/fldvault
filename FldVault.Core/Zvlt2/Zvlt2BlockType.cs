@@ -49,6 +49,11 @@ public static class Zvlt2BlockType
   public const int FileContentV3 = 0x5A4E4346;
 
   /// <summary>
+  /// Key transform block ('KTRX'), used in master key files.
+  /// </summary>
+  public const int KeyTransform = 0x5852544B;
+
+  /// <summary>
   /// ZVLT v2 File Content block ('FCNT')
   /// </summary>
   [Obsolete]

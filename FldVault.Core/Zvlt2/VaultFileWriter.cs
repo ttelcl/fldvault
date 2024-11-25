@@ -159,7 +159,7 @@ public class VaultFileWriter: IDisposable
           {
             case ZvltCompression.Auto:
               if(
-                compressedSize >= 0 
+                compressedSize >= 0
                 && (compressedSize + 256) * 100 < n * 92) // require a compression to less than 92% to enable compression
               {
                 plaintext = _compressionBuffer.Span(0, compressedSize);
@@ -175,7 +175,7 @@ public class VaultFileWriter: IDisposable
               throw new InvalidOperationException(
                 "Unexpected compression mode");
             case ZvltCompression.On:
-              if(compressedSize >= 0 
+              if(compressedSize >= 0
                 && (compressedSize + 256) * 100 < n * 98) // now require compression to less than 98% (with 256 offset)
               {
                 plaintext = _compressionBuffer.Span(0, compressedSize);
@@ -285,6 +285,79 @@ public class VaultFileWriter: IDisposable
   }
 
   /// <summary>
+  /// Append a key transform block, storing the given key (encrypted
+  /// by this vault file's key).
+  /// </summary>
+  /// <param name="keyBytes">
+  /// The 32-byte key to store
+  /// </param>
+  /// <returns>
+  /// A BlockElement representing the newly added block
+  /// </returns>
+  /// <exception cref="ArgumentException">
+  /// Thrown if the key is not 32 bytes long
+  /// </exception>
+  public BlockElement AppendChildKey(
+    ReadOnlySpan<byte> keyBytes)
+  {
+    if(keyBytes.Length != 32)
+    {
+      throw new ArgumentException(
+        "Expecting the key to be 32 bytes long", nameof(keyBytes));
+    }
+    CheckDisposed();
+    var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+    _stream.Position = _stream.Length;
+    var bi = new BlockInfo(Zvlt2BlockType.KeyTransform, 84, _stream.Position);
+    Span<byte> span = stackalloc byte[bi.Size];
+    Span<byte> nonce = stackalloc byte[12];
+    Span<byte> cipherText = _buffer.Span(0, keyBytes.Length);
+    Span<byte> idBytes = stackalloc byte[16];
+    Span<byte> tagOut = stackalloc byte[16];
+    keyId.TryWriteBytes(idBytes);
+    _cryptor.Encrypt(idBytes, keyBytes, cipherText, nonce, tagOut);
+    new SpanWriter()
+      .WriteI32(span, bi.Kind)
+      .WriteI32(span, bi.Size)
+      .WriteGuid(span, keyId)
+      .WriteSpan(span, nonce)
+      .WriteSpan(span, tagOut)
+      .WriteSpan(span, cipherText)
+      .CheckFull(span);
+    _stream.Write(span);
+    bi.VerifyBlockEnd(_stream);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  /// <summary>
+  /// Append a key transform block, storing the specified key (encrypted
+  /// by this vault file's key).
+  /// </summary>
+  /// <param name="keyId">
+  /// The id of the key to store. This key must exist in <paramref name="keyChain"/>
+  /// </param>
+  /// <param name="keyChain">
+  /// The key chain holding the key to store
+  /// </param>
+  /// <returns>
+  /// A BlockElement representing the newly added block
+  /// </returns>
+  /// <exception cref="ArgumentException">
+  /// Thrown if the key is not found in the key chain
+  /// </exception>
+  public BlockElement AppendChildKey(
+    Guid keyId,
+    KeyChain keyChain)
+  {
+    var blockElement = 
+      keyChain.TryMapKey(keyId, (kid, ibw) => AppendChildKey(ibw.Bytes));
+    return blockElement ?? throw new ArgumentException(
+        "The key was not found in the key chain",
+        nameof(keyId));
+  }
+
+  /// <summary>
   /// Clean up
   /// </summary>
   public void Dispose()
@@ -360,7 +433,6 @@ public class VaultFileWriter: IDisposable
     ReadOnlySpan<byte> tagIn,
     Span<byte> tagOut)
   {
-    // Compression is not yet implemented
     var fch = FileContentHeader.Create(_stream, contentLength, plainText.Length + 40, out var bi);
     Span<byte> nonce = stackalloc byte[12];
     Span<byte> cipherText = _buffer.Span(0, plainText.Length);

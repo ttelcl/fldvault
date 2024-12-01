@@ -20,7 +20,7 @@ using FldVault.Core.Vaults;
 namespace FldVault.Core.Zvlt2;
 
 /// <summary>
-/// Caches information about a ZVLT v2 file. Does not itself wrap
+/// Caches information about a ZVLT v2+ file. Does not itself wrap
 /// an open file handle. Requires the file to exist and have at least
 /// the file header block.
 /// </summary>

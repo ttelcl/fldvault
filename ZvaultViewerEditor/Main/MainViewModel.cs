@@ -13,6 +13,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.Zvlt2;
 
 using ZvaultViewerEditor.WpfUtilities;
 
@@ -26,6 +27,35 @@ public class MainViewModel: ViewModelBase
   }
 
   public KeyChain KeyChain { get; }
+
+  public VaultFile? CurrentVault {
+    get => _currentVault;
+    set {
+      if(SetNullableInstanceProperty(ref _currentVault, value))
+      {
+        RaisePropertyChanged(nameof(HasVault));
+      }
+    }
+  }
+  private VaultFile? _currentVault;
+
+  public bool HasVault => CurrentVault != null;
+
+  public bool VaultKeyKnown {
+    get => _vaultKeyKnown;
+    private set {
+      if(SetValueProperty(ref _vaultKeyKnown, value))
+      {
+        CheckVaultKeyKnown();
+      }
+    }
+  }
+  private bool _vaultKeyKnown = false;
+
+  private void CheckVaultKeyKnown()
+  {
+    VaultKeyKnown = CurrentVault != null && KeyChain.ContainsKey(CurrentVault.KeyId);
+  }
 
   public ICommand ExitCommand { get; } = new DelegateCommand(p => {
     var w = Application.Current.MainWindow;

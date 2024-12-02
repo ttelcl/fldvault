@@ -38,7 +38,7 @@ public class VaultInnerViewModel: ViewModelBase
 
   public KeyChain KeyChain { get => OuterModel.KeyChain; }
 
-  public List<VaultEntry> Entries {
+  public List<VaultEntryViewModel> Entries {
     get => _entries;
     private set {
       if(SetInstanceProperty(ref _entries, value))
@@ -47,9 +47,9 @@ public class VaultInnerViewModel: ViewModelBase
       }
     }
   }
-  private List<VaultEntry> _entries = [];
+  private List<VaultEntryViewModel> _entries = [];
 
-  public ObservableCollection<VaultEntry> SelectedEntries { get; } = new();
+  public ObservableCollection<VaultEntryViewModel> SelectedEntries { get; } = new();
 
   public int FileCount => Entries.Count;
 
@@ -60,9 +60,9 @@ public class VaultInnerViewModel: ViewModelBase
     var entries =
       Vault.FileElements()
       .Select(e => new FileElement(e))
-      .Select(fe => VaultEntry.TryCreate(fe, reader))
+      .Select(fe => VaultEntryViewModel.TryCreate(fe, reader))
       .Where(ve => ve!=null)
-      .Cast<VaultEntry>()
+      .Cast<VaultEntryViewModel>()
       .ToList();
     entries.Sort(
       (ve1, ve2) => StringComparer.OrdinalIgnoreCase.Compare(ve1.FileName, ve2.FileName));

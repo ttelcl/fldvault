@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 
 using FldVault.Core.Zvlt2;
+using ZvaultViewerEditor.WpfUtilities;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -17,12 +18,12 @@ namespace ZvaultViewerEditor.Main;
 /// Describes a file entry inside a vault file
 /// (only entries that have a name and size)
 /// </summary>
-public class VaultEntry
+public class VaultEntryViewModel: ViewModelBase
 {
   /// <summary>
   /// Create a new VaultEntry
   /// </summary>
-  private VaultEntry(
+  private VaultEntryViewModel(
     FileElement element,
     FileMetadata metadata)
   {
@@ -45,7 +46,7 @@ public class VaultEntry
   /// <param name="metadata"></param>
   /// <param name="element"></param>
   /// <returns></returns>
-  public static VaultEntry? TryCreate(
+  public static VaultEntryViewModel? TryCreate(
     FileElement element,
     FileMetadata metadata)
   {
@@ -55,10 +56,10 @@ public class VaultEntry
     {
       return null;
     }
-    return new VaultEntry(element, metadata);
+    return new VaultEntryViewModel(element, metadata);
   }
 
-  public static VaultEntry? TryCreate(
+  public static VaultEntryViewModel? TryCreate(
     FileElement element,
     VaultFileReader reader)
   {

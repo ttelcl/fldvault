@@ -22,7 +22,6 @@
                             Padding="10,3"
                             BorderThickness="1"
                             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                            <!--Background="{DynamicResource MahApps.Brushes.Accent4}"-->
                             <TextBlock
                                 Text="{Binding FileName}"/>
                         </Border>

@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="clr-namespace:ZvaultViewerEditor"
+    xmlns:converters="clr-namespace:ZvaultViewerEditor.Converters"
     xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
     Startup="App_Startup"
     Exit="Application_Exit">
@@ -27,6 +28,20 @@
             <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MahApps.Styles.TabItem}">
                 <Setter Property="mah:HeaderedControlHelper.HeaderFontSize" Value="20"/>
             </Style>
+            <converters:NullVisibilityConverter
+                x:Key="VisibleIfNotNull"/>
+            <converters:NullVisibilityConverter
+                x:Key="VisibleIfNull"
+                NullValue="{x:Static Visibility.Visible}"
+                NotNullValue="{x:Static Visibility.Collapsed}"/>
+            <converters:VisibleIfConverter
+                x:Key="VisibleIf"/>
+            <converters:VisibleIfConverter
+                x:Key="VisibleIfNot"
+                MatchValue="{x:Static Visibility.Collapsed}"
+                MismatchValue="{x:Static Visibility.Visible}"/>
+            <converters:StringMatchVisibilityConverter x:Key="VisibleIfString"/>
+            <converters:ValueMatchConverter x:Key="ValueIs"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

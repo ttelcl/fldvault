@@ -3,6 +3,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Windows;
 
+using ControlzEx.Theming;
+
 using FldVault.Core.Crypto;
 
 using ZvaultViewerEditor.Main;
@@ -23,7 +25,10 @@ public partial class App: Application
   /// </summary>
   private void App_Startup(object sender, StartupEventArgs e)
   {
+    DispatcherUnhandledException += (s, e) =>
+      ProcessUnhandledException(e);
     Trace.TraceInformation($"App.App_Startup enter");
+    ThemeManager.Current.ChangeTheme(this, "Dark.Olive");
     var mainWindow = new MainWindow();
     MainModel = new MainViewModel(_keyChain);
     mainWindow.DataContext = MainModel;
@@ -40,4 +45,18 @@ public partial class App: Application
     // zero out memory that is holding keys
     _keyChain.Dispose();
   }
+
+  private void ProcessUnhandledException(
+    System.Windows.Threading.DispatcherUnhandledExceptionEventArgs evt)
+  {
+    var ex = evt.Exception;
+    Trace.TraceError($"Error: {ex}");
+    MessageBox.Show(
+      $"{ex.GetType().FullName}\n{ex.Message}",
+      "Error",
+      MessageBoxButton.OK,
+      MessageBoxImage.Error);
+    evt.Handled = MainWindow?.IsLoaded ?? false;
+  }
+
 }

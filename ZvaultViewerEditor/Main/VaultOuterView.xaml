@@ -117,11 +117,6 @@
                     </Grid>
                 </Grid>
                 <Grid Visibility="{Binding IsVaultKeyKnown, Converter={StaticResource VisibleIf}}">
-                    <!--<TextBlock
-                        HorizontalAlignment="Center"
-                        VerticalAlignment="Center">
-                        Hello Vault!
-                    </TextBlock>-->
                     <local:VaultInnerView DataContext="{Binding InnerModel}"/>
                 </Grid>
             </Grid>

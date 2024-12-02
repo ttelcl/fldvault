@@ -64,8 +64,8 @@ public class VaultInnerViewModel: ViewModelBase
       .Where(ve => ve!=null)
       .Cast<VaultEntryViewModel>()
       .ToList();
-    entries.Sort(
-      (ve1, ve2) => StringComparer.OrdinalIgnoreCase.Compare(ve1.FileName, ve2.FileName));
+    //entries.Sort(
+    //  (ve1, ve2) => StringComparer.OrdinalIgnoreCase.Compare(ve1.FileName, ve2.FileName));
     Entries = entries;
     Trace.TraceInformation($"Loaded {FileCount} entries from {Vault.FileName}");
   }

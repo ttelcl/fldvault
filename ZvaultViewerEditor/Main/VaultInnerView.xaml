@@ -12,19 +12,14 @@
     <Grid>
         <ListBox
             SelectionMode="Multiple"
+            ScrollViewer.VerticalScrollBarVisibility="Visible"
             ItemsSource="{Binding Entries}">
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border
                         Margin="5,2,10,2"
-                        Background="#CC202020">
-                        <Border
-                            Padding="10,3"
-                            BorderThickness="1"
-                            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                            <TextBlock
-                                Text="{Binding FileName}"/>
-                        </Border>
+                        Background="#AA101010">
+                        <local:VaultEntryView />
                     </Border>
                 </DataTemplate>
             </ListBox.ItemTemplate>

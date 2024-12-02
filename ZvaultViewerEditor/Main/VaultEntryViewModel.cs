@@ -25,7 +25,8 @@ public class VaultEntryViewModel: ViewModelBase
   /// </summary>
   private VaultEntryViewModel(
     FileElement element,
-    FileMetadata metadata)
+    FileMetadata metadata,
+    FileHeader header)
   {
     if(String.IsNullOrEmpty(metadata.Name)
       || !metadata.Size.HasValue
@@ -36,6 +37,7 @@ public class VaultEntryViewModel: ViewModelBase
     }
     Metadata = metadata;
     Element = element;
+    Header = header;
     CompressedSize = Element.GetContentLength();
   }
 
@@ -48,7 +50,8 @@ public class VaultEntryViewModel: ViewModelBase
   /// <returns></returns>
   public static VaultEntryViewModel? TryCreate(
     FileElement element,
-    FileMetadata metadata)
+    FileMetadata metadata,
+    FileHeader header)
   {
     if(String.IsNullOrEmpty(metadata.Name)
       || !metadata.Size.HasValue
@@ -56,7 +59,7 @@ public class VaultEntryViewModel: ViewModelBase
     {
       return null;
     }
-    return new VaultEntryViewModel(element, metadata);
+    return new VaultEntryViewModel(element, metadata, header);
   }
 
   public static VaultEntryViewModel? TryCreate(
@@ -64,12 +67,17 @@ public class VaultEntryViewModel: ViewModelBase
     VaultFileReader reader)
   {
     var metadata = element.GetMetadata(reader);
-    return TryCreate(element, metadata);
+    var header = element.GetHeader(reader);
+    return TryCreate(element, metadata, header);
   }
 
   public FileMetadata Metadata { get; }
 
   public FileElement Element { get; }
+
+  public FileHeader Header { get; }
+
+  public Guid FileGuid { get => Header.FileId; }
 
   /// <summary>
   /// The logical file name, or null if it is anonymous
@@ -80,11 +88,25 @@ public class VaultEntryViewModel: ViewModelBase
 
   public long DecompressedSize { get => Metadata.Size!.Value; }
 
+  public int CompressionRatio {
+    get => (int)(100 * (CompressedSize / (double)DecompressedSize));
+  }
+
+  public string CompressionRatioText {
+    get => $"({CompressionRatio:F0}%)";
+  }
+
   public DateTime UtcStamp { get => Metadata.UtcStamp!.Value; }
 
   public string UtcText { get => UtcStamp.ToString("yyyy-MM-dd HH:mm:ss.fff"); }
 
   public DateTime LocalStamp { get => Metadata.UtcStamp!.Value.ToLocalTime(); }
 
-  public string LocalText { get => LocalStamp.ToString("yyyy-MM-dd HH:mm:ss.fff"); }
+  public string LocalText { get => LocalStamp.ToString("yyyy-MM-dd HH:mm:ss"); }
+
+  public DateTime UtcEncryptionStamp { get => Header.EncryptionStampUtc; }
+
+  public string LocalEncryptionText {
+    get => Header.EncryptionStampUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+  }
 }

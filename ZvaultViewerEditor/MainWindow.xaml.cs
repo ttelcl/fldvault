@@ -35,4 +35,11 @@ public partial class MainWindow: MetroWindow
     }
   }
 
+  private void MetroWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+  {
+    if(DataContext is MainViewModel mainViewModel)
+    {
+      mainViewModel.StatusMessage = ""; // disable timer if it was active
+    }
+  }
 }

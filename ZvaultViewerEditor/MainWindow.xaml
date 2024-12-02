@@ -16,7 +16,8 @@
     MinWidth="400"
     ResizeMode="CanResizeWithGrip"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
-    Loaded="MetroWindow_Loaded">
+    Loaded="MetroWindow_Loaded"
+    Closing="MetroWindow_Closing">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
@@ -66,9 +67,10 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <TextBlock
-                Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}"
-                >Hello Vault!</TextBlock>
+            <Grid
+                Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}">
+                <local:VaultOuterView DataContext="{Binding CurrentVault}"/>
+            </Grid>
         </Border>
     </DockPanel>
 </mah:MetroWindow>

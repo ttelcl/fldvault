@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
+using FldVault.KeyServer;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -20,5 +21,7 @@ public interface IApplicationModel
   KeyChain KeyChain { get; }
 
   string StatusMessage { get; set; }
+
+  KeyServerService KeyServer { get; }
 }
 

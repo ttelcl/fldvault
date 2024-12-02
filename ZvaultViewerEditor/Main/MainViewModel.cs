@@ -19,6 +19,7 @@ using FldVault.Core.Crypto;
 using FldVault.Core.Zvlt2;
 
 using ZvaultViewerEditor.WpfUtilities;
+using FldVault.KeyServer;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -27,12 +28,18 @@ public class MainViewModel: ViewModelBase, IApplicationModel
   public MainViewModel(KeyChain keyChain)
   {
     KeyChain = keyChain;
+    KeyServer = new KeyServerService();
     OpenVaultCommand = new DelegateCommand(
       p => OpenVault(),
       p => CurrentVault == null);
     CloseVaultCommand = new DelegateCommand(
       p => CloseVault(),
       p => CurrentVault != null);
+    _clearStatusTimer = new DispatcherTimer {
+      Interval = TimeSpan.FromMilliseconds(500),
+      IsEnabled = false,
+    };
+    _clearStatusTimer.Tick += (s, e) => CheckStatusClearing();
   }
 
   public ICommand ExitCommand { get; } = new DelegateCommand(p => {
@@ -45,6 +52,8 @@ public class MainViewModel: ViewModelBase, IApplicationModel
   public ICommand CloseVaultCommand { get; }
 
   public KeyChain KeyChain { get; }
+
+  public KeyServerService KeyServer { get; }
 
   public VaultOuterViewModel? CurrentVault {
     get => _currentVault;
@@ -64,10 +73,34 @@ public class MainViewModel: ViewModelBase, IApplicationModel
     set {
       if(SetInstanceProperty(ref _statusMessage, value))
       {
+        if(String.IsNullOrEmpty(_statusMessage))
+        {
+          _clearStatusAfter = DateTimeOffset.MaxValue;
+          _clearStatusTimer.Stop();
+          Trace.TraceInformation($"Clearing StatusMessage");
+        }
+        else
+        {
+          _clearStatusAfter = DateTimeOffset.Now.AddSeconds(5);
+          _clearStatusTimer.Start();
+          Trace.TraceInformation($"Setting StatusMessage: '{_statusMessage}'");
+        }
       }
     }
   }
   private string _statusMessage = "";
+
+  private DateTimeOffset _clearStatusAfter = DateTimeOffset.MaxValue;
+
+  private DispatcherTimer _clearStatusTimer;
+
+  private void CheckStatusClearing()
+  {
+    if(DateTimeOffset.Now > _clearStatusAfter)
+    {
+      StatusMessage = "";
+    }
+  }
 
   private void OpenVault()
   {

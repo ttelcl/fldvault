@@ -1,0 +1,34 @@
+﻿<UserControl
+    x:Class="ZvaultViewerEditor.Main.VaultInnerView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:ZvaultViewerEditor.Main"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    mc:Ignorable="d" 
+    d:DataContext="{d:DesignInstance local:VaultInnerViewModel, IsDesignTimeCreatable=False}"
+    d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <ListBox
+            SelectionMode="Multiple"
+            ItemsSource="{Binding Entries}">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border
+                        Margin="5,2,10,2"
+                        Background="#CC202020">
+                        <Border
+                            Padding="10,3"
+                            BorderThickness="1"
+                            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
+                            <!--Background="{DynamicResource MahApps.Brushes.Accent4}"-->
+                            <TextBlock
+                                Text="{Binding FileName}"/>
+                        </Border>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

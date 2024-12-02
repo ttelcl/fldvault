@@ -117,11 +117,12 @@
                     </Grid>
                 </Grid>
                 <Grid Visibility="{Binding IsVaultKeyKnown, Converter={StaticResource VisibleIf}}">
-                    <TextBlock
+                    <!--<TextBlock
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center">
                         Hello Vault!
-                    </TextBlock>
+                    </TextBlock>-->
+                    <local:VaultInnerView DataContext="{Binding InnerModel}"/>
                 </Grid>
             </Grid>
         </DockPanel>

@@ -13,6 +13,7 @@ using FldVault.Core.Crypto;
 using FldVault.Core.Zvlt2;
 
 using ZvaultViewerEditor.WpfUtilities;
+using System.Collections.ObjectModel;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -37,7 +38,7 @@ public class VaultInnerViewModel: ViewModelBase
 
   public KeyChain KeyChain { get => OuterModel.KeyChain; }
 
-  public IReadOnlyList<VaultEntry> Entries {
+  public List<VaultEntry> Entries {
     get => _entries;
     private set {
       if(SetInstanceProperty(ref _entries, value))
@@ -46,7 +47,9 @@ public class VaultInnerViewModel: ViewModelBase
       }
     }
   }
-  private IReadOnlyList<VaultEntry> _entries = [];
+  private List<VaultEntry> _entries = [];
+
+  public ObservableCollection<VaultEntry> SelectedEntries { get; } = new();
 
   public int FileCount => Entries.Count;
 
@@ -63,7 +66,7 @@ public class VaultInnerViewModel: ViewModelBase
       .ToList();
     entries.Sort(
       (ve1, ve2) => StringComparer.OrdinalIgnoreCase.Compare(ve1.FileName, ve2.FileName));
-    Entries = entries.AsReadOnly();
+    Entries = entries;
     Trace.TraceInformation($"Loaded {FileCount} entries from {Vault.FileName}");
   }
 }

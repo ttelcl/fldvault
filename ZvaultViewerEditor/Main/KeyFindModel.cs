@@ -26,26 +26,28 @@ public class KeyFindModel: ViewModelBase
   /// <summary>
   /// Create a new KeyFindModel
   /// </summary>
-  /// <param name="keyChain">
-  /// The keychain that will recive the key when done.
+  /// <param name="applicationModel">
+  /// Shared application services
   /// </param>
   /// <param name="target">
   /// The vault for which to find the key.
   /// </param>
   public KeyFindModel(
-    KeyChain keyChain,
+    IApplicationModel applicationModel,
     VaultFile target)
   {
-    KeyChain = keyChain;
+    ApplicationModel = applicationModel;
     Target = target;
     CheckDone();
     KeyInfo = Target.GetPassphraseInfo();
   }
 
+  public IApplicationModel ApplicationModel { get; }
+
   /// <summary>
   /// The key chain to receive the key
   /// </summary>
-  public KeyChain KeyChain { get; }
+  public KeyChain KeyChain { get => ApplicationModel.KeyChain; }
 
   /// <summary>
   /// The vault for which to find the key

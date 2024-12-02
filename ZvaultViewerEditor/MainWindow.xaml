@@ -20,11 +20,18 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_Open...">
+                <MenuItem Header="_Open..." Command="{Binding OpenVaultCommand}">
                     <MenuItem.Icon>
                         <iconPacks:PackIconMaterial
                             Padding="5,0,0,0" Height="20" Width="25"
                             Kind="FolderOpen"/>
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="_Close..." Command="{Binding CloseVaultCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial
+                            Padding="5,0,0,0" Height="20" Width="25"
+                            Kind="CloseCircleOutline"/>
                     </MenuItem.Icon>
                 </MenuItem>
                 <Separator/>
@@ -59,7 +66,9 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-
+            <TextBlock
+                Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}"
+                >Hello Vault!</TextBlock>
         </Border>
     </DockPanel>
 </mah:MetroWindow>

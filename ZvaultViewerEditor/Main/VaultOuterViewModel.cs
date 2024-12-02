@@ -67,10 +67,28 @@ public class VaultOuterViewModel: ViewModelBase
     private set {
       if(SetValueProperty(ref _vaultKeyKnown, value))
       {
+        if(_vaultKeyKnown)
+        {
+          InnerModel = new VaultInnerViewModel(this);
+        }
+        else
+        {
+          InnerModel = null;
+        }
       }
     }
   }
   private bool _vaultKeyKnown = false;
+
+  public VaultInnerViewModel? InnerModel {
+    get => _innerModel;
+    private set {
+      if(SetNullableInstanceProperty(ref _innerModel, value))
+      {
+      }
+    }
+  }
+  private VaultInnerViewModel? _innerModel;
 
   public string KeyStatus {
     get => _keyStatus;

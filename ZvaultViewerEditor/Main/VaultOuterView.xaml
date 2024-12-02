@@ -13,11 +13,13 @@
         Header="{Binding Label}">
         <DockPanel>
             <Border
+                Margin="0,0,0,5"
                 DockPanel.Dock="Top"
                 BorderThickness="1"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" MinHeight="10"/>
                         <RowDefinition Height="Auto" MinHeight="10"/>
                         <RowDefinition Height="Auto" MinHeight="10"/>
                     </Grid.RowDefinitions>
@@ -26,45 +28,102 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Vault File:"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Margin="5,0,5,3"/>
+                    <TextBox
+                        Grid.Row="0" Grid.Column="1"
+                        Text="{Binding FileName, Mode=OneWay}"
+                        FontFamily="Lucida Sans Typewriter"
+                        IsReadOnly="True"
+                        IsReadOnlyCaretVisible="True"
+                        BorderThickness="0.5"
+                        Margin="5,0,0,0"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0"
+                               Text="Vault Folder:"
+                               TextAlignment="Right"
+                               VerticalAlignment="Center"
+                               Margin="5,0,5,3"/>
+                    <TextBox
+                        Grid.Row="1" Grid.Column="1"
+                        Text="{Binding FilePath, Mode=OneWay}"
+                        FontFamily="Lucida Sans Typewriter"
+                        IsReadOnly="True"
+                        IsReadOnlyCaretVisible="True"
+                        BorderThickness="0.5"
+                        Margin="5,0,0,0"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0"
                                Text="Key ID:"
                                TextAlignment="Right"
                                VerticalAlignment="Center"
-                               Margin="5,0,5,0"/>
-                    <DockPanel Grid.Row="0" Grid.Column="1">
-                        <TextBox
-                            Text="{Binding KeyId, Mode=OneWay}"
-                            FontFamily="Lucida Sans Typewriter"
-                            IsReadOnly="True"
-                            IsReadOnlyCaretVisible="True"
-                            BorderThickness="0.5"
-                            Margin="5,0,5,0"/>
-                    </DockPanel>
-                    <TextBlock Grid.Row="1" Grid.Column="0"
-                               Text="Key Status:"
-                               TextAlignment="Right"
-                               VerticalAlignment="Center"
-                               Margin="5,0,5,0"/>
-                    <StackPanel Orientation="Horizontal" Grid.Row="1" Grid.Column="1">
-                        <Button
-                            Command="{Binding RefreshKeyCommand}"
-                            Style="{DynamicResource MahApps.Styles.Button.Circle}"
-                            Margin="5"
-                            Foreground="{DynamicResource MahApps.Brushes.AccentBase}">
-                            <iconPacks:PackIconMaterial
-                                Kind="Refresh"
-                                Padding="3"
-                                Height="18" Width="18"/>
-                        </Button>
-                        <TextBlock
-                            Text="{Binding KeyStatus}"
-                            Margin="5,0,5,0" VerticalAlignment="Center"/>
-                    </StackPanel>
+                               Margin="5,0,5,3"/>
+                    <TextBox
+                        Grid.Row="2" Grid.Column="1"
+                        Text="{Binding KeyId, Mode=OneWay}"
+                        FontFamily="Lucida Sans Typewriter"
+                        IsReadOnly="True"
+                        IsReadOnlyCaretVisible="True"
+                        BorderThickness="0.5"
+                        Margin="5,0,0,0"/>
                 </Grid>
             </Border>
-            <TextBlock
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                >Hello Vault!</TextBlock>
+            <!-- This Grid is just used to wrap alternatives -->
+            <Grid>
+                <Grid Visibility="{Binding IsVaultKeyKnown, Converter={StaticResource VisibleIfNot}}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="100"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Row="0" Grid.Column="0"
+                               Text="Key Status:"
+                               TextAlignment="Right"
+                               Margin="5,0,5,0"/>
+                    <TextBlock Grid.Row="0" Grid.Column="1"
+                               Foreground="Orange"
+                               Text="{Binding KeyStatus}"
+                               Margin="5,0,5,0"/>
+                    <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Row="1" Grid.Column="1"
+                                Command="{Binding RefreshKeyCommand}">
+                            <StackPanel Orientation="Horizontal">
+                                <iconPacks:PackIconMaterial
+                                    Kind="Refresh"
+                                    Height="24"
+                                    Width="24"
+                                    Foreground="{DynamicResource MahApps.Brushes.AccentBase}"/>
+                                <TextBlock
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    Padding="10,0">
+                                    Check Key Server Again
+                                </TextBlock>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                </Grid>
+                <Grid Visibility="{Binding IsVaultKeyKnown, Converter={StaticResource VisibleIf}}">
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center">
+                        Hello Vault!
+                    </TextBlock>
+                </Grid>
+            </Grid>
         </DockPanel>
     </GroupBox>
 </UserControl>

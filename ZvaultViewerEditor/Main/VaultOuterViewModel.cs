@@ -35,10 +35,10 @@ public class VaultOuterViewModel: ViewModelBase
   {
     ApplicationModel = applicationModel;
     Vault = vault;
-    Label = Path.GetFileNameWithoutExtension(vault.FileName);
     RefreshKeyCommand = new DelegateCommand(
       p => UpdateKeyStatus(),
       p => true);
+    UpdateKeyStatus();
   }
 
   public ICommand RefreshKeyCommand { get; }
@@ -54,7 +54,11 @@ public class VaultOuterViewModel: ViewModelBase
 
   public VaultFile Vault { get; }
 
-  public string Label { get; }
+  public string Label => Path.GetFileNameWithoutExtension(Vault.FileName);
+
+  public string FileName => Path.GetFileName(Vault.FileName);
+
+  public string FilePath => Path.GetDirectoryName(Vault.FileName) ?? "";
 
   public Guid KeyId => Vault.KeyId;
 
@@ -63,7 +67,6 @@ public class VaultOuterViewModel: ViewModelBase
     private set {
       if(SetValueProperty(ref _vaultKeyKnown, value))
       {
-        CheckVaultKeyKnown();
       }
     }
   }
@@ -93,6 +96,9 @@ public class VaultOuterViewModel: ViewModelBase
     }
     else if(KeyServer.ServerAvailable)
     {
+      //Trace.TraceInformation($"Delay lookup for test purposes");
+      //await Task.Delay(5000);
+      Trace.TraceInformation($"Looking up key {KeyId} in key server");
       try
       {
         var keyPresence = await KeyServer.LookupKeyAsync(
@@ -122,6 +128,7 @@ public class VaultOuterViewModel: ViewModelBase
         KeyStatus = "Error looking up key";
         ApplicationModel.StatusMessage = $"Error looking up key: {ex.Message}";
       }
+      CheckVaultKeyKnown();
     }
     else
     {

@@ -109,4 +109,14 @@ public class VaultEntryViewModel: ViewModelBase
   public string LocalEncryptionText {
     get => Header.EncryptionStampUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
   }
+
+  public bool Selected {
+    get => _selected;
+    set {
+      if(SetValueProperty(ref _selected, value))
+      {
+      }
+    }
+  }
+  private bool _selected = false;
 }

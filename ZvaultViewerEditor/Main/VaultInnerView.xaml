@@ -14,6 +14,11 @@
             SelectionMode="Multiple"
             ScrollViewer.VerticalScrollBarVisibility="Visible"
             ItemsSource="{Binding Entries}">
+            <ListBox.Resources>
+                <Style TargetType="{x:Type ListBoxItem}">
+                    <Setter Property="IsSelected" Value="{Binding Selected, Mode=TwoWay}" />
+                </Style>
+            </ListBox.Resources>
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <Border

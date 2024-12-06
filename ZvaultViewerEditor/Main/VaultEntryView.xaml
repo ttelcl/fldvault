@@ -20,12 +20,14 @@
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" FontSize="14" FontWeight="Bold"
+                <CheckBox Grid.Column="0" IsChecked="{Binding Selected}"/>
+                <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
                     Text="{Binding FileName}"/>
-                <TextBlock Grid.Column="1" FontSize="11"
+                <TextBlock Grid.Column="2" FontSize="11"
                     FontFamily="Lucida Sans Typewriter"
                     Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
                     Text="{Binding FileGuid}"/>

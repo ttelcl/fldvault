@@ -9,64 +9,87 @@
     mc:Ignorable="d" 
     d:DataContext="{d:DesignInstance local:VaultEntryViewModel, IsDesignTimeCreatable=False}"
     d:DesignHeight="450" d:DesignWidth="800">
-    <Border
-        Padding="10,3"
-        BorderThickness="1"
-        BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}">
-        <Grid>
+    <!-- Homebrew Expander, because <Expander> does not entirely what we want -->
+    <GroupBox Padding="0">
+        <GroupBox.Header>
+            <DockPanel>
+                <CheckBox DockPanel.Dock="Left" IsChecked="{Binding Selected}"/>
+                <ToggleButton
+                    DockPanel.Dock="Right"
+                    IsChecked="{Binding Expanded}"
+                    Style="{DynamicResource MahApps.Styles.ToggleButton.Circle}"
+                    MinWidth="20" MinHeight="20" BorderThickness="0">
+                    <iconPacks:PackIconMaterial
+                        Kind="{Binding ExpanderIcon}" Height="18" Width="18" />
+                </ToggleButton>
+                <TextBlock FontWeight="Bold" VerticalAlignment="Center"
+                           Text="{Binding FileName}" TextWrapping="Wrap"/>
+            </DockPanel>
+        </GroupBox.Header>
+        <Grid
+            TextBlock.FontSize="12"
+            Visibility="{Binding Expanded, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <CheckBox Grid.Column="0" IsChecked="{Binding Selected}"/>
-                <TextBlock Grid.Column="1" FontSize="14" FontWeight="Bold"
-                    Text="{Binding FileName}"/>
-                <TextBlock Grid.Column="2" FontSize="11"
-                    FontFamily="Lucida Sans Typewriter"
-                    Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
-                    Text="{Binding FileGuid}"/>
-            </Grid>
-            <Grid Grid.Row="1" TextBlock.FontSize="11">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="50"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="90"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="60"/>
-                    <ColumnDefinition Width="40"/>
-                    <ColumnDefinition Width="130"/>
-                    <ColumnDefinition Width="40"/>
-                    <ColumnDefinition Width="130"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" TextAlignment="Right"
-                           Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
-                           Text="File Size: "/>
-                <TextBlock Grid.Column="1" TextAlignment="Right"
-                           Text="{Binding DecompressedSize}"/>
-                <TextBlock Grid.Column="2" TextAlignment="Right"
-                           Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
-                           Text="Compressed: "/>
-                <TextBlock Grid.Column="3" TextAlignment="Right"
-                           Text="{Binding CompressedSize}"/>
-                <TextBlock Grid.Column="4" TextAlignment="Center"
-                           Text="{Binding CompressionRatioText}"/>
-                <TextBlock Grid.Column="5" TextAlignment="Right"
-                           Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
-                           Text="Time: "/>
-                <TextBlock Grid.Column="6" TextAlignment="Left"
-                           Text="{Binding LocalText}"/>
-                <TextBlock Grid.Column="7" TextAlignment="Right"
-                           Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
-                           Text="Added: "/>
-                <TextBlock Grid.Column="8" TextAlignment="Left"
-                           Text="{Binding LocalEncryptionText}"/>
-            </Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="85"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="85"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="85"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Grid.Row="0" Grid.Column="0" TextAlignment="Right"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Padding="0,0,10,0" VerticalAlignment="Center"
+                Text="File Guid:"/>
+            <TextBlock
+                Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3"
+                VerticalAlignment="Center"
+                FontFamily="Lucida Sans Typewriter"
+                Text="{Binding FileGuid}"/>
+            <TextBlock
+                Grid.Row="1" Grid.Column="0" TextAlignment="Right"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Padding="0,0,10,0" VerticalAlignment="Center"
+                Text="File Size:"/>
+            <TextBlock
+                Grid.Row="1" Grid.Column="1"
+                Text="{Binding DecompressedSize}"/>
+            <TextBlock
+                Grid.Row="2" Grid.Column="0" TextAlignment="Right"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Padding="0,0,10,0" VerticalAlignment="Center"
+                Text="Compressed:"/>
+            <StackPanel
+                Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+                <TextBlock
+                    Text="{Binding CompressedSize}"/>
+                <TextBlock
+                    Padding="10,0,0,0"
+                    Text="{Binding CompressionRatioText}"/>
+            </StackPanel>
+            <TextBlock
+                Grid.Row="1" Grid.Column="2" TextAlignment="Right"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Padding="0,0,10,0" VerticalAlignment="Center"
+                Text="File Time:"/>
+            <TextBlock
+                Grid.Row="1" Grid.Column="3" TextAlignment="Left"
+                Text="{Binding LocalText}"/>
+            <TextBlock
+                Grid.Row="2" Grid.Column="2" TextAlignment="Right"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Padding="0,0,10,0" VerticalAlignment="Center"
+                Text="Added:"/>
+            <TextBlock
+                Grid.Row="2" Grid.Column="3" TextAlignment="Left"
+                Text="{Binding LocalEncryptionText}"/>
         </Grid>
-    </Border>
+    </GroupBox>
 </UserControl>

@@ -119,4 +119,22 @@ public class VaultEntryViewModel: ViewModelBase
     }
   }
   private bool _selected = false;
+
+  public bool Expanded {
+    get => _expanded;
+    set {
+      if(SetValueProperty(ref _expanded, value))
+      {
+        RaisePropertyChanged(nameof(ExpanderIcon));
+      }
+    }
+  }
+  private bool _expanded = false;
+
+  public string ExpanderIcon {
+    get {
+      return Expanded ? "ChevronUpCircleOutline" : "ChevronDownCircleOutline";
+    }
+  }
+
 }

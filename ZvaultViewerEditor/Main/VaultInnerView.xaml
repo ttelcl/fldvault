@@ -10,7 +10,12 @@
     d:DataContext="{d:DesignInstance local:VaultInnerViewModel, IsDesignTimeCreatable=False}"
     d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
         <ListBox
+            BorderThickness="1" Grid.Row="0"
             SelectionMode="Multiple"
             ScrollViewer.VerticalScrollBarVisibility="Visible"
             ItemsSource="{Binding Entries}">
@@ -30,5 +35,31 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
+        <Border
+            Grid.Row="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            BorderThickness="1">
+            <ScrollViewer
+                VerticalScrollBarVisibility="Visible">
+                <ItemsControl
+                    Padding="0,0"
+                    ItemsSource="{Binding Entries}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:VaultEntryViewModel}">
+                            <Border
+                                Margin="0,1,0,1"
+                                Background="#AA101010">
+                                <local:VaultEntryView />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                    <!--<ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Vertical"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>-->
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
     </Grid>
 </UserControl>

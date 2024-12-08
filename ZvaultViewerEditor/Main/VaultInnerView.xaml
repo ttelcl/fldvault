@@ -16,6 +16,24 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Border
+            Grid.Row="0"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            BorderThickness="1">
+            <DockPanel>
+                <Button Command="{Binding SelectAllCommand}"
+                    Margin="5,2" Padding="10,0"
+                    DockPanel.Dock="Left">
+                    <TextBlock Text="Select All"/>
+                </Button>
+                <Button Command="{Binding SelectNoneCommand}"
+                    Margin="5,2" Padding="10,0"
+                    DockPanel.Dock="Left">
+                    <TextBlock Text="Select None"/>
+                </Button>
+                <StackPanel/>
+            </DockPanel>
+        </Border>
+        <Border
             Grid.Row="1"
             BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
             BorderThickness="1">
@@ -31,6 +49,59 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
+        </Border>
+        <Border
+            Grid.Row="2"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            BorderThickness="1">
+            <Grid >
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0">
+                    <Border
+                        BorderThickness="0,0,1,0"
+                        DockPanel.Dock="Left"
+                        BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}">
+                        <DockPanel>
+                            <Button Command="{Binding ExtractCommand}"
+                                Margin="5,2" Padding="10,0"
+                                DockPanel.Dock="Left">
+                                <TextBlock FontSize="14" Text="Extract Selected ..."/>
+                            </Button>
+                            <CheckBox IsChecked="{Binding ExtractMetadata}"
+                                Margin="5,2" Padding="5,0">
+                                Also Metadata
+                            </CheckBox>
+                            <CheckBox IsChecked="{Binding PreserveTimestamps}"
+                                Margin="5,2" Padding="5,0">
+                                Preserve Timestamps
+                            </CheckBox>
+                        </DockPanel>
+                    </Border>
+                    <Button Command="{Binding CloneCommand}"
+                        Margin="5,2" Padding="10,0"
+                        DockPanel.Dock="Left">
+                        <TextBlock FontSize="14" Text="Clone Selected to New Vault ..."/>
+                    </Button>
+                    <StackPanel/>
+                </DockPanel>
+                <DockPanel Grid.Row="1">
+                    <CheckBox
+                        Margin="5,2" Padding="5,0"
+                        IsChecked="{Binding AllowWrite}"
+                        IsEnabled="{Binding FileNotReadOnly}">
+                        Enable Vault Edits
+                    </CheckBox>
+                    <Button Command="{Binding AppendCommand}"
+                        Margin="5,2" Padding="10,0"
+                        DockPanel.Dock="Left">
+                        <TextBlock FontSize="14" Text="Append ..."/>
+                    </Button>
+                    <StackPanel/>
+                </DockPanel>
+            </Grid>
         </Border>
     </Grid>
 </UserControl>

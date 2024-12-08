@@ -24,6 +24,7 @@ public class VaultEntryViewModel: ViewModelBase
   /// Create a new VaultEntry
   /// </summary>
   private VaultEntryViewModel(
+    VaultInnerViewModel innerModel,
     FileElement element,
     FileMetadata metadata,
     FileHeader header)
@@ -35,6 +36,7 @@ public class VaultEntryViewModel: ViewModelBase
       throw new NotSupportedException(
         "Anonymous entries and entries without a size annotation are not supported");
     }
+    Owner = innerModel;
     Metadata = metadata;
     Element = element;
     Header = header;
@@ -49,6 +51,7 @@ public class VaultEntryViewModel: ViewModelBase
   /// <param name="element"></param>
   /// <returns></returns>
   public static VaultEntryViewModel? TryCreate(
+    VaultInnerViewModel innerModel,
     FileElement element,
     FileMetadata metadata,
     FileHeader header)
@@ -59,17 +62,20 @@ public class VaultEntryViewModel: ViewModelBase
     {
       return null;
     }
-    return new VaultEntryViewModel(element, metadata, header);
+    return new VaultEntryViewModel(innerModel, element, metadata, header);
   }
 
   public static VaultEntryViewModel? TryCreate(
+    VaultInnerViewModel innerModel,
     FileElement element,
     VaultFileReader reader)
   {
     var metadata = element.GetMetadata(reader);
     var header = element.GetHeader(reader);
-    return TryCreate(element, metadata, header);
+    return TryCreate(innerModel, element, metadata, header);
   }
+
+  public VaultInnerViewModel Owner { get; }
 
   public FileMetadata Metadata { get; }
 
@@ -115,6 +121,7 @@ public class VaultEntryViewModel: ViewModelBase
     set {
       if(SetValueProperty(ref _selected, value))
       {
+        Owner.UpdateHasSelected();
       }
     }
   }

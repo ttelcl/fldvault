@@ -4,19 +4,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using System.Windows;
+using System.Windows.Input;
+
+using Microsoft.Win32;
+
+using Newtonsoft.Json;
 
 using FldVault.Core.Crypto;
 using FldVault.Core.Zvlt2;
 
 using ZvaultViewerEditor.WpfUtilities;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
-using System.Windows;
-using System.IO;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -79,8 +82,6 @@ public class VaultInnerViewModel: ViewModelBase
     }
   }
   private List<VaultEntryViewModel> _entries = [];
-
-  public ObservableCollection<VaultEntryViewModel> SelectedEntries { get; } = new();
 
   public int FileCount => Entries.Count;
 
@@ -180,7 +181,34 @@ public class VaultInnerViewModel: ViewModelBase
 
   public void Extract()
   {
-    MessageBox.Show("Extract not yet implemented");
+    var peerFolderDialog = new OpenFolderDialog {
+      ClientGuid = DialogGuids.PeerFolderGuid,
+      Title = "Select target folder for extraction",
+    };
+    if(peerFolderDialog.ShowDialog() == true)
+    {
+      var targetFolder = Path.GetFullPath(peerFolderDialog.FolderName);
+      using var cryptor = Vault.CreateCryptor(KeyChain);
+      using var reader = new VaultFileReader(Vault, cryptor);
+      var extracted = new List<string>();
+      foreach(var entry in Entries.Where(e => e.Selected))
+      {
+        var result = ExtractTo(targetFolder, entry, reader);
+        if(result == null)
+        {
+          MessageBox.Show("Extraction aborted");
+          break;
+        }
+        if(result == true)
+        {
+          extracted.Add(entry.FileName);
+        }
+      }
+      var message = $"Extracted {extracted.Count} files:\n";
+      message += String.Join("\n", extracted);
+      MessageBox.Show(
+        message);
+    }
   }
 
   public void Clone()
@@ -191,5 +219,75 @@ public class VaultInnerViewModel: ViewModelBase
   public void Append()
   {
     MessageBox.Show("Append not yet implemented");
+  }
+
+  /// <summary>
+  /// Run the extract job.
+  /// Returns null to abort further extractions.
+  /// Returns true to indicate success.
+  /// Returns false to indicate skip.
+  /// </summary>
+  private bool? ExtractTo(
+    string targetFolder,
+    VaultEntryViewModel entry,
+    VaultFileReader reader)
+  {
+    var logicalName = entry.FileName;
+    if(String.IsNullOrEmpty(logicalName))
+    {
+      logicalName = $"anon-{entry.FileGuid}.unknown";
+    }
+    var targetPath = Path.Combine(targetFolder, logicalName);
+    var targetDir = Path.GetDirectoryName(targetPath);
+    if(!Directory.Exists(targetDir))
+    {
+      Directory.CreateDirectory(targetDir!);
+    }
+    var targetShort = Path.GetFileName(targetPath);
+    if(File.Exists(targetPath))
+    {
+      var response = MessageBox.Show(
+        $"File '{targetShort}' already exists. 'Yes' to overwrite, 'No' to skip.",
+        "Overwrite?",
+        MessageBoxButton.YesNoCancel,
+        MessageBoxImage.Question);
+      if(response == MessageBoxResult.Cancel)
+      {
+        return null;
+      }
+      if(response == MessageBoxResult.No)
+      {
+        return false;
+      }
+    }
+    // (response == MessageBoxResult.Yes, or no question asked)
+    var fileElement = entry.Element;
+    try
+    {
+      fileElement.SaveContentToFile(
+        reader,
+        targetFolder, // not really used
+        targetPath,
+        PreserveTimestamps,
+        false);
+      if(ExtractMetadata)
+      {
+        var metadataPath = targetPath + ".meta.json";
+        var metadata = entry.Metadata;
+        var json = JsonConvert.SerializeObject(
+          metadata, Formatting.Indented);
+        File.WriteAllText(metadataPath, json, Encoding.UTF8);
+      }
+      return true;
+    }
+    catch(Exception ex)
+    {
+      MessageBox.Show(
+        $"Error writing '{targetShort}': {ex.Message}",
+        "Error writing file",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return null;
+    }
   }
 }

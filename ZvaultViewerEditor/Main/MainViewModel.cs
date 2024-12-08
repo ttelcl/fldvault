@@ -115,7 +115,8 @@ public class MainViewModel: ViewModelBase, IApplicationModel
     }
     var dlg = new OpenFileDialog {
       DefaultExt = ".zvlt",
-      Filter = "Vault Files|*.zvlt"
+      Filter = "Vault Files|*.zvlt",
+      ClientGuid = DialogGuids.VaultFileGuid,
     };
     if(dlg.ShowDialog() == true)
     {

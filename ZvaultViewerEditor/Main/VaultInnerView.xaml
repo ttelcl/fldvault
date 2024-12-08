@@ -11,33 +11,13 @@
     d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ListBox
-            BorderThickness="1" Grid.Row="0"
-            SelectionMode="Multiple"
-            ScrollViewer.VerticalScrollBarVisibility="Visible"
-            ItemsSource="{Binding Entries}">
-            <ListBox.Resources>
-                <Style TargetType="{x:Type ListBoxItem}">
-                    <Setter Property="IsSelected" Value="{Binding Selected, Mode=TwoWay}" />
-                    <Setter Property="Padding" Value="10,0,5,0"/>
-                </Style>
-            </ListBox.Resources>
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Border
-                        Margin="5,2,10,2"
-                        Background="#AA101010">
-                        <local:VaultEntryView />
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
         <Border
             Grid.Row="1"
-            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
             BorderThickness="1">
             <ScrollViewer
                 VerticalScrollBarVisibility="Visible">
@@ -46,18 +26,9 @@
                     ItemsSource="{Binding Entries}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="{x:Type local:VaultEntryViewModel}">
-                            <Border
-                                Margin="0,1,0,1"
-                                Background="#AA101010">
-                                <local:VaultEntryView />
-                            </Border>
+                            <local:VaultEntryView />
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
-                    <!--<ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Vertical"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>-->
                 </ItemsControl>
             </ScrollViewer>
         </Border>

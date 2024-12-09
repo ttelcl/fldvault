@@ -169,6 +169,10 @@ The "associated data" for the metadata is constructed as the following
 * `<encryption stamp from the content file header>` (8 bytes)
 * `<ZVLT stamp from the ZVLT header>` (8 bytes)
 
+Note! Because the ZVLT stamp is part of the associated data, copying
+a file element from one ZVLT file to another is only possible if the
+ZVLT stamps and keys are the same.
+
 ### File content blocks (FCNZ)
 
 _Introduced in ZVLT 3.0 to replace FCNT blocks_

@@ -83,7 +83,7 @@
                     <Button Command="{Binding CloneCommand}"
                         Margin="5,2" Padding="10,0"
                         DockPanel.Dock="Left">
-                        <TextBlock FontSize="14" Text="Clone Selected to New Vault ..."/>
+                        <TextBlock FontSize="14" Text="Clone Selected as ..."/>
                     </Button>
                     <StackPanel/>
                 </DockPanel>

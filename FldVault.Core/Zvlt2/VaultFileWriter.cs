@@ -358,6 +358,92 @@ public class VaultFileWriter: IDisposable
   }
 
   /// <summary>
+  /// Append a clone of the specified element from a compatible vault file.
+  /// To be compatible, the source vault must have the same key and creation
+  /// stamp as this vault.
+  /// </summary>
+  /// <param name="sourceVault"></param>
+  /// <param name="sourceElement"></param>
+  /// <returns></returns>
+  public BlockElement AppendCloneElement(
+    VaultFileReader sourceVault,
+    IBlockElement sourceElement)
+  {
+    if(!IsCompatibleSource(sourceVault))
+    {
+      throw new ArgumentException(
+        "The source vault is not compatible with this vault",
+        nameof(sourceVault));
+    }
+    var rootBlock = AppendCloneBlock(sourceVault, sourceElement.Block);
+    var rootElement = new BlockElement(rootBlock);
+    foreach(var child in sourceElement.Children)
+    {
+      // Recursive!
+      // But the expectation is that the children don't have children themselves.
+      var childElement = AppendCloneElement(sourceVault, child);
+      rootElement.AddChild(childElement);
+    }
+    return rootElement;
+  }
+
+  /// <summary>
+  /// Append a clone of the specified block from a compatible vault file.
+  /// To be compatible, the source vault must have the same key and creation
+  /// stamp as this vault.
+  /// </summary>
+  /// <param name="sourceVault"></param>
+  /// <param name="sourceBlock"></param>
+  /// <returns></returns>
+  public BlockInfo AppendCloneBlock(
+    VaultFileReader sourceVault,
+    IBlockInfo sourceBlock)
+  {
+    if(!IsCompatibleSource(sourceVault))
+    {
+      throw new ArgumentException(
+        "The source vault is not compatible with this vault",
+        nameof(sourceVault));
+    }
+    throw new NotImplementedException();
+  }
+
+  /// <summary>
+  /// Test if the source vault is compatible with this vault, enabling
+  /// cloning blocks and elements directly, without reencoding. To enable
+  /// this scenario, the source vault must have the same key and creation
+  /// stamp as this vault.
+  /// </summary>
+  /// <param name="sourceVault">
+  /// The source vault to test
+  /// </param>
+  /// <returns>
+  /// True if the source vault is compatible with this vault
+  /// </returns>
+  public bool IsCompatibleSource(VaultFile sourceVault)
+  {
+    return sourceVault.KeyId == Vault.KeyId
+      && sourceVault.Header.TimeStamp == Vault.Header.TimeStamp;
+  }
+
+  /// <summary>
+  /// Test if the source vault is compatible with this vault, enabling
+  /// cloning blocks and elements directly, without reencoding. To enable
+  /// this scenario, the source vault must have the same key and creation
+  /// stamp as this vault.
+  /// </summary>
+  /// <param name="sourceVaultReader">
+  /// A reader on the source vault to test
+  /// </param>
+  /// <returns>
+  /// True if the source vault is compatible with this vault
+  /// </returns>
+  public bool IsCompatibleSource(VaultFileReader sourceVaultReader)
+  {
+    return IsCompatibleSource(sourceVaultReader.Vault);
+  }
+
+  /// <summary>
   /// Clean up
   /// </summary>
   public void Dispose()

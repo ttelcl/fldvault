@@ -83,6 +83,25 @@ public class BlockInfoList
   }
 
   /// <summary>
+  /// Check if the block list contains exactly one block with the same offset,
+  /// kind and size.
+  /// </summary>
+  /// <param name="block"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if there are multiple blocks with the same offset in the list
+  /// (which indicates an internal error)
+  /// </exception>
+  public bool ContainsBlock(IBlockInfo block)
+  {
+    var candidate = _blocks.SingleOrDefault(b => b.Offset == block.Offset);
+    return
+      candidate != null
+      && candidate.Kind == block.Kind
+      && candidate.Size == block.Size;
+  }
+
+  /// <summary>
   /// Build a new element tree wrapping the blocks in the list
   /// </summary>
   public BlockElementContainer BuildElementTree()

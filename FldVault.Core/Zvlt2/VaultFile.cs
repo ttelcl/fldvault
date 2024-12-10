@@ -138,6 +138,42 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
+  /// Create a new empty vault file, using the key ID and time stamp from the
+  /// source vault. If the source file has a PASS block, it is copied to the new
+  /// vault file.
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the new file to create. If this file already exists, it is
+  /// moved to a backup file with the same name plus the extension ".bak".
+  /// </param>
+  /// <param name="source">
+  /// The source vault file to clone
+  /// </param>
+  /// <returns></returns>
+  public static VaultFile CreateEmptyClone(
+    string fileName,
+    VaultFile source)
+  {
+    fileName = Path.GetFullPath(fileName);
+    if(File.Exists(fileName))
+    {
+      var bak = fileName + ".bak";
+      if(File.Exists(bak))
+      {
+        File.Delete(bak);
+      }
+      File.Move(fileName, bak);
+    }
+    using(var stream = File.Create(fileName))
+    {
+      VaultHeader.WriteSync(stream, source.KeyId, source.Header.TimeStamp);
+      var pkif = source.GetPassphraseInfo();
+      pkif?.WriteBlock(stream);
+    }
+    return new VaultFile(fileName);
+  }
+
+  /// <summary>
   /// Open an existing vault file. This method exists for symmetry with the 
   /// OpenOrCreate() factory methods but is just an alias for the constructor.
   /// </summary>
@@ -296,6 +332,25 @@ public class VaultFile: IBlockElementContainer
     {
       throw new ArgumentException("The logical name path cannot contain any segments ending in '.'");
     }
+  }
+
+  /// <summary>
+  /// Test if the source vault is compatible with this vault, enabling
+  /// cloning blocks and elements directly, without reencoding and without
+  /// access to the key.
+  /// To enable this scenario, the source vault must have the same key and creation
+  /// stamp as this vault.
+  /// </summary>
+  /// <param name="sourceVault">
+  /// The source vault to test
+  /// </param>
+  /// <returns>
+  /// True if the source vault is compatible with this vault
+  /// </returns>
+  public bool IsCompatibleSource(VaultFile sourceVault)
+  {
+    return sourceVault.KeyId == KeyId
+      && sourceVault.Header.TimeStamp == Header.TimeStamp;
   }
 
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)

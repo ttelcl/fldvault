@@ -6,6 +6,8 @@ temporarily carry the raw keys of vault files.
 This mechanism aims to avoid having to type the passphrase repeatedly
 in th CLI.
 
+:warning: This mechanism is deprecated. DO NOT USE.
+
 In the future some kind of "key server" may be developed to provide
 a similar feature using in-memory.
 

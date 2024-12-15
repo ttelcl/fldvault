@@ -155,10 +155,10 @@ public class MainViewModel: ViewModelBase, IApplicationModel
       return;
     }
     CurrentVault = null;
-    MessageBox.Show("Closing a vault not yet fully implemented",
-      "Not Implemented",
-      MessageBoxButton.OK,
-      MessageBoxImage.Information);
+    //MessageBox.Show("Closing a vault not yet fully implemented",
+    //  "Not Implemented",
+    //  MessageBoxButton.OK,
+    //  MessageBoxImage.Information);
     StatusMessage = "";
   }
 }

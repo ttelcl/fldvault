@@ -20,6 +20,8 @@ using FldVault.Core.Crypto;
 using FldVault.Core.Zvlt2;
 
 using ZvaultViewerEditor.WpfUtilities;
+using FldVault.Core.BlockFiles;
+using FldVault.Core.Utilities;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -67,6 +69,8 @@ public class VaultInnerViewModel: ViewModelBase
   public ICommand AppendCommand { get; }
 
   public VaultOuterViewModel OuterModel { get; }
+
+  public IApplicationModel ApplicationModel { get => OuterModel.ApplicationModel; }
 
   public VaultFile Vault { get => OuterModel.Vault; }
 
@@ -191,18 +195,26 @@ public class VaultInnerViewModel: ViewModelBase
       using var cryptor = Vault.CreateCryptor(KeyChain);
       using var reader = new VaultFileReader(Vault, cryptor);
       var extracted = new List<string>();
-      foreach(var entry in Entries.Where(e => e.Selected))
+      Mouse.OverrideCursor = Cursors.Wait;
+      try
       {
-        var result = ExtractTo(targetFolder, entry, reader);
-        if(result == null)
+        foreach(var entry in Entries.Where(e => e.Selected))
         {
-          MessageBox.Show("Extraction aborted");
-          break;
+          var result = ExtractTo(targetFolder, entry, reader);
+          if(result == null)
+          {
+            MessageBox.Show("Extraction aborted");
+            break;
+          }
+          if(result == true)
+          {
+            extracted.Add(entry.FileName);
+          }
         }
-        if(result == true)
-        {
-          extracted.Add(entry.FileName);
-        }
+      }
+      finally
+      {
+        Mouse.OverrideCursor = null;
       }
       var message = $"Extracted {extracted.Count} files:\n";
       message += String.Join("\n", extracted);
@@ -213,7 +225,66 @@ public class VaultInnerViewModel: ViewModelBase
 
   public void Clone()
   {
-    MessageBox.Show("Clone not yet implemented");
+    var keyTag = Vault.KeyId.ToString("N")[..8];
+    var suffix = $".{keyTag}.zvlt";
+    var shortSourceName = Path.GetFileName(Vault.FileName);
+    string shortCloneName;
+    if(shortSourceName.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+    {
+      shortCloneName =
+        shortSourceName[..^suffix.Length] + "-clone" + suffix;
+    }
+    else
+    {
+      shortCloneName =
+        shortSourceName[..^".zvlt".Length] + "-clone" + suffix;
+    }
+    var selectedCount = Entries.Count(ve => ve.Selected);
+    var title =
+      selectedCount == 0
+      ? "Clone empty version of the vault to"
+      : $"Clone or append {selectedCount} selected files to";
+
+    var saveDialog = new SaveFileDialog {
+      ClientGuid = DialogGuids.VaultFileGuid,
+      Title = title,
+      FileName = shortCloneName,
+      Filter = "Vault files (*.zvlt)|*.zvlt",
+      OverwritePrompt = false,
+    };
+
+    var result = saveDialog.ShowDialog();
+
+    if(result == true)
+    {
+      var fileName = saveDialog.FileName;
+      if(fileName == Vault.FileName)
+      {
+        MessageBox.Show(
+          "Cannot clone to the same file",
+          "Error cloning",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+        return;
+      }
+      try
+      {
+        Mouse.OverrideCursor = Cursors.Wait;
+        RunClone(fileName);
+      }
+      catch(Exception ex)
+      {
+        MessageBox.Show(
+          $"Error cloning to '{fileName}': {ex.Message}",
+          "Error cloning",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+      }
+      finally
+      {
+        Mouse.OverrideCursor = null;
+      }
+    }
   }
 
   public void Append()
@@ -277,6 +348,11 @@ public class VaultInnerViewModel: ViewModelBase
         var json = JsonConvert.SerializeObject(
           metadata, Formatting.Indented);
         File.WriteAllText(metadataPath, json, Encoding.UTF8);
+        if(PreserveTimestamps && metadata.Stamp.HasValue)
+        {
+          var utcStamp = EpochTicks.ToUtc(metadata.Stamp.Value);
+          File.SetLastWriteTimeUtc(metadataPath, utcStamp);
+        }
       }
       return true;
     }
@@ -290,4 +366,76 @@ public class VaultInnerViewModel: ViewModelBase
       return null;
     }
   }
+
+  private void RunClone(string targetName)
+  {
+    var entries = Entries.Where(ve => ve.Selected).ToList();
+    var selectedCount = entries.Count;
+    var shortTargetName = Path.GetFileName(targetName);
+
+    if(File.Exists(targetName))
+    {
+      var probeExisting = VaultFile.Open(targetName);
+      if(!VaultCloneEngine.AreVaultsCompatible(Vault, probeExisting))
+      {
+        MessageBox.Show(
+          "The existing target vault is not compatible with the source vault",
+          "Incompatible vaults",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+        return;
+      }
+      if(selectedCount == 0)
+      {
+        var response = MessageBox.Show(
+          $"{shortTargetName} already exists.\n"+
+          "Overwrite existing file with an empty vault?",
+          "Overwrite?",
+          MessageBoxButton.OKCancel,
+          MessageBoxImage.Question);
+        if(response == MessageBoxResult.Cancel)
+        {
+          return;
+        }
+        var bakName = targetName + ".bak";
+        File.Move(targetName, bakName, true);
+      }
+      else
+      {
+        var response = MessageBox.Show(
+          $"{shortTargetName} already exists.\n"+
+          "'Yes' to append, 'No' to replace.",
+          "Overwrite?",
+          MessageBoxButton.YesNoCancel,
+          MessageBoxImage.Question);
+        if(response == MessageBoxResult.Cancel)
+        {
+          return;
+        }
+        if(response == MessageBoxResult.No)
+        {
+          var bakName = targetName + ".bak";
+          File.Move(targetName, bakName, true);
+        }
+      }
+    }
+    using var cloner = VaultCloneEngine.Create(Vault, targetName);
+
+    if(selectedCount == 0)
+    {
+      ApplicationModel.StatusMessage =
+        $"Cloned empty vault to {shortTargetName}";
+      return;
+    }
+
+    foreach(var entry in entries)
+    {
+      var fileElement = entry.Element;
+      var rootElement = fileElement.RootElement;
+      cloner.CloneElement(rootElement);
+    }
+    ApplicationModel.StatusMessage =
+      $"Copied {entries.Count} entries to {shortTargetName}";
+  }
+
 }

@@ -72,7 +72,7 @@
                             </Button>
                             <CheckBox IsChecked="{Binding ExtractMetadata}"
                                 Margin="5,2" Padding="5,0">
-                                Also Metadata
+                                Extract Metadata
                             </CheckBox>
                             <CheckBox IsChecked="{Binding PreserveTimestamps}"
                                 Margin="5,2" Padding="5,0">

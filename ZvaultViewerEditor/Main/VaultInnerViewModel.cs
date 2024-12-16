@@ -523,6 +523,7 @@ public class VaultInnerViewModel: ViewModelBase
         }
       }
     }
+
     using var cloner = VaultCloneEngine.Create(Vault, targetName);
 
     if(selectedCount == 0)
@@ -531,6 +532,10 @@ public class VaultInnerViewModel: ViewModelBase
         $"Cloned empty vault to {shortTargetName}";
       return;
     }
+
+    // For now we skip guarding against duplicates in the target
+    // since there are some tricky things involved that may not be
+    // worth the effort. I may add this later.
 
     foreach(var entry in entries)
     {

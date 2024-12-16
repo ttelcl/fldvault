@@ -6,12 +6,23 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Assets\z-edit.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- This prevents other language resources being emitted -->
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!--<None Remove="Assets\z-edit.ico" />-->
+    <None Remove="Assets\z-editor.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\z-edit.ico" />
+    <Resource Include="Assets\z-editor.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />

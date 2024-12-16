@@ -17,6 +17,7 @@
     ResizeMode="CanResizeWithGrip"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
     Loaded="MetroWindow_Loaded"
+    Icon="pack://application:,,,/ZvaultViewerEditor;component/assets/z-edit.ico"
     Closing="MetroWindow_Closing">
     <DockPanel>
         <Menu DockPanel.Dock="Top">

@@ -124,7 +124,7 @@ public class MainViewModel: ViewModelBase, IApplicationModel
     }
   }
 
-  private bool TryOpenVault(
+  public bool TryOpenVault(
     string vaultFileName)
   {
     StatusMessage = "";

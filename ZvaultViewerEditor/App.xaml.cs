@@ -31,6 +31,14 @@ public partial class App: Application
     ThemeManager.Current.ChangeTheme(this, "Dark.Olive");
     var mainWindow = new MainWindow();
     MainModel = new MainViewModel(_keyChain);
+    foreach(var arg in e.Args)
+    {
+      if(arg.EndsWith(".zvlt"))
+      {
+        MainModel.TryOpenVault(arg);
+        break;
+      }
+    }
     mainWindow.DataContext = MainModel;
     Trace.TraceInformation($"App.App_Startup showing main window");
     mainWindow.Show();

@@ -87,6 +87,18 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   }
 
   /// <summary>
+  /// Expose a part of the buffer as Memory{T}
+  /// </summary>
+  public Memory<T> Memory(int start, int length)
+  {
+    if(_disposed)
+    {
+      throw new ObjectDisposedException(GetType().Name);
+    }
+    return _buffer.AsMemory(start, length);
+  }
+
+  /// <summary>
   /// Clear the buffer
   /// </summary>
   public void Dispose()

@@ -74,7 +74,7 @@ public class VaultCryptor: IDisposable
   public NonceGenerator NonceGenerator { get; init; }
 
   /// <summary>
-  /// Wraps <see cref="AesCcm.Encrypt(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte}, Span{byte}, ReadOnlySpan{byte})"/>
+  /// Wraps <see cref="AesGcm.Encrypt(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte}, Span{byte}, ReadOnlySpan{byte})"/>
   /// adding additional checks, changing the nonce to be an output instead of an input,
   /// and changing the order of arguments.
   /// </summary>

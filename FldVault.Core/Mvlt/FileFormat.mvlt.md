@@ -8,7 +8,8 @@ and don't need to know the length of the file in advance.
 * Signature (4 bytes): 'MVLT'
 * Minor version (2 bytes): 0x0000
 * Major version (2 bytes): 0x0001
-* Reserved (8 bytes): 0x0000000000000000
+* Creation timestamp (8 bytes): creation stamp of the MVLT file, expressed
+  in epoch ticks.
 * A PassphraseKeyInfoFile block (96 bytes). This identifies the key.
 
 | Offset | Name | Size | Notes |
@@ -16,11 +17,11 @@ and don't need to know the length of the file in advance.
 | 0x00 | Signature | 4 bytes | 0x544C564D ('MVLT') |
 | 0x04 | Minor version | 2 bytes | 0x0000 |
 | 0x06 | Major version | 2 bytes | 0x0001 |
-| 0x08 | Reserved | 8 bytes | 0x0000000000000000 |
+| 0x08 | Stamp | 8 bytes | Creation timestamp in epoch-ticks |
 | 0x10 | PassphraseKeyInfoFile | 96 bytes | The key info file block |
-| 0x60 | Preamble metadata block | variable | The preamble metadata block |
+| 0x70 | Preamble metadata block | variable | The preamble metadata block |
 | ? | Start of Data block 1 | variable | The first data block |
-| ? | more data blocks | variable | More data blocks |
+| ? | More data blocks | variable | More data blocks |
 | ? | Last Data block | variable | The last data block |
 | ? | Terminator metadata block | variable | The terminator metadata block |
 
@@ -39,7 +40,7 @@ The following types of blocks are used in the file:
 | --- | --- | --- | --- | --- |
 | 'PREM' | 0x4D455250  | Preamble metadata block | Uncompressed | Encrypted |
 | 'DCMP' | 0x504D4344 | Data block (compressed) | Compressed | Encrypted |
-| 'DUNC' | 0x434E5544 | Data block (pre-compressed) | Uncompressed | Encrypted |
+| 'DUNC' | 0x434E5544 | Data block (not compressed / precompressed) | Uncompressed | Encrypted |
 | 'POST' | 0x54534F50 | Terminator metadata block | Uncompressed | Encrypted |
 
 The metadata types store a UTF8 encoded JSON object.
@@ -50,36 +51,21 @@ logically.
 
 Each data block is encrypted using AES-GCM encryption, with the following
 parameters:
-* The compression algorithm is AES-GCM
+* The encryption algorithm is AES-GCM
 * The nonce is 12 bytes (generated based on the current time, with a twist
   to guarantee that it is unique)
 * The authentication tag is 16 bytes
-* The AES-GCM associated data always has length 16 bytes. However, its content
+* The AES-GCM "associated data" always has length 16 bytes. However, its content
   varies depending on block type.
-  * Type 0x00 (first block):
-    * 16 bytes: the key guid
-  * Type 0x01, 0x02 and 0x03 (later blocks):
+  * Type 'PREM' (first block):
+    * 16 bytes: The first 16 bytes of the file header (the signature,
+      version, and creation time stamp).      
+  * Types 'DCMP', 'DUNC' and 'POST' (later blocks):
     * 16 bytes: the authentication tag of the previous block. Note that this
       is always well defined, because the first block is always a type 0x00
       block.
 
 Each block is serialized as follows:
-* Size + type (4 bytes):
-  * The lower 3 bytes: Size: the total size of this block in this file in bytes
-    (including this size+flags field itself)
-  * The upper byte: block type (0x00, 0x01, 0x02 or 0x03)    
-* Unpacked size (4 bytes): the unpacked size of the block content, in bytes.
-  * For types 0x00 and 0x03, this is the size of the UTF 8 JSON string bytes
-    after decompression.
-  * For types 0x01 and 0x02, this is the size of the data after decompression.
-* Nonce (12 bytes): the nonce used for this block
-* Authentication tag (16 bytes): the authentication tag for this block
-* Content.
-  * For types 0x00 and 0x03, this is the UTF 8 JSON string, not compressed
-  * For types 0x01 and 0x02, this is the data. For type 0x01 this is
-    compressed using BZ2 compression (level 9). For type 0x02, this is
-    uncompressed (and assuming it doesn't compress well, i.e. the plaintext
-    is already compressed).
 
 | Offset | Name | Size | Notes |
 | --- | --- | --- | --- |

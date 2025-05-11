@@ -1,18 +1,31 @@
 ﻿# Single-file encrypted file format
 
-`*.mvlt` files are similar to `*.zvlt` files, but encrypt only a single file.
-In other words, they provide just an encryption layer, not any archiving.
+`*.mvlt` files are related to `*.zvlt` files, but encrypt only a single file,
+and can be written and read as streams.
+In other words, they provide just an encryption layer, not any archiving,
+and don't need to know the length of the file in advance.
 
 * Signature (4 bytes): 'MVLT'
 * Minor version (2 bytes): 0x0000
 * Major version (2 bytes): 0x0001
 * Reserved (8 bytes): 0x0000000000000000
 * A PassphraseKeyInfoFile block (96 bytes). This identifies the key.
-* The timestamp of the file in epoch-ticks (8 bytes)
-* The original length of the file (4 bytes)
 
-The rest of the file is a sequence of encrypted blocks, each of which
-encrypts a chunk of the file. Each chunk encodes 0xD0000 bytes 
+| Offset | Name | Size | Notes |
+| --- | --- | --- | --- |
+| 0x00 | Signature | 4 bytes | 0x544C564D ('MVLT') |
+| 0x04 | Minor version | 2 bytes | 0x0000 |
+| 0x06 | Major version | 2 bytes | 0x0001 |
+| 0x08 | Reserved | 8 bytes | 0x0000000000000000 |
+| 0x10 | PassphraseKeyInfoFile | 96 bytes | The key info file block |
+| 0x60 | Preamble metadata block | variable | The preamble metadata block |
+| ? | Start of Data block 1 | variable | The first data block |
+| ? | more data blocks | variable | More data blocks |
+| ? | Last Data block | variable | The last data block |
+| ? | Terminator metadata block | variable | The terminator metadata block |
+
+The rest of the file is a sequence of encrypted blocks, most of which
+encrypt a chunk of the file. Each chunk encodes up to 0xD0000 bytes 
 (VaultFormat.VaultChunkSize) from the cleartext, except for the last
 one, which may be smaller. Before encryption, the chunk is compressed
 using BZ2 compression (level 9), unless it doesn't compress well.
@@ -20,30 +33,86 @@ The chunk size is chosen to be the smallest multiple of 64 kb that is
 less than 900000 bytes, guaranteeing that the compression processes exactly
 one block (level 9 BZ2 compression -> compression block size is 9 * 100000).
 
-Each compressed block is encrypted as follows:
+The following types of blocks are used in the file:
+
+| Type | 4CC | Description | Compression | Encryption |
+| --- | --- | --- | --- | --- |
+| 'PREM' | 0x4D455250  | Preamble metadata block | Uncompressed | Encrypted |
+| 'DCMP' | 0x504D4344 | Data block (compressed) | Compressed | Encrypted |
+| 'DUNC' | 0x434E5544 | Data block (pre-compressed) | Uncompressed | Encrypted |
+| 'POST' | 0x54534F50 | Terminator metadata block | Uncompressed | Encrypted |
+
+The metadata types store a UTF8 encoded JSON object.
+
+There is precisely one preamble metadata block (first block) and one terminator
+metadata block (last block). The content of the two metadata blocks are merged
+logically.
+
+Each data block is encrypted using AES-GCM encryption, with the following
+parameters:
 * The compression algorithm is AES-GCM
 * The nonce is 12 bytes (generated based on the current time, with a twist
   to guarantee that it is unique)
 * The authentication tag is 16 bytes
-* The AES-GCM associated data is normally the 16 bytes of the previous
-  block's tag, except for the first block, which uses 16 bytes constructed as follows:
-  * 8 bytes: the original length of the file
-  * 8 bytes: the timestamp of the file in epoch-ticks
+* The AES-GCM associated data always has length 16 bytes. However, its content
+  varies depending on block type.
+  * Type 0x00 (first block):
+    * 16 bytes: the key guid
+  * Type 0x01, 0x02 and 0x03 (later blocks):
+    * 16 bytes: the authentication tag of the previous block. Note that this
+      is always well defined, because the first block is always a type 0x00
+      block.
 
 Each block is serialized as follows:
-* Size + flags (4 bytes):
+* Size + type (4 bytes):
   * The lower 3 bytes: Size: the total size of this block in this file in bytes
-          (including this size+flags field itself)
-  * The upper byte: flags:
-    * 0x01: the block is compressed
+    (including this size+flags field itself)
+  * The upper byte: block type (0x00, 0x01, 0x02 or 0x03)    
+* Unpacked size (4 bytes): the unpacked size of the block content, in bytes.
+  * For types 0x00 and 0x03, this is the size of the UTF 8 JSON string bytes
+    after decompression.
+  * For types 0x01 and 0x02, this is the size of the data after decompression.
 * Nonce (12 bytes): the nonce used for this block
 * Authentication tag (16 bytes): the authentication tag for this block
-* Ciphertext (variable): the ciphertext of the block
+* Content.
+  * For types 0x00 and 0x03, this is the UTF 8 JSON string, not compressed
+  * For types 0x01 and 0x02, this is the data. For type 0x01 this is
+    compressed using BZ2 compression (level 9). For type 0x02, this is
+    uncompressed (and assuming it doesn't compress well, i.e. the plaintext
+    is already compressed).
 
-Note that the decoded and decrypted sizes are implicit, not explicit:
-* The decrypted size of the block is the same as the ciphertext size
-* The decompressed size of the block is always 0xD0000 bytes, except possibly
-  the last block, whose size can be calculated from the original length of the file
+| Offset | Name | Size | Notes |
+| --- | --- | --- | --- |
+| 0x00 | Block type (a 4CC) | 4 bytes | The block type (as given above) |
+| 0x04 | Block size | 4 bytes | The total size of this block (including this field itself) |
+| 0x08 | Unpacked size | 4 bytes | The unpacked size of the block content, in bytes |
+| 0x0C | Nonce | 12 bytes | The nonce used for this block |
+| 0x18 | Authentication tag | 16 bytes | The authentication tag for this block |
+| 0x28 | Content | variable | The content of the block, as described below |
 
-Unlike the ZVLT format, the MVLT format does not have a block kind - there is only
-one kind of block.
+Block content:
+
+| Type | Content Description |
+| --- | --- |
+| 'PREM' | A UTF8 encoded JSON object string |
+| 'DCMP' | A BZ2 compressed block of data |
+| 'DUNC' | A plain block of data, not compressed |
+| 'POST' | A UTF8 encoded JSON object string |
+
+# Metadata blocks
+
+The two metadata blocks (preamble and terminator) are UTF8 encoded JSON
+objects, which should be merged together field-by-field to form a single object.
+If there are two fields with the same name in both, the value of the field in the
+terminator block is used. the combined metadata is expected to contain at least
+the following fields:
+
+* `modified`: The ISO 8601 date/time of the last modification of the file in an
+  as high resolution as possible, and including the timezone (prefarrably 'Z' for
+  UTC).
+* `length`: The length of the file in bytes.
+
+Note that the name of the file is not included in the metadata. The name of the file
+is derived from the file name of the `*.mvlt` file.
+
+

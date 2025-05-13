@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZvaultKeyServer", "ZvaultKe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZvaultViewerEditor", "ZvaultViewerEditor\ZvaultViewerEditor.csproj", "{33C3E4DD-BC2B-428A-A4E6-147D2DC672B2}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "mvlt", "mvlt\mvlt.fsproj", "{0C338434-E74E-4BCB-9E96-00122FE3A01E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -84,6 +86,10 @@ Global
 		{33C3E4DD-BC2B-428A-A4E6-147D2DC672B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{33C3E4DD-BC2B-428A-A4E6-147D2DC672B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{33C3E4DD-BC2B-428A-A4E6-147D2DC672B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C338434-E74E-4BCB-9E96-00122FE3A01E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C338434-E74E-4BCB-9E96-00122FE3A01E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C338434-E74E-4BCB-9E96-00122FE3A01E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C338434-E74E-4BCB-9E96-00122FE3A01E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +105,7 @@ Global
 		{3C4ABC7B-A73B-4227-8FAC-22FA87592B59} = {8A375364-B265-4786-AD15-DA3F01B77376}
 		{B930F3E0-1D65-49D3-B3F9-EAB783F44064} = {CFF07758-9BC0-43C2-9BE9-162CCA769C0C}
 		{33C3E4DD-BC2B-428A-A4E6-147D2DC672B2} = {CFF07758-9BC0-43C2-9BE9-162CCA769C0C}
+		{0C338434-E74E-4BCB-9E96-00122FE3A01E} = {E554EA83-9E37-4A3C-AEFC-B94D89F52168}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {031C7C67-97E0-4943-B6F7-344A9A89CC1D}

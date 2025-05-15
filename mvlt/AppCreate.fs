@@ -4,56 +4,61 @@ open System
 open System.IO
 
 open FldVault.Core.Crypto
+open FldVault.Core.Vaults
 open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
 
-type KeySource =
-  | KeyId of Guid
-  | KeyInfoFile of string
-  | ZvaultFile of string
-  | MvaultFile of string
-
-let parseKeySource (txt: string) =
-  if txt.EndsWith(".pass.key-info", StringComparison.InvariantCultureIgnoreCase) then
-    KeyInfoFile txt |> Some
-  elif txt.EndsWith(".zvlt", StringComparison.InvariantCultureIgnoreCase) then
-    ZvaultFile txt |> Some
-  elif txt.EndsWith(".mvlt", StringComparison.InvariantCultureIgnoreCase) then
-    MvaultFile txt |> Some
-  else
-    match Guid.TryParse(txt) with
-    | true, g -> KeyId g |> Some
-    | _ -> None
-
 type private Options = {
   InputFile: string
   OutputFolder: string
-  Key: KeySource option
+  KeyFile: string option
 }
 
+let getKeyInfoFromFile fileName =
+  let pkif = PassphraseKeyInfoFile.TryFromFile(fileName)
+  if pkif = null then
+    cp $"\frError\fo: Could not get key from \fy{fileName}\f0."
+    None
+  else
+    let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
+    cp $"\fcDBG\fo Key Info: \fg{zkey.ToString(true)}\f0."
+    Some pkif
+
 let private runCreate o =
-  let keyId =
-    match o.Key with
-    | Some(KeyId g) -> g
-    | Some(KeyInfoFile f) -> 
-      failwith "KeyInfoFile as key source not implemented"
-    | Some(ZvaultFile f) ->
-      failwith "ZvaultFile as key source not implemented"
-    | Some(MvaultFile f) ->
-      failwith "MvaultFile as key source not implemented"
-    | None ->
-      failwith "Internal error: Key source not specified"
+  let pkif = o.KeyFile |> Option.bind getKeyInfoFromFile    
   let kss = new KeyServerService()
   use keyChain = new KeyChain()
-  if kss.ServerAvailable |> not then
-    cp "\frError\fo: Key server is not available\f0."
-    1
+  let status =
+    if kss.ServerAvailable |> not then
+      cp "\frError\fo: Key server is not available\f0."
+      1
+    elif pkif.IsNone then
+      cp "\frError\fo: Key not specified\f0."
+      1
+    else
+      let pkif = pkif.Value
+      let keyId = pkif.KeyId
+      let presence = kss.LookupKeySync(keyId, keyChain)
+      //cp $"\fcDBG\f0 key presence: \fy{presence}\f0."
+      match presence with
+      | KeyPresence.Unavailable ->
+        cp $"\frError\fo: Key \fy{keyId}\f0 not yet found on server."
+        kss.RegisterFileSync(o.KeyFile.Value, keyChain) |> ignore
+        1
+      | KeyPresence.Cloaked ->
+        cp $"\frError\fo: Key \fy{keyId}\f0 is available, but hidden."
+        1
+      | KeyPresence.Present ->
+        0
+      | _ ->
+        cp $"\frError\fo: Key \fy{keyId}\f0 has an unrecognized status."
+        1
+  if status <> 0 then
+    status
   else
-    let presence = kss.LookupKeySync(keyId, keyChain)
-    cp $"\fcDBG\f0 key presence: \fy{presence}\f0."
-    cp "\fo'create' Not Yet Implemented\f0."
+    cp "NYI"
     1
 
 let run args =
@@ -72,7 +77,7 @@ let run args =
       elif o.OutputFolder |> String.IsNullOrEmpty then
         cp "\frError\fo: Output folder not specified\f0."
         None
-      elif o.Key.IsNone then
+      elif o.KeyFile.IsNone then
         cp "\frError\fo: Key not specified\f0."
         None
       else
@@ -89,12 +94,7 @@ let run args =
         else
           parseMore { o with InputFile = file } rest
     | "-k" :: keysource :: rest ->
-      match keysource |> parseKeySource with
-      | None ->
-        cp $"\frError\fo: Key source \fy{keysource}\fo is not recognized."
-        None
-      | Some ks ->
-        rest |> parseMore { o with Key = Some ks }
+      rest |> parseMore { o with KeyFile = Some keysource }
     | "-of" :: outFolder :: rest ->
       let outFolder = outFolder |> Path.GetFullPath
       if outFolder |> Directory.Exists |> not then
@@ -108,7 +108,7 @@ let run args =
   let oo = args |> parseMore {
     InputFile = ""
     OutputFolder = ""
-    Key = None
+    KeyFile = None
   }
   match oo with
   | None ->

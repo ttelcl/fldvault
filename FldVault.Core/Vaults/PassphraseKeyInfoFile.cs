@@ -4,6 +4,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,6 +14,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
+using FldVault.Core.Mvlt;
 using FldVault.Core.Utilities;
 using FldVault.Core.Zvlt2;
 
@@ -24,6 +26,7 @@ namespace FldVault.Core.Vaults;
 public class PassphraseKeyInfoFile
 {
   private readonly byte[] _salt;
+  private string? _saltBase64Cache = null;
 
   /// <summary>
   /// Create a new PassphraseKeyInfoFile. Consider using one of the static
@@ -60,6 +63,26 @@ public class PassphraseKeyInfoFile
   public PassphraseKeyInfoFile(PassphraseKey key, DateTime? stamp = null)
     : this(key.GetId(), key.Salt, stamp ?? DateTime.UtcNow)
   {
+  }
+
+  /// <summary>
+  /// Convert a Zkey to a PassphraseKeyInfoFile. These classes contain the
+  /// same information; <see cref="Zkey"/> is JSON serializable and
+  /// <see cref="PassphraseKeyInfoFile"/> serializes to a custom binary format.
+  /// </summary>
+  public static PassphraseKeyInfoFile FromZkey(Zkey zkey)
+  {
+    var keyId = Guid.Parse(zkey.KeyId);
+    var salt = Base64Url.DecodeFromChars(zkey.Salt);
+    return new PassphraseKeyInfoFile(keyId, salt, zkey.Created);
+  }
+
+  /// <summary>
+  /// Convert this PassphraseKeyInfoFile to Zkey format.
+  /// </summary>
+  public Zkey ToZkey()
+  {
+    return Zkey.FromPassphraseKeyInfoFile(this);
   }
 
   /// <summary>
@@ -233,6 +256,11 @@ public class PassphraseKeyInfoFile
   /// </returns>
   public static PassphraseKeyInfoFile? TryFromFile(string fileName)
   {
+    if(fileName.EndsWith(".zkey"))
+    {
+      var zkey = Zkey.FromJson(File.ReadAllText(fileName));
+      return FromZkey(zkey);
+    }
     if(fileName.EndsWith(".pass.key-info"))
     {
       return ReadFrom(fileName);
@@ -241,6 +269,10 @@ public class PassphraseKeyInfoFile
     {
       var vaultFile = new VaultFile(fileName);
       return vaultFile.GetPassphraseInfo();
+    }
+    if(fileName.EndsWith(".mvlt"))
+    {
+      return MvltFormat.ReadKeyInfo(fileName);
     }
     return null;
   }
@@ -346,6 +378,19 @@ public class PassphraseKeyInfoFile
   /// The UTC time the key was created
   /// </summary>
   public DateTime UtcKeyStamp { get; init; }
+
+  /// <summary>
+  /// Get the salt encoded as standard base64url string
+  /// </summary>
+  public string SaltBase64 {
+    get {
+      if(_saltBase64Cache == null)
+      {
+        _saltBase64Cache = Base64Url.EncodeToString(_salt);
+      }
+      return _saltBase64Cache;
+    }
+  }
 
   /// <summary>
   /// *.pass.key-inf file signature

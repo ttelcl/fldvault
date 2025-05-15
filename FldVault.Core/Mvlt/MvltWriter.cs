@@ -247,6 +247,9 @@ public class MvltWriter: IDisposable
       ct);
   }
 
+  /// <summary>
+  /// Derives the name of the MVLT file from the source file name.
+  /// </summary>
   public static string DeriveMvltFileName(
     string sourceFile,
     Guid keyId)

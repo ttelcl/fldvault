@@ -7,6 +7,8 @@ open FldVault.Core.Crypto
 open FldVault.Core.Vaults
 open FldVault.KeyServer
 
+open FileUtilities
+
 open ColorPrint
 open CommonTools
 
@@ -23,7 +25,7 @@ let getKeyInfoFromFile fileName =
     None
   else
     let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
-    cp $"\fcDBG\fo Key Info: \fg{zkey.ToString(true)}\f0."
+    cp $"\fcDBG\fo Key Info: \n\fg{zkey.ToZkeyTransferString(false)}\f0\n."
     Some pkif
 
 let private runCreate o =
@@ -74,12 +76,19 @@ let run args =
       if o.InputFile |> String.IsNullOrEmpty then
         cp "\frError\fo: Input file not specified\f0."
         None
-      elif o.OutputFolder |> String.IsNullOrEmpty then
-        cp "\frError\fo: Output folder not specified\f0."
-        None
       elif o.KeyFile.IsNone then
         cp "\frError\fo: Key not specified\f0."
         None
+      elif o.OutputFolder |> String.IsNullOrEmpty then
+        let inputFolder =
+          o.InputFile |> Path.GetFullPath |> Path.GetDirectoryName
+        if FileIdentifier.AreSame(inputFolder, Environment.CurrentDirectory) then
+          cp "\frError\fo: Output folder not specified\fy (required if input folder is current directory)\f0."
+          None
+        else
+          // If input folder is not the current directory, then default
+          // to current directory as output folder (else error)
+          Some { o with OutputFolder = Environment.CurrentDirectory }
       else
         Some o
     | "-f" :: file :: rest ->

@@ -7,9 +7,9 @@ open ColorPrint
 let usage focus =
   cp "\foEncrypt / decrypt a file\f0"
   cp ""
-  cp "\fomvlt \fyinfo \fg-a \fc*.mvlt\f0"
+  cp "\fomvlt \fyinfo \fg-a \fc*.mvlt\f0 [\fg-check\f0]"
   cp "\fomvlt \fyi \fg-a \fc*.mvlt\f0"
-  cp "   Get information on an *.mvlt vault"
+  cp "   Get information on an *.mvlt vault, optionally validating the checksum"
   cp ""
   cp "\fomvlt \fycreate \fg-f \fcfile \fg-k \fc<key-source> \fg-of \fcfolder\f0"
   cp "\fomvlt \fyc \fg-f \fcfile \fg-k \fc<key-source> \fg-of \fcfolder\f0"

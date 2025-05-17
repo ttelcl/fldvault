@@ -37,6 +37,8 @@
     <Compile Include="DumpApp.fs" />
     <Compile Include="AppendApp.fs" />
     <Compile Include="ExtractApp.fs" />
+    <Compile Include="ShowKeyApp.fs" />
+    <Compile Include="ZkeyApp.fs" />
     <Compile Include="Program.fs" />
     <None Include="README.md" />
   </ItemGroup>

@@ -245,8 +245,7 @@ public class PassphraseKeyInfoFile
 
   /// <summary>
   /// Try to read a PassphraseKeyInfoFile from a file in a supported format.
-  /// This implementation supports both *.pass.key-info files as well as *.zvlt
-  /// files.
+  /// This implementation supports a variety of file formats.
   /// </summary>
   /// <param name="fileName">
   /// The name of the file, which should have a recognized file extension

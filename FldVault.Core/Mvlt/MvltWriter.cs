@@ -206,6 +206,12 @@ public class MvltWriter: IDisposable
   /// <param name="sourceFile">
   /// The name of the file to compress and encrypt.
   /// </param>
+  /// <param name="sinkName">
+  /// The name of the output *.mvlt file. If null, the name is derived
+  /// using <see cref="DeriveMvltFileName(string, Guid)"/>. That leads to a
+  /// file in the same directory as <paramref name="sourceFile"/>, which
+  /// is not recommended. So passing a non-null value is recommended.
+  /// </param>
   /// <param name="keyChain">
   /// The key chain providing the encryption key.
   /// </param>
@@ -216,26 +222,37 @@ public class MvltWriter: IDisposable
   /// <param name="timeStamp">
   /// Optional. The time stamp to record for the encrypted stream, so
   /// it can be set as modified time on the file when it is decrypted again.
-  /// This sets the 'modified' field in the preamble block.
+  /// This sets the 'modified' field in the preamble block. If null, the
+  /// last write time of <paramref name="sourceFile"/> is used.
   /// </param>
   /// <param name="metadata">
   /// Optional. The metadata to write in the preamble block. If both
   /// <paramref name="metadata"/> and <paramref name="timeStamp"/> are set, the
   /// 'modified' field is set to the value of <paramref name="timeStamp"/>.
+  /// if null, but a file with a named <paramref name="sourceFile"/>.meta.json
+  /// exists, metadata is read from that file.
   /// </param>
   /// <param name="ct">
   /// Cancellation token to cancel this asynchronous operation.
   /// </param>
   /// <returns></returns>
-  public static async Task CompressAndEncrypt(
+  public static async Task<string> CompressAndEncrypt(
     string sourceFile,
+    string? sinkName,
     KeyChain keyChain,
     PassphraseKeyInfoFile keyDescriptor,
     DateTimeOffset? timeStamp = null,
     JObject? metadata = null,
     CancellationToken ct = default)
   {
-    var sinkName = DeriveMvltFileName(sourceFile, keyDescriptor.KeyId);
+    sinkName ??= DeriveMvltFileName(sourceFile, keyDescriptor.KeyId);
+    timeStamp ??= File.GetLastWriteTimeUtc(sourceFile);
+    var metaFileName = sourceFile + ".meta.json";
+    if(metadata == null && File.Exists(metaFileName))
+    { 
+      metadata = JsonConvert.DeserializeObject<JObject>(
+        File.ReadAllText(metaFileName));
+    }
     using var source = File.OpenRead(sourceFile);
     await CompressAndEncrypt(
       source,
@@ -245,6 +262,7 @@ public class MvltWriter: IDisposable
       timeStamp,
       metadata,
       ct);
+    return sinkName;
   }
 
   /// <summary>

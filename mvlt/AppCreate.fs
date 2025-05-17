@@ -83,7 +83,7 @@ let run args =
         let inputFolder =
           o.InputFile |> Path.GetFullPath |> Path.GetDirectoryName
         if FileIdentifier.AreSame(inputFolder, Environment.CurrentDirectory) then
-          cp "\frError\fo: Output folder not specified\fy (required if input folder is current directory)\f0."
+          cp "\frError\fo: Output folder not specified\fy (\fg-of\fy is required if input folder is current directory)\f0."
           None
         else
           // If input folder is not the current directory, then default

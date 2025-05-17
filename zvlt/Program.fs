@@ -14,16 +14,16 @@ let rec run arglist =
     rest |> run
   | "--help" :: _
   | "-h" :: _  ->
-    usage "all"
+    usage "all-deprecated"
     0 
   | [] ->
-    usage (if verbose then "all" else "")
+    usage (if verbose then "all" else "all-summary")
     0  // program return status code to the operating system; 0 == "OK"
   | "help" :: command :: rest ->
     usage command
     0
   | "help" :: [] ->
-    usage "all"
+    usage (if verbose then "all" else "all-deprecated")
     0
   | "key" :: "new" :: rest
   | "key-new" :: rest ->

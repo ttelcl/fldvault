@@ -11,6 +11,7 @@ open FileUtilities
 
 open ColorPrint
 open CommonTools
+open FldVault.Core.Mvlt
 
 type private Options = {
   InputFile: string
@@ -24,8 +25,8 @@ let getKeyInfoFromFile fileName =
     cp $"\frError\fo: Could not get key from \fy{fileName}\f0."
     None
   else
-    let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
-    cp $"\fcDBG\fo Key Info: \n\fg{zkey.ToZkeyTransferString(false)}\f0\n."
+    // let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
+    // cp $"\fcDBG\fo Key Info: \n\fg{zkey.ToZkeyTransferString(false)}\f0."
     Some pkif
 
 let private runCreate o =
@@ -60,8 +61,35 @@ let private runCreate o =
   if status <> 0 then
     status
   else
-    cp "NYI"
-    1
+    let pkif = pkif.Value
+    let sinkName =
+      MvltWriter.DeriveMvltFileName(o.InputFile, pkif.KeyId)
+      |> Path.GetFileName
+    let sinkName =
+      if o.OutputFolder |> String.IsNullOrEmpty then
+        Path.Combine(Environment.CurrentDirectory, sinkName)
+      else
+        Path.Combine(o.OutputFolder, sinkName)
+    let sinkShort = Path.GetFileName(sinkName)
+    cp $"Saving \fg{sinkShort}\f0."
+    let metafile = o.InputFile + ".meta.json"
+    let metaShort = Path.GetFileName(metafile)
+    if File.Exists(metafile) then
+      cp $"Metadata file \fc{metaShort}\f0 found. Including it in the vault."
+    else
+      cp $"\fkNo metadata file ({metaShort}) found: not including extra metadata\f0."
+    let saveTask =
+      task {
+        let! name = MvltWriter.CompressAndEncrypt(
+          o.InputFile, sinkName, keyChain, pkif)
+        return name
+      }
+    let name =       
+      saveTask
+      |> Async.AwaitTask
+      |> Async.RunSynchronously
+    cp $"Saved to \fg{name}\f0."
+    0
 
 let run args =
   let rec parseMore o args =
@@ -88,7 +116,7 @@ let run args =
         else
           // If input folder is not the current directory, then default
           // to current directory as output folder (else error)
-          Some { o with OutputFolder = Environment.CurrentDirectory }
+          Some {o with OutputFolder = Environment.CurrentDirectory}
       else
         Some o
     | "-f" :: file :: rest ->

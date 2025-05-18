@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using FldVault.Core.Crypto;
 using FldVault.Core.Utilities;
 using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -38,6 +39,7 @@ public class MvltReader: IDisposable
   private readonly ByteCryptoBuffer _sourceBuffer;
   private Memory<byte>? _sourceMemory = null;
   private Memory<byte>? _decryptedMemory = null;
+  private Memory<byte>? _decompressedMemory = null;
   private uint _blockType;
   private uint _blockSize;
   private uint _blockOriginalSize;
@@ -190,7 +192,59 @@ public class MvltReader: IDisposable
   }
 
   /// <summary>
+  /// Decompressed the currently loaded block if it is compressed and
+  /// applies the next phase (as was returned by <see cref="DecryptBlock"/>).
+  /// </summary>
+  /// <param name="nextPhase">
+  /// The next value of phase. If you need the current phase, make sure to capture
+  /// it before calling this method.
+  /// </param>
+  public Memory<byte> DecompressBlock(MvltPhase nextPhase)
+  {
+    if(_decryptedMemory == null)
+    {
+      throw new InvalidOperationException(
+        $"Expecting a decrypted memory buffer, but it was null");
+    }
+    Phase = nextPhase;
+    if(_blockType == MvltFormat.Preamble4CC)
+    {
+      _decompressedMemory = _decryptedMemory;
+      return _decompressedMemory.Value;
+    }
+    if(_blockType == MvltFormat.UncompressedBlock4CC)
+    {
+      _decompressedMemory = _decryptedMemory;
+      return _decompressedMemory.Value;
+    }
+    if(_blockType == MvltFormat.Terminator4CC)
+    {
+      _decompressedMemory = _decryptedMemory;
+      return _decompressedMemory.Value;
+    }
+    if(_blockType == MvltFormat.CompressedBlock4CC)
+    {
+      var decompressedCount = VaultCompressor.Decompress(
+        _decryptedBuffer,
+        (int)BlockContentSize,
+        _blockBuffer);
+      if(decompressedCount != _blockOriginalSize)
+      {
+        throw new InvalidDataException(
+          $"Decompression error: expecting {BlockOriginalSize} bytes, but got {decompressedCount} bytes");
+      }
+      var decompressedMemory = _blockBuffer.Memory(0, decompressedCount);
+      _decompressedMemory = decompressedMemory;
+      return decompressedMemory;
+    }
+    throw new InvalidOperationException(
+      $"Unrecognized block type {_blockType}");
+  }
+
+  /// <summary>
   /// Cycles the phase to the next phase (after <see cref="DecryptBlock"/>)
+  /// This is used to replace <see cref="DecompressBlock(MvltPhase)"/> when
+  /// only interested in the file structure, but not the decompressed content.
   /// </summary>
   public MvltPhase CyclePhase(MvltPhase nextPhase)
   {
@@ -257,6 +311,7 @@ public class MvltReader: IDisposable
     var offset = _virtualOffset;
     _sourceMemory = null;
     _decryptedMemory = null;
+    _decompressedMemory = null;
     ObjectDisposedException.ThrowIf(_disposed, this);
     if(Phase>=MvltPhase.End )
     {
@@ -285,6 +340,68 @@ public class MvltReader: IDisposable
     }
     _virtualOffset += _blockSize;
     return offset;
+  }
+
+  /// <summary>
+  /// Derive the original file name from the MVLT file name, output folder, and the key ID.
+  /// Does not check that the output folder exists.
+  /// </summary>
+  public static string DeriveOriginalFileName(
+    string mvltFilename,
+    string outputFolder,
+    Guid keyId)
+  {
+    if(String.IsNullOrEmpty(outputFolder))
+    {
+      outputFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      outputFolder = Path.GetFullPath(outputFolder);
+    }
+    var shortMvltName = Path.GetFileName(mvltFilename);
+    var shortGuid = keyId.ToString().Substring(0, 8);
+    var expectedExtension = $".{shortGuid}.mvlt";
+    string shortname;
+    if(shortMvltName.EndsWith(expectedExtension, StringComparison.OrdinalIgnoreCase))
+    {
+      shortname = shortMvltName.Substring(0, shortMvltName.Length - expectedExtension.Length);
+    }
+    else if(shortMvltName.EndsWith(".mvlt", StringComparison.OrdinalIgnoreCase))
+    {
+      shortname = shortMvltName.Substring(0, shortMvltName.Length - 5);
+    }
+    else
+    {
+      throw new InvalidOperationException(
+        $"Expecting this MVLT file name to end with '{expectedExtension}' or just '.mvlt'");
+    }
+    return Path.Combine(
+      outputFolder,
+      $"{shortname}");
+  }
+
+  /// <summary>
+  /// Get the modified time from the metadata if present.
+  /// </summary>
+  /// <param name="metadata"></param>
+  /// <returns></returns>
+  public static DateTimeOffset? GetModifiedTimeFromMetadata(JObject metadata)
+  {
+    if(metadata.TryGetValue("modified", out var modified))
+    {
+      if(modified is JValue jv)
+      {
+        var modifiedTime = jv.ToObject<DateTimeOffset>();
+        return modifiedTime;
+      }
+      else
+      {
+        throw new InvalidDataException(
+          $"Expecting a DateTimeOffset value for 'modified', but it was {modified}");
+      }
+    }
+    return null;
   }
 
   /// <summary>

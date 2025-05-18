@@ -32,9 +32,15 @@ let usage focus =
     cp "   \fg-k \fcfile.mvlt\f0  Copy the key from another mvlt M-vault file"
     cp ""
   if showSection "extract" then
-    cp "\fomvlt \fyextract \fg-a \fc*.mvlt \fg-of \fcfolder\f0"
+    cp "\fomvlt \fyextract \fg-a \fc*.mvlt\f0 [\fg-of \fcfolder\f0] [\fg-F\f0] [\fg-meta\f0|\fg-nometa\f0]"
     cp "\fomvlt \fyx \fg-a \fc*.mvlt \fg-of \fcfolder\f0"
     cp "   Decrypt a file"
+    cp "   \fg-of \fcfolder\f0  The output folder. Required when input is in current directory"
+    cp "   \fx\fx\fx            (else this defaults to current directory)"
+    cp "   \fg-F\fx\f0          Overwrite existing files in the output folder"
+    cp "   \fg-meta\fx\f0       Always extract a metadata file too"
+    cp "   \fg-nometa\fx\f0     Do not extract a metadata file"
+    cp "   \fg-meta-auto\fx\f0  (default) decide automatically whether or not to extract metadata"
     cp ""
   if showSection "" then
     cp "\fg-v               \f0Verbose mode"

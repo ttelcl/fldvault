@@ -101,120 +101,134 @@
                 </Grid>
             </Border>
             <Border DockPanel.Dock="Top"
-                Padding="5,2"
+                Padding="2,2"
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Published}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Column="0">
-                        <Button
-                            Width="85"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            Command="{Binding Owner.HideCurrentKeyCommand}"
-                            Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="EyeOff" />
-                                <TextBlock Padding="2,0" Text="Hide"/>
-                            </StackPanel>
-                        </Button>
-                        <Button
-                            Width="85"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            ToolTip="Reset timer"
-                            Command="{Binding ResetTimeoutCommand}"
-                            Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Restore" />
-                                <TextBlock Padding="2,0" Text="Reset"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Grid.Column="2">
-                        <Button
-                            MinWidth="85"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            Foreground="#EEd6ded3"
-                            Command="{Binding NewVaultCommand}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="FileKey" />
-                                <TextBlock Padding="2,0" Text="New Vault &#x2026;"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Grid.Column="4">
-                        <Button
-                            Width="96"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            ToolTip="Unload Key"
-                            Command="{Binding UnloadKeyCommand}"
-                            Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
-                                <TextBlock Padding="2,0" Text="Unload"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Button
+                        Grid.Column="0" Grid.Row="0"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        Command="{Binding Owner.HideCurrentKeyCommand}"
+                        Foreground="{Binding Source=Hidden, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="EyeOff" />
+                            <TextBlock Padding="2,0" Text="Hide"/>
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="1" Grid.Row="0"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        Foreground="#EEd6ded3"
+                        Command="{Binding NewVaultCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="FileKey" />
+                            <TextBlock Padding="2,0" Text="New Vault &#x2026;"/>
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="2" Grid.Row="1"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        ToolTip="Unload Key"
+                        Command="{Binding UnloadKeyCommand}"
+                        Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
+                            <TextBlock Padding="2,0" Text="Unload"/>
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="3" Grid.Row="1"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        ToolTip="Delete key from this server"
+                        Command="{Binding Owner.DeleteCurrentKeyCommand}"
+                        Foreground="#eeff5577">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="DeleteForever" />
+                            <TextBlock Padding="2,0" Text="Delete ..."/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
             <Border DockPanel.Dock="Top"
-                Padding="5,2"
+                Padding="2,2"
                 BorderThickness="1"
                 Visibility="{Binding Status, Converter={StaticResource VisibleIfString}, ConverterParameter=Hidden}"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Column="0">
-                        <Button
-                            Grid.Column="0"
-                            Width="85"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            Command="{Binding Owner.PublishCurrentKeyCommand}"
-                            Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Eye" />
-                                <TextBlock Padding="2,0" Text="Unhide"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Grid.Column="2">
-                        <Button
-                            Width="96"
-                            FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            ToolTip="Unload Key"
-                            Command="{Binding UnloadKeyCommand}"
-                            Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
-                            <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
-                                <TextBlock Padding="2,0" Text="Unload"/>
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Button
+                        Grid.Column="0" Grid.Row="0"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        Command="{Binding Owner.PublishCurrentKeyCommand}"
+                        Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Eye" />
+                            <TextBlock Padding="2,0" Text="Unhide"/>
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="2" Grid.Row="1"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        ToolTip="Unload Key"
+                        Command="{Binding UnloadKeyCommand}"
+                        Foreground="{Binding Source=Seeded, Converter={StaticResource StatusFore}}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="LockAlert" />
+                            <TextBlock Padding="2,0" Text="Unload"/>
+                        </StackPanel>
+                    </Button>
+                    <Button
+                        Grid.Column="3" Grid.Row="1"
+                        FontSize="14"
+                        Padding="2,1" Margin="2,1"
+                        ToolTip="Delete key from this server"
+                        Command="{Binding Owner.DeleteCurrentKeyCommand}"
+                        Foreground="#eeff5577">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="DeleteForever" />
+                            <TextBlock Padding="2,0" Text="Delete ..."/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </Border>
             <Border DockPanel.Dock="Top"
-                Padding="5,0"
+                Padding="2,0"
                 BorderThickness="1"
                 BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                <DockPanel >
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.5*"/>
+                        <ColumnDefinition Width="1.5*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     <Border
-                        DockPanel.Dock="Left"
+                        Grid.Column="0"
                         BorderThickness="0,0,1,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <mah:ToggleSwitch
@@ -224,16 +238,16 @@
                             OffContent="Auto-hide Off"/>
                     </Border>
                     <Border
-                        DockPanel.Dock="Left"
+                        Grid.Column="1"
                         BorderThickness="0,0,1,0"
                         Padding="5,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-                        <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                             <TextBlock
                                 VerticalAlignment="Center"
                                 Text="Timeout: "/>
                             <ComboBox
-                                MinWidth="64"
+                                MinWidth="70"
                                 BorderThickness="0"
                                 HorizontalContentAlignment="Right"
                                 SelectedValue="{Binding TimeoutValue, Mode=TwoWay}"
@@ -241,27 +255,23 @@
                         </StackPanel>
                     </Border>
                     <Border
-                        DockPanel.Dock="Right"
+                        Grid.Column="2"
                         BorderThickness="0,0,0,0"
-                        Padding="5,0,0,0"
+                        Padding="0,0,0,0"
                         BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
                         <Button
-                            Width="96"
                             FontSize="14"
-                            Padding="2,1" Margin="2,0"
-                            ToolTip="Delete key from this server"
-                            Command="{Binding Owner.DeleteCurrentKeyCommand}"
-                            Foreground="#eeff5577">
+                            Padding="2,1" Margin="2,1"
+                            ToolTip="Reset timer"
+                            Command="{Binding ResetTimeoutCommand}"
+                            Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}">
                             <StackPanel Orientation="Horizontal">
-                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="DeleteForever" />
-                                <TextBlock Padding="2,0" Text="Delete ..."/>
+                                <iconPacks:PackIconMaterial Padding="2,0" Height="20" Width="20" Kind="Restore" />
+                                <TextBlock Padding="2,0" Text="Reset"/>
                             </StackPanel>
                         </Button>
                     </Border>
-                    <Grid>
-                        <!-- Dummy -->
-                    </Grid>
-                </DockPanel>
+                </Grid>
             </Border>
             <Grid MinHeight="10">
                 <!-- empty filler -->

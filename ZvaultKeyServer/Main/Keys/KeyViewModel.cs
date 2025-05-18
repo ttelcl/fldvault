@@ -346,6 +346,7 @@ public class KeyViewModel: ViewModelBase
   {
     AutohideLeft = AutohideSeconds;
     Model.HideKey = false;
+    SetCurrentKeyShowState(true); // also unhide, if hidden
   }
 
   public void UnloadKey()

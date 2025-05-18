@@ -255,7 +255,7 @@ public class KeysViewModel: ViewModelBase
   {
     StatusHost.StatusMessage = "Select file(s) to import the key of.";
     var dialog = new OpenFileDialog() {
-      Filter = "All supported files (*.pass.key-info, *.zvlt)|*.pass.key-info;*.zvlt",
+      Filter = "All supported files (*.zkey, *.mvlt, *.zvlt, *.pass.key-info)|*.zkey;*.mvlt;*.zvlt;*.pass.key-info",
       Multiselect = true,
     };
     if(dialog.ShowDialog() == true)

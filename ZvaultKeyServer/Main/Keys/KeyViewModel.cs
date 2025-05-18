@@ -49,6 +49,9 @@ public class KeyViewModel: ViewModelBase
     NewVaultCommand = new DelegateCommand(
       p => NewVault(),
       p => Status == KeyStatus.Published);
+    SaveZkeyCommand = new DelegateCommand(
+      p => SaveZkey(),
+      p => Status == KeyStatus.Published);
     KeyFiles = new(this);
     ResetTimer();
     SyncModel();
@@ -59,6 +62,8 @@ public class KeyViewModel: ViewModelBase
   public ICommand UnloadKeyCommand { get; }
 
   public ICommand NewVaultCommand { get; }
+
+  public ICommand SaveZkeyCommand { get; }
 
   public KeyState Model { get; }
 
@@ -346,6 +351,7 @@ public class KeyViewModel: ViewModelBase
   {
     AutohideLeft = AutohideSeconds;
     Model.HideKey = false;
+    SetCurrentKeyShowState(true); // also unhide, if hidden
   }
 
   public void UnloadKey()
@@ -388,6 +394,35 @@ public class KeyViewModel: ViewModelBase
     else
     {
       MessageBox.Show("Creating a vault for this type of key is not yet supported");
+    }
+  }
+
+  private void SaveZkey()
+  {
+    if(Model.Seed is IKeySeed<PassphraseKeyInfoFile> keyseed)
+    {
+      var pkif = keyseed.KeyDetail;
+      var zkey = pkif.ToZkey();
+      var zkeyFileName = $"{KeyId}.zkey";
+      var dialog = new SaveFileDialog() {
+        Filter = "Key description files (*.zkey)|*.zkey",
+        OverwritePrompt = true,
+        CheckPathExists = true,
+        DefaultExt = ".zkey",
+        FileName = zkeyFileName,
+      };
+      if(dialog.ShowDialog() == true)
+      {
+        var fileName = dialog.FileName;
+        var json = zkey.ToString(true);
+        File.WriteAllText(fileName, json);
+        Model.AssociateFile(fileName, true);
+        SyncModel();
+      }
+    }
+    else
+    {
+      MessageBox.Show("Saving a Z-key for this type of key is not yet supported");
     }
   }
 

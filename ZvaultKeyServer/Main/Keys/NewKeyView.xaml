@@ -23,6 +23,7 @@
             DataContextChanged="PasswordBoxPrimary_DataContextChanged"/>
         <PasswordBox
             Grid.Row="1"
+            Margin="0,5"
             mah:TextBoxHelper.ClearTextButton="True"
             mah:TextBoxHelper.Watermark="Re-enter passphrase"
             DataContextChanged="PasswordBoxVerify_DataContextChanged"/>
@@ -32,7 +33,7 @@
                 DockPanel.Dock="Right"
                 FontSize="14"
                 MinWidth="85"
-                Padding="2,1" Margin="2,0"
+                Padding="2,1" Margin="2,2"
                 Command="{Binding CancelCommand}"
                 IsCancel="False">
                 <StackPanel Orientation="Horizontal">
@@ -44,7 +45,7 @@
                 DockPanel.Dock="Right"
                 FontSize="14"
                 MinWidth="85"
-                Padding="2,1" Margin="2,0"
+                Padding="2,1" Margin="2,2"
                 Command="{Binding SubmitCommand}"
                 Foreground="{Binding Source=Published, Converter={StaticResource StatusFore}}"
                 IsCancel="False">

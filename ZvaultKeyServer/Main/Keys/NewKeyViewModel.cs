@@ -12,11 +12,14 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
+using Microsoft.Win32;
+
 using FldVault.Core.Crypto;
 using FldVault.Core.KeyResolution;
 using FldVault.Core.Vaults;
 
 using ZvaultKeyServer.WpfUtilities;
+using System.IO;
 
 namespace ZvaultKeyServer.Main.Keys;
 
@@ -95,6 +98,30 @@ public class NewKeyViewModel: ViewModelBase
           Owner.NewKeyPane = null;
           Owner.SyncModel();
           Owner.StatusHost.StatusMessage = $"Created new key {pkif.KeyId}";
+          var zkey = pkif.ToZkey();
+          var zkeyfilename = $"{pkif.KeyId}.zkey";
+          var response = MessageBox.Show(
+            $"Do you want to save the key to {zkeyfilename}?",
+            "Save key",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+          if(response == MessageBoxResult.Yes)
+          {
+            var sfd = new SaveFileDialog {
+              FileName = zkeyfilename,
+              Filter = "ZVault key info files (*.zkey)|*.zkey",
+              DefaultExt = ".zkey",
+              AddExtension = false,
+              OverwritePrompt = true,
+            };
+            if(sfd.ShowDialog() == true)
+            {
+              var json = zkey.ToString(true);
+              File.WriteAllText(sfd.FileName, json);
+              Owner.StatusHost.StatusMessage =
+                $"Key {pkif.KeyId} saved to {sfd.FileName}";
+            }
+          }
         }
       }
     }

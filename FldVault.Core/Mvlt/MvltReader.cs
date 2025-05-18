@@ -27,9 +27,10 @@ namespace FldVault.Core.Mvlt;
 public class MvltReader: IDisposable
 {
   private readonly Stream _input;
+  private long _virtualOffset = 0;
   private bool _disposed;
   private readonly bool _ownsInput;
-  private readonly VaultCryptor _cryptor;
+  private readonly VaultCryptor? _cryptor;
   private readonly byte[] _lastTag;
   private readonly ByteCryptoBuffer _blockBuffer;
   private readonly ByteCryptoBuffer _decryptedBuffer;
@@ -47,7 +48,7 @@ public class MvltReader: IDisposable
   /// Create a new MvltReader
   /// </summary>
   internal MvltReader(
-    KeyChain keyChain,
+    KeyChain? keyChain,
     MvltFileHeader header,
     Stream input,
     bool ownsInput,
@@ -56,7 +57,7 @@ public class MvltReader: IDisposable
     _input = input;
     _ownsInput = ownsInput;
     KeyDescriptor = header.KeyInfoFile;
-    _cryptor = new VaultCryptor(
+    _cryptor = keyChain == null ? null : new VaultCryptor(
       keyChain,
       KeyDescriptor.KeyId,
       EpochTicks.ToUtc(header.Stamp),
@@ -67,7 +68,21 @@ public class MvltReader: IDisposable
     _sourceBuffer = new ByteCryptoBuffer(MvltFormat.MvltChunkSize + 0x010000);
     Phase = MvltPhase.AfterHeader;
     header.PreHeader[..16].CopyTo(_lastTag);
+    _virtualOffset = header.HeaderByteCount;
   }
+
+  /// <summary>
+  /// If true, this reader does not have access to the key, and can
+  /// not decrypt the data. Functionality is limited to providing information
+  /// on the file structure, not content.
+  /// </summary>
+  public bool Keyless => _cryptor == null;
+
+  /// <summary>
+  /// Current file position (tracked manually, since the input may be
+  /// not seekable)
+  /// </summary>
+  public long VirtualOffset => _virtualOffset;
 
   /// <summary>
   /// The key descriptor for the MVLT file.
@@ -105,6 +120,11 @@ public class MvltReader: IDisposable
   /// </summary>
   public string GetMetadataText()
   {
+    if(_cryptor == null)
+    {
+      throw new InvalidOperationException(
+        $"This MVLT reader is info-only. It cannot decrypt content or metadata.");
+    }
     if(_blockType != MvltFormat.Preamble4CC && _blockType != MvltFormat.Terminator4CC)
     {
       throw new InvalidOperationException(
@@ -134,9 +154,9 @@ public class MvltReader: IDisposable
   /// </returns>
   public bool IgnoreBlock()
   {
-    ObjectDisposedException.ThrowIf(_disposed, this);
+    var phase = ValidatePhase(); // includes disposed check
     _tagBuffer.AsSpan().CopyTo(_lastTag);
-    Phase = ValidatePhase();
+    Phase = phase;
     return Phase < MvltPhase.End;
   }
 
@@ -146,11 +166,16 @@ public class MvltReader: IDisposable
   /// </summary>
   public MvltPhase DecryptBlock()
   {
-    var nextPhase = ValidatePhase();
+    var nextPhase = ValidatePhase();  // includes disposed check
     if(_sourceMemory == null)
     {
       throw new InvalidOperationException(
         $"Expecting a source memory buffer, but it was null");
+    }
+    if(_cryptor == null)
+    {
+      throw new InvalidOperationException(
+        $"This MVLT reader is info-only. It cannot decrypt content or metadata.");
     }
     var decryptedMemory = _decryptedBuffer.Memory(0, _sourceMemory.Value.Length);
     _decryptedMemory = decryptedMemory;
@@ -224,8 +249,12 @@ public class MvltReader: IDisposable
   /// and state variables. Does not decrypt the block nor validate the
   /// phase.
   /// </summary>
-  public async Task LoadNextBlock(CancellationToken ct = default)
+  /// <returns>
+  /// The file offset before the read started.
+  /// </returns>
+  public async Task<long> LoadNextBlock(CancellationToken ct = default)
   {
+    var offset = _virtualOffset;
     _sourceMemory = null;
     _decryptedMemory = null;
     ObjectDisposedException.ThrowIf(_disposed, this);
@@ -254,6 +283,8 @@ public class MvltReader: IDisposable
       throw new EndOfStreamException(
         $"Expecting {_blockSize - 40} bytes, but only {bytesRead} bytes were read");
     }
+    _virtualOffset += _blockSize;
+    return offset;
   }
 
   /// <summary>
@@ -270,7 +301,7 @@ public class MvltReader: IDisposable
       }
       _sourceMemory = null;
       _decryptedMemory = null;
-      _cryptor.Dispose();
+      _cryptor?.Dispose();
       _blockBuffer.Dispose();
       _decryptedBuffer.Dispose();
       _sourceBuffer.Dispose();

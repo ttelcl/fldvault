@@ -21,6 +21,8 @@ let rec run arglist =
   | "info" :: rest
   | "i" :: rest ->
     rest |> AppInfo.run
+  |"check" :: rest ->
+    "-c" :: rest |> AppInfo.run
   | "create" :: rest
   | "c" :: rest ->
     rest |> AppCreate.run

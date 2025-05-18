@@ -31,7 +31,8 @@ public class MvltFileHeader
     ushort minorVersion,
     ushort majorVersion,
     long epochTicks,
-    PassphraseKeyInfoFile pkif)
+    PassphraseKeyInfoFile pkif,
+    long headerByteCount)
   {
     MajorVersion = majorVersion;
     MinorVersion = minorVersion;
@@ -45,7 +46,14 @@ public class MvltFileHeader
       _preheader.AsSpan(6, 2), majorVersion);
     BinaryPrimitives.WriteInt64LittleEndian(
       _preheader.AsSpan(8, 8), epochTicks);
+    HeaderByteCount = headerByteCount;
   }
+
+  /// <summary>
+  /// The number of bytes in the file header. In the current implementation
+  /// (format 1.0) that is 0x70 bytes.
+  /// </summary>
+  public long HeaderByteCount { get; }
 
   /// <summary>
   /// Major version of the MVLT file
@@ -73,10 +81,12 @@ public class MvltFileHeader
   public PassphraseKeyInfoFile KeyInfoFile { get; }
 
   /// <summary>
-  /// Create a new MvltReader to continue reading the MVLT file.
+  /// Create a new MvltReader to continue reading the MVLT file. If
+  /// <paramref name="keyChain"/> is null, the reader is info-only,
+  /// and will not be able to decrypt the data nor metadata.
   /// </summary>
   public MvltReader CreateReader(
-    KeyChain keyChain,
+    KeyChain? keyChain,
     Stream input,
     bool ownsInput,
     NonceGenerator? nonceGenerator = null)
@@ -125,6 +135,17 @@ public class MvltFileHeader
     {
       throw new InvalidDataException("Unsupported MVLT file minor version");
     }
+    long headerSize;
+    if(minorVersion == 0 && majorVersion == 1)
+    {
+      // version 1.0 has a fixed size of 0x70 bytes
+      headerSize = 0x70;
+    }
+    else
+    {
+      throw new NotSupportedException(
+        $"Unsupported MVLT file version {majorVersion}.{minorVersion} (unknown header size)");
+    }
     // reuse buffer1 for stamp
     if(buffer1.Length != await stream.ReadAsync(buffer1, cancellationToken))
     {
@@ -141,7 +162,8 @@ public class MvltFileHeader
       minorVersion,
       majorVersion,
       epochTicks,
-      pkif);
+      pkif,
+      headerSize);
   }
 }
 

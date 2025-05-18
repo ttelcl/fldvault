@@ -378,7 +378,7 @@ public class MvltWriter: IDisposable
     ExpectPhase(MvltPhase.Data);
     int n;
     while((n = await source.ReadAsync(
-      _uncompressedBuffer.Memory(0, _uncompressedBuffer.Length), ct))> 0)
+      _uncompressedBuffer.Memory(0, MvltFormat.MvltChunkSize), ct))> 0)
     {
       await WriteBufferedData(n, ct);
     }

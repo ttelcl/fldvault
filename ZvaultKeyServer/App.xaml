@@ -6,7 +6,9 @@
              xmlns:converters="clr-namespace:ZvaultKeyServer.Converters"
              xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
              Startup="App_Startup"
-             Exit="Application_Exit">
+             Exit="Application_Exit"
+             Activated="Application_Activated"
+             Deactivated="Application_Deactivated">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

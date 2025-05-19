@@ -23,6 +23,15 @@
                         <TextBlock FontSize="14" Padding="2,2" Text="Import Key ..."/>
                     </StackPanel>
                 </Button>
+                <Button
+                    Padding="2,1" Margin="2,0"
+                    ToolTip="Paste &lt;ZKEY&gt; ... &lt;/ZKEY&gt; block from clipboard"
+                    Command="{Binding PasteZkeyFromClipboardCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="ClipboardTextPlayOutline" />
+                        <TextBlock FontSize="14" Padding="2,2" Text="Paste &lt;ZKEY&gt;"/>
+                    </StackPanel>
+                </Button>
                 <Button Padding="2,1" Margin="2,0" Command="{Binding NewKeyCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial Padding="2,0" Height="24" Width="24" Kind="KeyStar" />

@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Windows;
@@ -40,5 +41,14 @@ public partial class App: Application
     Trace.TraceInformation("Application_Exit: Destroying keychain");
     // zero out memory that is holding keys
     _keyChain.Dispose();
+  }
+  private void Application_Activated(object sender, EventArgs e)
+  {
+    MainModel?.ApplicationShowing(true);
+  }
+
+  private void Application_Deactivated(object sender, EventArgs e)
+  {
+    MainModel?.ApplicationShowing(false);
   }
 }

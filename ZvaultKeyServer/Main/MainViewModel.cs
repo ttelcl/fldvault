@@ -198,4 +198,9 @@ public class MainViewModel: ViewModelBase, IStatusMessage
   public bool CanStopServer => Server.ServerActive;
 
   public bool CanStartServer => Server.ServerState == ServerStatus.CanStart;
+
+  public void ApplicationShowing(bool showing)
+  {
+    KeysViewModel.ApplicationShowing(showing);
+  }
 }

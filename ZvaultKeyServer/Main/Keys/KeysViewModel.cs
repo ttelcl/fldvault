@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,6 +21,7 @@ using System.Windows.Media;
 
 using Microsoft.Win32;
 
+using FldVault.Core.KeyResolution;
 using FldVault.Core.Vaults;
 using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
@@ -48,15 +50,27 @@ public class KeysViewModel: ViewModelBase
     StatusHost = statusHost;
     _passwordBackground = BrushCache.Default["#44444444"];
     Keys = new ObservableCollection<KeyViewModel>();
-    ImportKeyCommand = new DelegateCommand(p => ImportKey());
-    NewKeyCommand = new DelegateCommand(p => NewKey());
-    TryUnlockCommand = new DelegateCommand(p => TryUnlock());
-    ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
-    PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
-    HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
-    ResetTimeoutCommand = new DelegateCommand(p => CurrentKey?.ResetTimer());
-    DeleteCurrentKeyCommand = new DelegateCommand(p => DeleteCurrentKey(), p => CurrentKey != null);
+    ImportKeyCommand = new DelegateCommand(
+      p => ImportKey());
+    NewKeyCommand = new DelegateCommand(
+      p => NewKey());
+    TryUnlockCommand = new DelegateCommand(
+      p => TryUnlock());
+    ClearPasswordCommand = new DelegateCommand(
+      p => ClearPassword());
+    PublishCurrentKeyCommand = new DelegateCommand(
+      p => CurrentKey?.SetCurrentKeyShowState(true));
+    HideCurrentKeyCommand = new DelegateCommand(
+      p => CurrentKey?.SetCurrentKeyShowState(false));
+    ResetTimeoutCommand = new DelegateCommand(
+      p => CurrentKey?.ResetTimer());
+    DeleteCurrentKeyCommand = new DelegateCommand(
+      p => DeleteCurrentKey(),
+      p => CurrentKey != null);
     HideAllCommand = new DelegateCommand(p => HideAll());
+    PasteZkeyFromClipboardCommand = new DelegateCommand(
+      p => PasteZkeyFromClipboard(),
+      p => ClipBoardMayHaveZkey);
     DefaultTimeout = 180;
     _timeoutValues = [
       "0:30",
@@ -94,6 +108,8 @@ public class KeysViewModel: ViewModelBase
 
   public ICommand HideAllCommand { get; }
 
+  public ICommand PasteZkeyFromClipboardCommand { get; }
+
   public ObservableCollection<KeyViewModel> Keys { get; }
 
   public /*ICollectionView*/ ListCollectionView KeysView { get; }
@@ -117,8 +133,8 @@ public class KeysViewModel: ViewModelBase
     get => _currentKey == null ? Visibility.Collapsed : Visibility.Visible;
   }
 
-  public NewKeyViewModel? NewKeyPane { 
-    get => _newKeyPane; 
+  public NewKeyViewModel? NewKeyPane {
+    get => _newKeyPane;
     set {
       var oldPane = _newKeyPane;
       if(SetNullableInstanceProperty(ref _newKeyPane, value))
@@ -260,11 +276,20 @@ public class KeysViewModel: ViewModelBase
     };
     if(dialog.ShowDialog() == true)
     {
+      Guid? guid = null;
       foreach(var fileName in dialog.FileNames)
       {
-        LinkFile(fileName);
+        var id = LinkFile(fileName);
+        if(id.HasValue)
+        {
+          guid = id;
+        }
       }
       SyncModel();
+      if(guid.HasValue)
+      {
+        TrySelectKey(guid.Value);
+      }
     }
     else
     {
@@ -272,13 +297,14 @@ public class KeysViewModel: ViewModelBase
     }
   }
 
-  public void LinkFile(string fileName)
+  public Guid? LinkFile(string fileName)
   {
     var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
     if(pkif == null)
     {
       Trace.TraceWarning($"Unsupported file {fileName}");
       StatusHost.StatusMessage = $"Unsupported file {Path.GetFileName(fileName)}";
+      return null;
     }
     else
     {
@@ -286,6 +312,7 @@ public class KeysViewModel: ViewModelBase
       state.AssociateFile(fileName, true);
       StatusHost.StatusMessage = $"Updated key {pkif.KeyId}";
       Trace.TraceInformation($"Linked key {pkif.KeyId} to file {fileName}");
+      return pkif.KeyId;
     }
   }
 
@@ -375,4 +402,144 @@ public class KeysViewModel: ViewModelBase
     }
     SyncModel();
   }
+
+  private void PasteZkeyFromClipboard()
+  {
+    if(!Clipboard.ContainsText())
+    {
+      MessageBox.Show(
+        "Clipboard does not contain text",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var text = Clipboard.GetText();
+    if(String.IsNullOrEmpty(text))
+    {
+      MessageBox.Show(
+        "Clipboard does not contain text (or only empty text)",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+    AddZkeyText(lines);
+  }
+
+  private void AddZkeyText(IEnumerable<string> lines)
+  {
+    using var zkeyex = ZkeyEx.TryFromTransferLines(lines);
+    if(zkeyex == null)
+    {
+      MessageBox.Show(
+        "No valid Zkey descriptor found\n" +
+        "(expecting lines to contain at least '<ZKEY>' and '</ZKEY>')",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var pkif = zkeyex.ToPassphraseKeyInfoFile();
+    var state = Model.GetKey(pkif.KeyId);
+    var seed = state.Seed;
+    if(seed == null)
+    {
+      seed = new PassphraseKeySeed2(pkif);
+      state.SetSeed(seed);
+    }
+    if(state.Status >= KeyStatus.Hidden)
+    {
+      MessageBox.Show(
+        $"Key {pkif.KeyId} was already imported and unlocked",
+        "Nothing to import",
+        MessageBoxButton.OK,
+        MessageBoxImage.Information);
+    }
+    else if(zkeyex.Passphrase != null)
+    {
+      if(seed is not IParameterKeySeed<SecureString> pks)
+      {
+        MessageBox.Show(
+          $"Key {pkif.KeyId} importing: Existing key descriptor is not compatible",
+          "Incompatible key",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+      }
+      else
+      {
+        var resolved = pks.TryResolve(zkeyex.Passphrase, state.KeyChain);
+        if(resolved)
+        {
+          // This is expected to be the case. Stay silent.
+
+          //MessageBox.Show(
+          //  $"Key {pkif.KeyId} imported and unlocked",
+          //  "Import and unlock key",
+          //  MessageBoxButton.OK,
+          //  MessageBoxImage.Information);
+        }
+        else
+        {
+          MessageBox.Show(
+            $"Key {pkif.KeyId} imported, but passphrase was incorrect",
+            "Import key - bad passphrase",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+        }
+      }
+    }
+    else
+    {
+      // leave as is if no passphrase was provided
+      MessageBox.Show(
+        $"Key {pkif.KeyId} imported.\n" + 
+        "It is still locked, since no passphrase ('PASS:' line) was included.",
+        "Success",
+        MessageBoxButton.OK,
+        MessageBoxImage.Information);
+    }
+    SyncModel();
+    TrySelectKey(pkif.KeyId);
+  }
+
+  public bool ClipBoardMayHaveZkey {
+    get => _clipBoardMayHaveZkey;
+    set {
+      if(SetValueProperty(ref _clipBoardMayHaveZkey, value))
+      {
+      }
+    }
+  }
+  private bool _clipBoardMayHaveZkey;
+
+  public void ApplicationShowing(bool showing)
+  {
+    if(showing)
+    {
+      var mayHaveZkey = false;
+      if(Clipboard.ContainsText())
+      {
+        var text = Clipboard.GetText();
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None).ToList();
+        mayHaveZkey =
+          lines.Contains("<ZKEY>") &&
+          lines.Contains("</ZKEY>");
+      }
+      ClipBoardMayHaveZkey = mayHaveZkey;
+    }
+  }
+
+  public void TrySelectKey(Guid keyId)
+  {
+    var kvm = Keys.FirstOrDefault(k => k.KeyId == keyId);
+    if(kvm != null)
+    {
+      CurrentKey = kvm;
+      //KeysView.MoveCurrentTo(kvm);
+      //KeysView.Refresh();
+    }
+  }
+
 }

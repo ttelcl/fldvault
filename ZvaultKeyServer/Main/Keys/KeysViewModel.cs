@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -20,6 +21,7 @@ using System.Windows.Media;
 
 using Microsoft.Win32;
 
+using FldVault.Core.KeyResolution;
 using FldVault.Core.Vaults;
 using FldVault.Upi;
 using FldVault.Upi.Implementation.Keys;
@@ -57,6 +59,9 @@ public class KeysViewModel: ViewModelBase
     ResetTimeoutCommand = new DelegateCommand(p => CurrentKey?.ResetTimer());
     DeleteCurrentKeyCommand = new DelegateCommand(p => DeleteCurrentKey(), p => CurrentKey != null);
     HideAllCommand = new DelegateCommand(p => HideAll());
+    PasteZkeyFromClipboardCommand = new DelegateCommand(
+      p => PasteZkeyFromClipboard(),
+      p => Clipboard.ContainsText());
     DefaultTimeout = 180;
     _timeoutValues = [
       "0:30",
@@ -94,6 +99,8 @@ public class KeysViewModel: ViewModelBase
 
   public ICommand HideAllCommand { get; }
 
+  public ICommand PasteZkeyFromClipboardCommand { get; }
+
   public ObservableCollection<KeyViewModel> Keys { get; }
 
   public /*ICollectionView*/ ListCollectionView KeysView { get; }
@@ -117,8 +124,8 @@ public class KeysViewModel: ViewModelBase
     get => _currentKey == null ? Visibility.Collapsed : Visibility.Visible;
   }
 
-  public NewKeyViewModel? NewKeyPane { 
-    get => _newKeyPane; 
+  public NewKeyViewModel? NewKeyPane {
+    get => _newKeyPane;
     set {
       var oldPane = _newKeyPane;
       if(SetNullableInstanceProperty(ref _newKeyPane, value))
@@ -372,6 +379,104 @@ public class KeysViewModel: ViewModelBase
     foreach(var keyview in Keys)
     {
       keyview.Model.HideKey = true;
+    }
+    SyncModel();
+  }
+
+  private void PasteZkeyFromClipboard()
+  {
+    if(!Clipboard.ContainsText())
+    {
+      MessageBox.Show(
+        "Clipboard does not contain text",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var text = Clipboard.GetText();
+    if(String.IsNullOrEmpty(text))
+    {
+      MessageBox.Show(
+        "Clipboard does not contain text (or only empty text)",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+    AddZkeyText(lines);
+  }
+
+  private void AddZkeyText(IEnumerable<string> lines)
+  {
+    using var zkeyex = ZkeyEx.TryFromTransferLines(lines);
+    if(zkeyex == null)
+    {
+      MessageBox.Show(
+        "No valid Zkey descriptor found\n" +
+        "(expecting lines to contain at least '<ZKEY>' and '</ZKEY>')",
+        "Failed",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+      return;
+    }
+    var pkif = zkeyex.ToPassphraseKeyInfoFile();
+    var state = Model.GetKey(pkif.KeyId);
+    var seed = state.Seed;
+    if(seed == null)
+    {
+      seed = new PassphraseKeySeed2(pkif);
+      state.SetSeed(seed);
+    }
+    if(state.Status >= KeyStatus.Hidden)
+    {
+      MessageBox.Show(
+        $"Key {pkif.KeyId} was already imported and unlocked",
+        "Nothing to import",
+        MessageBoxButton.OK,
+        MessageBoxImage.Information);
+    }
+    else if(zkeyex.Passphrase != null)
+    {
+      if(seed is not IParameterKeySeed<SecureString> pks)
+      {
+        MessageBox.Show(
+          $"Key {pkif.KeyId} importing: Existing key descriptor is not compatible",
+          "Incompatible key",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+      }
+      else
+      {
+        var resolved = pks.TryResolve(zkeyex.Passphrase, state.KeyChain);
+        if(resolved)
+        {
+          MessageBox.Show(
+            $"Key {pkif.KeyId} imported and unlocked",
+            "Import and unlock key",
+            MessageBoxButton.OK,
+            MessageBoxImage.Information);
+        }
+        else
+        {
+          MessageBox.Show(
+            $"Key {pkif.KeyId} imported, but passphrase was incorrect",
+            "Import key - bad passphrase",
+            MessageBoxButton.OK,
+            MessageBoxImage.Error);
+        }
+      }
+    }
+    else
+    {
+      // leave as is if no passphrase was provided
+      MessageBox.Show(
+        $"Key {pkif.KeyId} imported.\n" + 
+        "It is still locked, since no passphrase ('PASS:' line) was included.",
+        "Success",
+        MessageBoxButton.OK,
+        MessageBoxImage.Information);
     }
     SyncModel();
   }

@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FileUtilities\FileUtilities.csproj" />
+    <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
+  </ItemGroup>
+
+</Project>

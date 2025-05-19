@@ -50,18 +50,27 @@ public class KeysViewModel: ViewModelBase
     StatusHost = statusHost;
     _passwordBackground = BrushCache.Default["#44444444"];
     Keys = new ObservableCollection<KeyViewModel>();
-    ImportKeyCommand = new DelegateCommand(p => ImportKey());
-    NewKeyCommand = new DelegateCommand(p => NewKey());
-    TryUnlockCommand = new DelegateCommand(p => TryUnlock());
-    ClearPasswordCommand = new DelegateCommand(p => ClearPassword());
-    PublishCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(true));
-    HideCurrentKeyCommand = new DelegateCommand(p => CurrentKey?.SetCurrentKeyShowState(false));
-    ResetTimeoutCommand = new DelegateCommand(p => CurrentKey?.ResetTimer());
-    DeleteCurrentKeyCommand = new DelegateCommand(p => DeleteCurrentKey(), p => CurrentKey != null);
+    ImportKeyCommand = new DelegateCommand(
+      p => ImportKey());
+    NewKeyCommand = new DelegateCommand(
+      p => NewKey());
+    TryUnlockCommand = new DelegateCommand(
+      p => TryUnlock());
+    ClearPasswordCommand = new DelegateCommand(
+      p => ClearPassword());
+    PublishCurrentKeyCommand = new DelegateCommand(
+      p => CurrentKey?.SetCurrentKeyShowState(true));
+    HideCurrentKeyCommand = new DelegateCommand(
+      p => CurrentKey?.SetCurrentKeyShowState(false));
+    ResetTimeoutCommand = new DelegateCommand(
+      p => CurrentKey?.ResetTimer());
+    DeleteCurrentKeyCommand = new DelegateCommand(
+      p => DeleteCurrentKey(),
+      p => CurrentKey != null);
     HideAllCommand = new DelegateCommand(p => HideAll());
     PasteZkeyFromClipboardCommand = new DelegateCommand(
       p => PasteZkeyFromClipboard(),
-      p => Clipboard.ContainsText());
+      p => ClipBoardMayHaveZkey);
     DefaultTimeout = 180;
     _timeoutValues = [
       "0:30",
@@ -267,11 +276,20 @@ public class KeysViewModel: ViewModelBase
     };
     if(dialog.ShowDialog() == true)
     {
+      Guid? guid = null;
       foreach(var fileName in dialog.FileNames)
       {
-        LinkFile(fileName);
+        var id = LinkFile(fileName);
+        if(id.HasValue)
+        {
+          guid = id;
+        }
       }
       SyncModel();
+      if(guid.HasValue)
+      {
+        TrySelectKey(guid.Value);
+      }
     }
     else
     {
@@ -279,13 +297,14 @@ public class KeysViewModel: ViewModelBase
     }
   }
 
-  public void LinkFile(string fileName)
+  public Guid? LinkFile(string fileName)
   {
     var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
     if(pkif == null)
     {
       Trace.TraceWarning($"Unsupported file {fileName}");
       StatusHost.StatusMessage = $"Unsupported file {Path.GetFileName(fileName)}";
+      return null;
     }
     else
     {
@@ -293,6 +312,7 @@ public class KeysViewModel: ViewModelBase
       state.AssociateFile(fileName, true);
       StatusHost.StatusMessage = $"Updated key {pkif.KeyId}";
       Trace.TraceInformation($"Linked key {pkif.KeyId} to file {fileName}");
+      return pkif.KeyId;
     }
   }
 
@@ -452,11 +472,13 @@ public class KeysViewModel: ViewModelBase
         var resolved = pks.TryResolve(zkeyex.Passphrase, state.KeyChain);
         if(resolved)
         {
-          MessageBox.Show(
-            $"Key {pkif.KeyId} imported and unlocked",
-            "Import and unlock key",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+          // This is expected to be the case. Stay silent.
+
+          //MessageBox.Show(
+          //  $"Key {pkif.KeyId} imported and unlocked",
+          //  "Import and unlock key",
+          //  MessageBoxButton.OK,
+          //  MessageBoxImage.Information);
         }
         else
         {
@@ -479,5 +501,45 @@ public class KeysViewModel: ViewModelBase
         MessageBoxImage.Information);
     }
     SyncModel();
+    TrySelectKey(pkif.KeyId);
   }
+
+  public bool ClipBoardMayHaveZkey {
+    get => _clipBoardMayHaveZkey;
+    set {
+      if(SetValueProperty(ref _clipBoardMayHaveZkey, value))
+      {
+      }
+    }
+  }
+  private bool _clipBoardMayHaveZkey;
+
+  public void ApplicationShowing(bool showing)
+  {
+    if(showing)
+    {
+      var mayHaveZkey = false;
+      if(Clipboard.ContainsText())
+      {
+        var text = Clipboard.GetText();
+        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None).ToList();
+        mayHaveZkey =
+          lines.Contains("<ZKEY>") &&
+          lines.Contains("</ZKEY>");
+      }
+      ClipBoardMayHaveZkey = mayHaveZkey;
+    }
+  }
+
+  public void TrySelectKey(Guid keyId)
+  {
+    var kvm = Keys.FirstOrDefault(k => k.KeyId == keyId);
+    if(kvm != null)
+    {
+      CurrentKey = kvm;
+      //KeysView.MoveCurrentTo(kvm);
+      //KeysView.Refresh();
+    }
+  }
+
 }

@@ -97,6 +97,7 @@ public class NewKeyViewModel: ViewModelBase
           ClearPasswords();
           Owner.NewKeyPane = null;
           Owner.SyncModel();
+          Owner.TrySelectKey(pkif.KeyId);
           Owner.StatusHost.StatusMessage = $"Created new key {pkif.KeyId}";
           var zkey = pkif.ToZkey();
           var zkeyfilename = $"{pkif.KeyId}.zkey";

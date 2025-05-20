@@ -1,0 +1,13 @@
+﻿module AppAnchorAdd
+
+open System
+open System.IO
+
+open ColorPrint
+open CommonTools
+
+let run args =
+  cp "\frNot Yet Implemented\f0."
+  Usage.usage "anchor-add"
+  1
+

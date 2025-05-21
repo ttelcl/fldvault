@@ -30,14 +30,14 @@ public class RepoSettings
   public RepoSettings(
     string hostname,
     string reponame,
-    [JsonProperty("vault-folder")] string vaultFolder,
-    [JsonProperty("bundle-folder")] string bundleFolder,
+    [JsonProperty("vault-anchor")] string vaultAnchor,
+    [JsonProperty("bundle-anchor")] string bundleAnchor,
     Zkey keyinfo)
   {
     HostName = hostname;
     RepoName = reponame;
-    VaultFolder = vaultFolder;
-    BundleFolder = bundleFolder;
+    VaultAnchor = vaultAnchor;
+    BundleAnchor = bundleAnchor;
     KeyInfo = keyinfo;
   }
 
@@ -56,22 +56,68 @@ public class RepoSettings
   public string RepoName { get; }
 
   /// <summary>
-  /// The full path to the folder where the bundle vault is stored.
+  /// The tag in the central settings used to identify the full path to the
+  /// vault anchor folder.
   /// </summary>
-  [JsonProperty("vault-folder")] 
-  public string VaultFolder { get; }
+  [JsonProperty("vault-anchor")] 
+  public string VaultAnchor { get; }
 
   /// <summary>
-  /// The full path to the folder where the bundle is stored.
+  /// The tag in the central settings used to identify the full path to the
+  /// bundle anchor folder.
   /// </summary>
-  [JsonProperty("bundle-folder")]
-  public string BundleFolder { get; }
+  [JsonProperty("bundle-anchor")]
+  public string BundleAnchor { get; }
 
   /// <summary>
   /// The key information for the encryption key of this repository's vault.
   /// </summary>
   [JsonProperty("keyinfo")]
   public Zkey KeyInfo { get; }
+
+  /// <summary>
+  /// The first 8 characters of the key ID. This is used as a hint to
+  /// identify the key used for this repository (and is part of the vault file
+  /// name).
+  /// </summary>
+  [JsonIgnore]
+  public string KeyTag {
+    get {
+      return KeyInfo.KeyId.Substring(0, 8);
+    }
+  }
+
+  /// <summary>
+  /// Materializes the abstract information in this object to a
+  /// concrete outgoing BundleInfo object by looking up the anchor names and constructing
+  /// the file names.
+  /// </summary>
+  public BundleInfo ToBundleInfo(CentralSettings centralSettings)
+  {
+    if(!centralSettings.Anchors.TryGetValue(VaultAnchor, out var vaultAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Vault anchor '{VaultAnchor}' not found in central settings.");
+    }
+    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
+    }
+    var vaultFile = Path.Combine(
+      vaultAnchorFolder,
+      $"{RepoName}.{HostName}.-.bundle.{KeyTag}.mvlt");
+    var bundleFile = Path.Combine(
+      bundleAnchorFolder,
+      $"{RepoName}.{HostName}.-.bundle");
+    return new BundleInfo(
+      true,
+      HostName,
+      RepoName,
+      bundleFile,
+      vaultFile,
+      KeyInfo);
+  }
 
   /// <summary>
   /// Save the settings to the .git folder of the repository.

@@ -54,8 +54,7 @@ let private runAnchorAdd o =
     1
   else
     let anchorFolder = centralSettings.Anchors[o.AnchorName]
-    cp $"\fgAnchor \fy{o.AnchorName}\f0 added: \fg{anchorFolder}\f0."
-    cp "\fgDone\f0."
+    cp $"Anchor \fy{o.AnchorName}\f0 added: \fg{anchorFolder}\f0."
     0
 
 let run args =

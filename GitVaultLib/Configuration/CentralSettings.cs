@@ -159,7 +159,8 @@ public class CentralSettings
   }
 
   /// <summary>
-  /// Add a new anchor folder to the settings.
+  /// Try to add a new anchor folder to the settings.
+  /// Returns null on success, or an error message on failure.
   /// </summary>
   /// <param name="name">
   /// The name for the new anchor. This name must be unique and valid.
@@ -171,24 +172,23 @@ public class CentralSettings
   /// </param>
   /// <exception cref="ArgumentException"></exception>
   /// <exception cref="DirectoryNotFoundException"></exception>
-  public void AddAnchor(string name, string anchorFolder)
+  public string? TryAddAnchor(string name, string anchorFolder)
   {
     if(_anchors.ContainsKey(name))
     {
-      throw new ArgumentException(
-        $"Anchor {name} already exists");
+      return $"Anchor {name} already exists";
     }
     if(!IsValidName(name, false))
     {
-      throw new ArgumentException(
+      return
         $"Anchor name {name} is not valid as an anchor name. " +
-        "Only letters, digits and '-' are allowed");
+        "Only letters, digits and '-' are allowed";
     }
     anchorFolder = Path.GetFullPath(anchorFolder).TrimEnd('/', '\\');
     if(!Directory.Exists(anchorFolder))
     {
-      throw new DirectoryNotFoundException(
-        $"Anchor path {anchorFolder} does not exist");
+      return
+        $"Anchor path {anchorFolder} does not exist";
     }
     var anchorLeaf = Path.GetFileName(anchorFolder);
     if(!anchorLeaf.Equals("GitVault", StringComparison.OrdinalIgnoreCase))
@@ -199,20 +199,23 @@ public class CentralSettings
         Directory.CreateDirectory(anchorFolder);
       }
     }
-    var anchorFid =
-      FileIdentifier.FromPath(anchorFolder)
-      ?? throw new ArgumentException(
-        $"Anchor path {anchorFolder} is not accessible");
+    var anchorFid = FileIdentifier.FromPath(anchorFolder);
+    if(anchorFid == null)
+    {
+      return $"Anchor path {anchorFolder} is not accessible";
+    }
     foreach(var kv in _anchors)
     {
       if(anchorFid.SameAs(kv.Value))
       {
-        throw new ArgumentException(
-          $"Anchor folder {anchorFolder} points to the same as anchor '{kv.Key}' ({kv.Value})");
+        return
+          $"Anchor folder {anchorFolder} points to the same as anchor '{kv.Key}' ({kv.Value})";
       }
     }
     _anchors[name] = anchorFolder;
     Modified = true;
+    SaveIfModified();
+    return null;
   }
 
   /// <summary>

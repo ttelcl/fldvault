@@ -57,6 +57,9 @@ case).
 |  | `KSM.KeyResponseCode` | Succesful response to a key request. |
 |  | `KSM.KeyNotFoundCode` | Key not found. |
 |  | `MC.ErrorText` | Something's not right with the file (missing, wrong format, etc.) |
+| `KSM.KeyInfoCode` |  | Request a key descriptor (zkey) based on a key ID. |
+|  | `KSM.KeyInfoResponseCode` | Succesful response to a key info request. |
+|  | `KSM.KeyNotFoundCode` | Key not found. |
 | `KSM.KeyUploadCode` |  | Upload a key to the server. |
 |  | `KSM.KeyUploadedCode` | Succesful response to a key upload (no content). |
 | `KSM.KeyRemoveCode` |  | Remove a key from the server. |

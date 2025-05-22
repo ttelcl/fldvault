@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using FldVault.Core.KeyResolution;
 using FldVault.Core.Vaults;
 using FldVault.KeyServer;
 using FldVault.Upi.Implementation.Keys;
@@ -18,6 +19,8 @@ using FldVault.Upi.Implementation.Keys;
 using UdSocketLib.Communication;
 using UdSocketLib.Framing;
 using UdSocketLib.Framing.Layer1;
+
+using static FldVault.KeyServer.KeyServerSeedService;
 
 namespace FldVault.Upi.Implementation;
 
@@ -78,6 +81,7 @@ public class KeyServerLogic: IDisposable
       [KeyServerMessages.KeyRequestCode] = HandleKeyRequest,
       [KeyServerMessages.KeyPresenceListCode] = HandleKeyPresenceList,
       [KeyServerMessages.ServerDiagnosticsCode] = HandleServerDiagnostics,
+      [KeyServerMessages.KeyInfoCode] = HandleKeyInfoRequest,
     };
   }
 
@@ -344,6 +348,22 @@ public class KeyServerLogic: IDisposable
       frameOut.WriteKeyResponse(bw);
     });
     // sent not only when not found ("load request") but also when served ("serve notification")
+    await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
+  }
+
+  private async Task HandleKeyInfoRequest(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keyId = frameIn.ReadKeyInfoRequest();
+    var state = KeyStates.GetKey(keyId);
+    if(state.Seed is IKeySeed<PassphraseKeyInfoFile> keyseed)
+    {
+      frameOut.WriteKeyInfoResponse(keyseed.KeyDetail);
+    }
+    else
+    {
+      frameOut.WriteKeyInfoResponse(null);
+    }
+    // Callback to notify the server about the last request time
     await Callbacks.KeyLoadRequest(Owner, keyId, state.Status, null);
   }
 

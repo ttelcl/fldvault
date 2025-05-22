@@ -19,7 +19,6 @@ namespace GitVaultLib.GitThings;
 public class GitRemotes
 {
   private readonly Dictionary<string, GitRemoteInfo> _remotes;
-    
 
   /// <summary>
   /// Create a new GitRemotes

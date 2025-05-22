@@ -402,6 +402,40 @@ public class KeyServerService
   }
 
   /// <summary>
+  /// Lookup the key descriptor for the given key ID in the key server.
+  /// This can be returned if the key is not unlocked.
+  /// </summary>
+  public async Task<PassphraseKeyInfoFile?> LookupKeyInfoAsync(
+    Guid keyId, CancellationToken cancellationToken = default)
+  {
+    if(!ServerAvailable)
+    {
+      return null;
+    }
+    using var frameOut = new MessageFrameOut();
+    using var client = await SocketService.ConnectClientAsync(cancellationToken);
+    frameOut.WriteKeyInfoRequest(keyId);
+    await client.SendFrameAsync(frameOut, cancellationToken);
+    using var frameIn = new MessageFrameIn();
+    var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
+    if(!receiveOk)
+    {
+      return null;
+    }
+    var messageCode = frameIn.MessageCode();
+    switch(messageCode)
+    {
+      case KeyServerMessages.KeyNotFoundCode:
+        return null;
+      case KeyServerMessages.KeyInfoResponseCode:
+        return frameIn.ReadKeyInfoResponse();
+      default:
+        throw new InvalidOperationException(
+          $"Unexpected response from server: 0x{messageCode:X08}");
+    }
+  }
+
+  /// <summary>
   /// The default short name for the key server Unix Domain socket
   /// </summary>
   public const string DefaultSocketName = "zvlt-keyserver.sock";

@@ -4,12 +4,17 @@ open System
 open System.IO
 
 open FldVault.Core.Vaults
+open FldVault.KeyServer
 
 open ColorPrint
 open CommonTools
 
+type private KeySource =
+  | KeyFile of string
+  | KeyId of Guid
+
 type private Options = {
-  InputFile: string
+  Source: KeySource option
   IncludePassphrase: bool
 }
 
@@ -24,13 +29,22 @@ let run args =
     | "-p" :: rest ->
       rest |> parseMore { o with IncludePassphrase = true }
     | "-f" :: fileName :: rest ->
-      rest |> parseMore { o with InputFile = fileName }
-    | [] ->
-      if o.InputFile |> String.IsNullOrEmpty then
-        cp "\frError\fo: No input file specified\f0."
+      let fileName = fileName |> Path.GetFullPath
+      if fileName |> File.Exists |> not then
+        cp $"\frError\fo: Input file \fy{fileName}\fo does not exist\f0."
         None
-      elif o.InputFile |> File.Exists |> not then
-        cp $"\frError\fo: Input file \fy{o.InputFile}\fo does not exist\f0."
+      else
+        rest |> parseMore { o with Source = fileName |> KeyFile |> Some }
+    | "-k" :: id :: rest ->
+      let ok, guid = id |> Guid.TryParse
+      if ok |> not then
+        cp $"\frError\fo: Key id \fy{id}\fo is not a valid GUID\f0."
+        None
+      else
+        rest |> parseMore { o with Source = guid |> KeyId |> Some }
+    | [] ->
+      if o.Source.IsNone then
+        cp "\frError\fo: No input file or key id specified\f0."
         None
       else
         Some o
@@ -38,7 +52,7 @@ let run args =
       cp $"\frError\fo Unknown option: \fc{x}\f0."
       None
   let oo = args |> parseMore {
-    InputFile = null
+    Source = None
     IncludePassphrase = false
   }
   match oo with
@@ -46,14 +60,25 @@ let run args =
     Usage.usage "showkey"
     1
   | Some o ->
-    let pkif = o.InputFile |> PassphraseKeyInfoFile.TryFromFile
+    let pkif =
+      match o.Source with
+      | Some (KeyFile fileName) ->
+        fileName |> PassphraseKeyInfoFile.TryFromFile
+      | Some (KeyId id) ->
+        let kss = new KeyServerService()
+        if kss.ServerAvailable then
+          kss.LookupKeyInfoAsync(id) |> Async.AwaitTask |> Async.RunSynchronously
+        else
+          null
+      | None ->
+        failwith "Key source is not specified"
     if pkif = null then
-      cp $"\fo: Could not get key from \fy{o.InputFile}\f0 (unsupported format)."
+      cp $"\fo: Could not get key\f0 (unsupported format)."
       1
     else
       let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
       let info = zkey.ToZkeyTransferString(o.IncludePassphrase)
-      cp $"Key used by \fc{o.InputFile}\f0:"
+      cp $"Key\f0:"
       let color = if o.IncludePassphrase then "\fy" else "\fg"
       cp $"{color}{info}\f0"
       0

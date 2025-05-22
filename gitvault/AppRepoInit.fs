@@ -12,6 +12,10 @@ open GitVaultLib.GitThings
 open ColorPrint
 open CommonTools
 
+type private KeySource =
+  | KeySpecifier of string
+  | KeyAuto
+
 type private Options = {
   VaultAnchorName: string
   BundleAnchorName: string

@@ -31,6 +31,7 @@ public class Zkey
     DateTime created)
   {
     KeyId = id;
+    KeyGuid = Guid.Parse(id);
     Salt = salt;
     Created = created;
   }
@@ -121,6 +122,13 @@ public class Zkey
   /// </summary>
   [JsonProperty("id")]  
   public string KeyId { get; }
+
+  /// <summary>
+  /// The key ID as a GUID. This is the same value as <see cref="KeyId"/>,
+  /// but as a GUID.
+  /// </summary>
+  [JsonIgnore]
+  public Guid KeyGuid { get; }
 
   /// <summary>
   /// The bas64url encoded salt. 

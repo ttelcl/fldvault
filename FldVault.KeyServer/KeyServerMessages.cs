@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.Vaults;
 
 using UdSocketLib.Framing;
 using UdSocketLib.Framing.Layer1;
@@ -91,6 +92,18 @@ public static class KeyServerMessages
   public const int KeyForFileCode = 0x10010006;
 
   /// <summary>
+  /// Key descriptor info request. The payload is the key GUID (in binary form).
+  /// Potential responses: <see cref="KeyInfoResponseCode"/> or <see cref="KeyNotFoundCode"/>
+  /// </summary>
+  public const int KeyInfoCode = 0x10010007;
+
+  /// <summary>
+  /// Response when the requested key descriptor was found. The payload is a
+  /// binary <see cref="PassphraseKeyInfoFile"/> blob (96 bytes).
+  /// </summary>
+  public const int KeyInfoResponseCode = 0x10010008;
+
+  /// <summary>
   /// Read the key to look up from the key request message in the frame
   /// </summary>
   /// <param name="frame">
@@ -121,6 +134,63 @@ public static class KeyServerMessages
       .Clear()
       .AppendI32(KeyRequestCode)
       .AppendGuid(keyId);
+  }
+
+  /// <summary>
+  /// Read the key info request. The payload is the key GUID (in binary form).
+  /// </summary>
+  public static Guid ReadKeyInfoRequest(this MessageFrameIn frame)
+  {
+    frame
+      .Rewind()
+      .ValidateI32(KeyInfoCode, "Internal error: Incorrect message code")
+      .TakeGuid(out var guid)
+      .EnsureFullyRead();
+    return guid;
+  }
+
+  /// <summary>
+  /// Write a key info request
+  /// </summary>
+  public static void WriteKeyInfoRequest(this MessageFrameOut frame, Guid keyId)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyInfoCode)
+      .AppendGuid(keyId);
+  }
+
+  /// <summary>
+  /// Write a key info response into the output frame.
+  /// </summary>
+  public static void WriteKeyInfoResponse(this MessageFrameOut frame,
+    PassphraseKeyInfoFile? keyInfo)
+  {
+    if(keyInfo == null)
+    {
+      frame.WriteNoContentMessage(KeyNotFoundCode);
+      return;
+    }
+    Span<byte> keyInfoBytes = stackalloc byte[96];
+    keyInfo.SerializeToSpan(keyInfoBytes);
+    frame
+      .Clear()
+      .AppendI32(KeyInfoResponseCode)
+      .AppendBytes(keyInfoBytes);
+  }
+
+  /// <summary>
+  /// Read a key info response from the input frame.
+  /// </summary>
+  public static PassphraseKeyInfoFile ReadKeyInfoResponse(this MessageFrameIn frame)
+  {
+    Span<byte> keyInfoBytes = stackalloc byte[96];
+    frame
+      .Rewind()
+      .ValidateI32(KeyInfoResponseCode, "Internal error: Incorrect message code")
+      .TakeSlice(96, out keyInfoBytes)
+      .EnsureFullyRead();
+    return PassphraseKeyInfoFile.ReadFrom(keyInfoBytes);
   }
 
   /// <summary>

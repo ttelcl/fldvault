@@ -44,6 +44,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileUtilities", "FileUtilit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GitVaultLib", "GitVaultLib\GitVaultLib.csproj", "{E11E950E-B177-431B-8530-DE3E8F98C044}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "gitvault", "gitvault\gitvault.fsproj", "{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,10 @@ Global
 		{E11E950E-B177-431B-8530-DE3E8F98C044}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E11E950E-B177-431B-8530-DE3E8F98C044}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E11E950E-B177-431B-8530-DE3E8F98C044}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,6 +126,7 @@ Global
 		{0C338434-E74E-4BCB-9E96-00122FE3A01E} = {E554EA83-9E37-4A3C-AEFC-B94D89F52168}
 		{7E269519-FCE5-4983-8EB2-90678ED799A8} = {8A375364-B265-4786-AD15-DA3F01B77376}
 		{E11E950E-B177-431B-8530-DE3E8F98C044} = {8A375364-B265-4786-AD15-DA3F01B77376}
+		{D03DC2CD-5212-41BE-94AE-E70ECDAA34AB} = {E554EA83-9E37-4A3C-AEFC-B94D89F52168}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {031C7C67-97E0-4943-B6F7-344A9A89CC1D}

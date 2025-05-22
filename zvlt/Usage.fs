@@ -42,10 +42,11 @@ let usage detail =
     cp ""
   
   if showSummary "showkey" then
-    cp "\fozvlt showkey \fg-f\f0 \fc<file>\f0 [\fg-p\f0]"
+    cp "\fozvlt showkey \f0[\fg-f\f0 \fc<file>\f0|\fg-k \fc<key-id>\f0] [\fg-p\f0]"
     cp "  Show the ZKEY info for the given \fb*.zvlt\f0 / \fb*.mvlt\f0 / \fb*.zkey\f0 / \fb*.key-info\f0 file"
   if matchDetail "showkey" then
     cp "  \fg-f \fc<file>\f0        The file to show the key info for."
+    cp "  \fg-k \fc<key-id>\f0      The full key guid to show the key info for."
     cp "  \fg-p\fx\f0               Include an (empty) passphrase field"
     cp ""
   

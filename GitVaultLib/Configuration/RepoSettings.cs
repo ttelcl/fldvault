@@ -210,12 +210,6 @@ public class AnchorRepoSettings
       bundleAnchorFolder,
       shortBundleName);
     var repoVaultFolder = new RepoVaultFolder(vaultAnchorFolder, RepoName);
-    //var error = repoVaultFolder.CanGetKey();
-    //if(error != null)
-    //{
-    //  throw new InvalidOperationException(
-    //    $"Cannot get key for repository '{RepoName}' ({vaultAnchorFolder}): {error}");
-    //}
     var keyInfo = repoVaultFolder.GetVaultKey();
     var keyTag = keyInfo.KeyTag;
     var shortVaultName = $"{shortBundleName}.{keyTag}.mvlt";

@@ -261,6 +261,20 @@ public class GitRepoFolder
     {
       Directory.CreateDirectory(vaultFolder);
     }
+    
+    var bundleSourceFile = Path.Combine(
+      bundleFolder,
+      $"{repoName}.{hostName}.source.json");
+    var source = new BundleSource(Folder);
+    var existingSource = BundleSource.TryLoad(bundleSourceFile);
+    if(existingSource != null && !existingSource.SameSource(source))
+    {
+      return
+        "The combination of anchor, repo name and host name is already in use from " +
+        $"a different folder. Choose a different -host name to fix. {existingSource.SourceFolder}";
+    }
+    source.Save(bundleSourceFile);
+
     repoSettings = new AnchorRepoSettings(
       hostName,
       repoName,

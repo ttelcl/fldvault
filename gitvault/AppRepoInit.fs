@@ -130,13 +130,13 @@ let run args =
         else
           rest |> parseMore { o with RepoFolder = repo }
       | "-host" :: hostName :: rest ->
-        if CentralSettings.IsValidName(hostName, false) then
+        if CentralSettings.IsValidName(hostName, false) |> not then
           cp $"\foThe name \fy{hostName}\fo is not valid as a gitvault 'host name'\f0."
           None
         else
           rest |> parseMore { o with HostName = hostName }
       | "-n" :: repoName :: rest ->
-        if CentralSettings.IsValidName(repoName, true) then
+        if CentralSettings.IsValidName(repoName, true) |> not then
           cp $"\foThe name \fy{repoName}\fo is not valid as a gitvault 'repository name'\f0."
           None
         else

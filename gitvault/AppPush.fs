@@ -123,7 +123,7 @@ let private runPush o =
               }
             let writtenFile =
               encryptionTask |> Async.AwaitTask |> Async.RunSynchronously
-            cp $"\fgVault file \fc{writtenFile}\f0 created successfully."
+            cp $"Vault file \fc{writtenFile}\f0 created \fgsuccessfully\f0."
             ()
     0
 

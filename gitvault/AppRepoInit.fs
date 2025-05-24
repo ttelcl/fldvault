@@ -11,6 +11,7 @@ open GitVaultLib.GitThings
 
 open ColorPrint
 open CommonTools
+open GitVaultLib.VaultThings
 
 type private KeySource =
   | KeySpecifier of string
@@ -36,13 +37,21 @@ let private runAppRepoInit o =
       repoFolder.AutoRepoName
     else
       o.RepoName
-  let vaultFolder = Path.Combine(vaultAnchor, repoName)
+  let repoVaultFolder0 = new RepoVaultFolder(vaultAnchor, repoName) // also creates folder.
+  let vaultFolder = repoVaultFolder0.VaultFolder
   let bundleFolder = Path.Combine(bundleAnchor, o.VaultAnchorName, repoName)
   cp "Info:"
   cp $"  Repository    \fb{repoName,15}\f0: \fc{repoFolder.Folder}\f0 / \fb{repoFolder.GitFolder}\f0."
   cp $"  Vault folder  \fb{o.VaultAnchorName,15}\f0: \fg{vaultFolder}\f0."
   cp $"  Bundle folder \fb{o.BundleAnchorName,15}\f0: \fy{bundleFolder}\f0."
   cp $"  Settings file:                 \fg{repoFolder.GitvaultSettingsFile}\f0."
+  
+  let compatible = repoVaultFolder0.GitRootsCompatible(repoFolder)
+  if compatible |> not then
+    cp $"\frFATAL:\fo The git repository at \fc{repoFolder.Folder}\fo is not compatible with the vault folder at \fy{vaultFolder}\f0."
+    failwith "Incompatible git repository (the repository and the existing vault folder seem unrelated)"
+  else
+    cp "\fgRepository and vault folder are compatible\f0."
 
   let error, repoSettings = repoFolder.TryInitGitVaultSettings(
     centralSettings, o.VaultAnchorName, o.BundleAnchorName, o.HostName, repoName)
@@ -55,6 +64,10 @@ let private runAppRepoInit o =
     else
       cp "\fgRepository initialized successfully.\f0"
     let repoVaultFolder = repoSettings.GetRepoVaultFolder(centralSettings)
+    if repoVaultFolder.MergeRoots(repoFolder) then
+      cp "\fyMerged and saved the GIT root commits for this repository\f0."
+    else
+      cp "The GIT root commits for this repository are already up to date\f0."
     let keyError = repoVaultFolder.CanGetKey()
     if keyError |> String.IsNullOrEmpty |> not then
       cp $"\foBeware!\fy {keyError}\f0."
@@ -86,12 +99,22 @@ let run args =
       | "-h" :: _ ->
         None
       | "-a" :: name :: rest ->
+        let parts = name.Split("::", StringSplitOptions.RemoveEmptyEntries)
+        let name = parts.[0].Trim()
         let ok, _ = centralSettings.Anchors.TryGetValue(name)
         if ok |> not then
           cp $"\foVault anchor name \fy{name}\fo is not defined\f0."
           None
         else
-          rest |> parseMore { o with VaultAnchorName = name }
+          if parts.Length > 1 then
+            let repoName = parts.[1].Trim()
+            if CentralSettings.IsValidName(repoName, true) |> not then
+              cp $"\foThe name \fy{repoName}\fo is not valid as a gitvault 'repository name'\f0."
+              None
+            else
+              rest |> parseMore { o with VaultAnchorName = name; RepoName = repoName }
+          else
+            rest |> parseMore { o with VaultAnchorName = name }
       | "-b" :: name :: rest ->
         let ok, _ = centralSettings.BundleAnchors.TryGetValue(name)
         if ok |> not then

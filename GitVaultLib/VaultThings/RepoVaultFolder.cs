@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using FldVault.Core.Vaults;
 
 using GitVaultLib.Configuration;
+using GitVaultLib.GitThings;
 
 namespace GitVaultLib.VaultThings;
 
@@ -22,6 +23,7 @@ namespace GitVaultLib.VaultThings;
 public class RepoVaultFolder
 {
   private Zkey? _cachedKey;
+  private GitRoots? _cachedRoots;
 
   /// <summary>
   /// Create a new RepoVaultFolder
@@ -40,6 +42,10 @@ public class RepoVaultFolder
     AnchorFolder = anchorFolder;
     RepoName = repoName;
     VaultFolder = Path.Combine(anchorFolder, repoName);
+    if(!Directory.Exists(VaultFolder))
+    {
+      Directory.CreateDirectory(VaultFolder);
+    }
   }
 
   /// <summary>
@@ -76,6 +82,71 @@ public class RepoVaultFolder
       }
     }
     return _cachedKey!;
+  }
+
+  /// <summary>
+  /// Get the git roots for the associated repositories. Returns an empty
+  /// GitRoots if the git roots file does not exist yet in the vault folder.
+  /// </summary>
+  public GitRoots GetGitRoots()
+  {
+    if(_cachedRoots == null)
+    {
+      _cachedRoots = GitRoots.ForVaultFolder(VaultFolder);
+    }
+    return _cachedRoots;
+  }
+
+  /// <summary>
+  /// Saves the given git roots to this vault folder.
+  /// </summary>
+  /// <param name="roots"></param>
+  public void SetGitRoots(GitRoots roots)
+  {
+    _cachedRoots = roots;
+    roots.SaveToVaultFolder(VaultFolder);
+  }
+
+  /// <summary>
+  /// True if the git roots of this repository are compatible with
+  /// the given <paramref name="other"/> git roots.
+  /// </summary>
+  public bool GitRootsCompatible(GitRoots other)
+  {
+    return GetGitRoots().AreCompatible(other);
+  }
+
+  /// <summary>
+  /// True if the git roots of this repository are compatible with
+  /// the git roots of the given <paramref name="repository"/>.
+  /// </summary>
+  public bool GitRootsCompatible(GitRepoFolder repository)
+  {
+    return GitRootsCompatible(repository.GetGitRoots());
+  }
+
+  /// <summary>
+  /// Merge the git roots of the given <paramref name="repository"/>.
+  /// If there were any changes, the git roots are saved to this
+  /// vault folder. Throws an exception if the git roots are not
+  /// compatible.
+  /// </summary>
+  public bool MergeRoots(GitRepoFolder repository)
+  {
+    var otherRoots = repository.GetGitRoots();
+    if(!GitRootsCompatible(otherRoots))
+    {
+      throw new InvalidOperationException(
+        $"Cannot merge git roots from '{repository.Folder}' " +
+        $"into '{VaultFolder}': incompatible git roots.");
+    }
+    var myRoots = GetGitRoots();
+    if(myRoots.AreSame(otherRoots))
+    {
+      return false; // nothing to do
+    }
+    SetGitRoots(myRoots.Merge(otherRoots));
+    return true; // roots were merged and saved
   }
 
   /// <summary>

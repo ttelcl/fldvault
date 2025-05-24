@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -132,6 +133,38 @@ public static class GitRunner
       remoteTarget
     };
     var result = RunToLines(args, workingDirectory);
+    return result;
+  }
+
+  /// <summary>
+  /// Enumerate the root commits of the repository that
+  /// <paramref name="witnessFolder"/> is part of.
+  /// </summary>
+  /// <param name="witnessFolder">
+  /// Any folder that is part of the repository. Or null to use
+  /// the current directory as the witness folder.
+  /// </param>
+  /// <returns>
+  /// A GitRunResult containing the output of the command.
+  /// </returns>
+  public static GitRunResult EnumRoots(string? witnessFolder)
+  {
+    if(string.IsNullOrEmpty(witnessFolder))
+    {
+      witnessFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      witnessFolder = Path.GetFullPath(witnessFolder);
+    }
+    var args = new List<string> {
+      "-C",
+      witnessFolder,
+      "rev-list",
+      "--max-parents=0",
+      "--all"
+    };
+    var result = RunToLines(args, null);
     return result;
   }
 }

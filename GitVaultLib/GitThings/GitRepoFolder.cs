@@ -46,6 +46,8 @@ public enum GitRepoTestResult
 /// </summary>
 public class GitRepoFolder
 {
+  private GitRoots? _cachedGitRoots;
+
   /// <summary>
   /// Create a new GitRepoFolder.
   /// Called via <see cref="LocateRepoRootFrom(string)"/>.
@@ -127,6 +129,28 @@ public class GitRepoFolder
         GitFolder,
         "gitvault-settings.json");
     }
+  }
+
+  /// <summary>
+  /// Get the git roots for this repository. This is cached at first call.
+  /// </summary>
+  public GitRoots GetGitRoots()
+  {
+    if(_cachedGitRoots == null)
+    {
+      _cachedGitRoots = GitRoots.ForRepository(Folder);
+    }
+    return _cachedGitRoots;
+  }
+
+  /// <summary>
+  /// True if the git roots of this repository are compatible with the
+  /// one of the given <paramref name="repoVaultFolder"/>. That includes
+  /// the case where either root set is empty.
+  /// </summary>
+  public bool GitRootsCompatible(RepoVaultFolder repoVaultFolder)
+  {
+    return repoVaultFolder.GitRootsCompatible(this);
   }
 
   /// <summary>

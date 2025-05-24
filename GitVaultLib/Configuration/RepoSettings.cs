@@ -183,6 +183,41 @@ public class AnchorRepoSettings
   }
 
   /// <summary>
+  /// Get the name of the file storing the tips map for the latest bundle
+  /// </summary>
+  public string GetTipsFile(CentralSettings centralSettings)
+  {
+    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
+    }
+    return Path.Combine(
+      bundleAnchorFolder,
+      VaultAnchor,
+      RepoName,
+      $"{RepoName}.{HostName}.tips.json");
+  }
+
+  /// <summary>
+  /// Get the file name for the bundle file for this repository, host and anchor.
+  /// </summary>
+  public string GetBundleFileName(CentralSettings centralSettings)
+  {
+    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
+    }
+    var shortBundleName = $"{RepoName}.{HostName}.-.bundle";
+    return Path.Combine(
+      bundleAnchorFolder,
+      VaultAnchor,
+      RepoName,
+      shortBundleName);
+  }
+
+  /// <summary>
   /// Materializes the abstract information in this object to a
   /// concrete outgoing BundleInfo object by looking up the anchor names and constructing
   /// the file names. Throws an exception if the vault folder has no known key.

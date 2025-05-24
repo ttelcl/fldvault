@@ -75,7 +75,7 @@ public class GitRoots
     if(result.StatusCode != 0)
     {
       throw new InvalidOperationException(
-        $"Failed to enumerate roots in repository at '{witnessFolder}': {string.Join(", ", result.ErrorLines)}");
+        $"Failed to enumerate roots in repository at '{witnessFolder}': \n{string.Join("\n", result.ErrorLines)}");
     }
     return new GitRoots(result.OutputLines);
   }

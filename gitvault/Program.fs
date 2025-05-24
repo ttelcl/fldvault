@@ -23,6 +23,8 @@ let rec run arglist =
     rest |> AppRepoInit.run
   | "anchor" :: "add" :: rest ->
     rest |> AppAnchorAdd.run
+  | "push" :: rest ->
+    rest |> AppPush.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

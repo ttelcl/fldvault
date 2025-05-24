@@ -34,6 +34,11 @@ let usage focus =
     cp "  \fg-host \fchostname    \f0Name used as 'host' (default: the value set as default host name for this computer)"
     cp "  \fg-b \fcbundleanchor   \f0Name of the bundle anchor folder below which the raw bundles will be stored. Default '\fodefault\f0'."
     cp ""
+  if showSection "push" then
+    cp "\fogitvault \fypush \f0[\fg-all]\f0"
+    cp "  Update the bundle(s) and encrypt the updated bundle(s) to a new vault(s)."
+    cp "  There can be multiple anchors connected; this command will push to all of them."
+    cp ""
   cp "\fg-v               \f0Verbose mode"
 
 

@@ -8,10 +8,10 @@ open GitVaultLib.Configuration
 open FldVault.Core.Vaults
 
 open GitVaultLib.GitThings
+open GitVaultLib.VaultThings
 
 open ColorPrint
 open CommonTools
-open GitVaultLib.VaultThings
 
 type private KeySource =
   | KeySpecifier of string

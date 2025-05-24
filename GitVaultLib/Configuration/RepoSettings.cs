@@ -252,6 +252,7 @@ public class AnchorRepoSettings
     var shortVaultName = $"{shortBundleName}.{keyTag}.mvlt";
     var vaultFile = Path.Combine(
       vaultAnchorFolder,
+      RepoName,
       shortVaultName);
     return new BundleInfo(
       true,

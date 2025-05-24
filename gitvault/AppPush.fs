@@ -3,14 +3,19 @@
 open System
 open System.IO
 
-open GitVaultLib.Configuration
+open Newtonsoft.Json
+open Newtonsoft.Json.Linq
 
+open FileUtilities
+
+open FldVault.KeyServer
+open FldVault.Core.Crypto
+open FldVault.Core.Mvlt
 open FldVault.Core.Vaults
 
+open GitVaultLib.Configuration
 open GitVaultLib.GitThings
 open GitVaultLib.VaultThings
-
-open Newtonsoft.Json
 
 open ColorPrint
 open CommonTools
@@ -25,6 +30,8 @@ type private Options = {
 
 let private runPush o =
   let centralSettings = CentralSettings.Load()
+  let kss = new KeyServerService()
+  use keychain = new KeyChain()
   let status, repoRoot, repoSettings =
     let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
     if repoRoot = null then
@@ -41,17 +48,18 @@ let private runPush o =
     status
   else
     let repotips = GitTips.ForRepository(repoRoot.Folder)
-
+    let reporoots = GitRoots.ForRepository(repoRoot.Folder)
     for repoAnchorSettings in repoSettings.ByAnchor.Values do
       let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
       let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings)
       let bundleTips = GitTips.ForBundleFile(bundleFile) // empty if there is no bundle file
+      // Todo: report differences between bundle and repo tips
       if repotips.AreSame(bundleTips) then
         cp $"\fgNo changes\f0 in branches or tags for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
       else
         cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
         let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings) //bundleInfo.BundleFile
-        cp $"Bundling to \fy{bundleFile}\f0..."
+        cp $"Bundling to \fc{bundleFile}\f0..."
         let result = GitRunner.CreateBundle(bundleFile, null)
         if result.StatusCode <> 0 then
           cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
@@ -64,9 +72,60 @@ let private runPush o =
         cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping encryption stage\f0."
       else
         let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
-        ()
-    cp "NYI: runPush not implemented yet"
-    1
+        let keyId = bundleInfo.KeyInfo.KeyGuid
+        let vaultIsOutdated =
+          FileUtils.IsFileOutdated(bundleInfo.VaultFile, bundleInfo.BundleFile)
+        if vaultIsOutdated |> not then
+          cp $"\fgVault file is up-to-date\f0 ({bundleInfo.VaultFile})"
+        else
+          cp $"Vault file is out-of-date \f0(\fc{bundleInfo.VaultFile}\f0)"
+          let keyLoaded =
+            if keyId |> keychain.ContainsKey |> not then
+              if kss.ServerAvailable then
+                let presence = kss.LookupKeySync(keyId, keychain)
+                match presence with
+                | KeyPresence.Unavailable ->
+                  cp $"\foKey \fb{keyId}\fo not found in the key server\f0."
+                  cp $"\fySkipping encryption\f0. To fix, unlock the key in the key server GUI and try again."
+                  false
+                | KeyPresence.Cloaked ->
+                  cp $"Key \fb{keyId}\f0 is present but currently \fohidden\f0 in the key server."
+                  cp $"\fySkipping encryption\f0. To fix, un-hide the key in the key server GUI and try again."
+                  false
+                | KeyPresence.Present ->
+                  cp $"Key \fb{keyId}\f0 \fgloaded successfully\f0 from the key server\f0."
+                  true
+                | x -> 
+                  cp $"\frInternal Error\fo: Unrecognized key presence status: \fr{x}\f0."
+                  false
+              else
+                cp $"\foKey server is not available, cannot load key \fb{keyId}\f0."
+                cp $"\fySkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
+                false
+            else
+              true
+          if keyLoaded then // else: a message was already printed
+            let metadata = new JObject()
+            metadata.Add("tips", repotips.TipMap |> JToken.FromObject)
+            metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
+            //let dbg = JsonConvert.SerializeObject(metadata, Formatting.Indented)
+            //cp $"Metadata for vault file: \fw{dbg}\f0"
+            let encryptionTask =
+              task {
+                let! writtenFile =
+                  MvltWriter.CompressAndEncrypt(
+                    bundleInfo.BundleFile,
+                    bundleInfo.VaultFile,
+                    keychain,
+                    bundleInfo.KeyInfo.ToPassphraseKeyInfoFile(),
+                    ?metadata = Some(metadata))
+                return writtenFile
+              }
+            let writtenFile =
+              encryptionTask |> Async.AwaitTask |> Async.RunSynchronously
+            cp $"\fgVault file \fc{writtenFile}\f0 created successfully."
+            ()
+    0
 
 let run args =
   let rec parseMore o args =

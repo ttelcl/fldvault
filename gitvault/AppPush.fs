@@ -44,29 +44,27 @@ let private runPush o =
 
     for repoAnchorSettings in repoSettings.ByAnchor.Values do
       let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
+      let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings)
+      let bundleTips = GitTips.ForBundleFile(bundleFile) // empty if there is no bundle file
+      if repotips.AreSame(bundleTips) then
+        cp $"\fgNo changes\f0 in branches or tags for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
+      else
+        cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
+        let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings) //bundleInfo.BundleFile
+        cp $"Bundling to \fy{bundleFile}\f0..."
+        let result = GitRunner.CreateBundle(bundleFile, null)
+        if result.StatusCode <> 0 then
+          cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
+          for line in result.ErrorLines do
+            cp $"\fo  {line}\f0"
+        else
+          cp $"\fgBundle created successfully\f0."
       let keyError = repoAnchorSettings.CanGetKey(centralSettings)
       if keyError |> String.IsNullOrEmpty |> not then
-        cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping bundling stage\f0."
+        cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping encryption stage\f0."
       else
-        let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings)
-        //let tipsFile = repoAnchorSettings.GetTipsFile(centralSettings)
-        let bundleTips = GitTips.ForBundleFile(bundleFile) // empty if there is no bundle file
-        if repotips.AreSame(bundleTips) then
-          cp $"No changes in tips for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
-        else
-          cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
-          let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
-          let bundleFile = bundleInfo.BundleFile
-          cp $"Bundling to \fy{bundleFile}\f0..."
-          let result = GitRunner.CreateBundle(bundleFile, null)
-          if result.StatusCode <> 0 then
-            cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
-            for line in result.ErrorLines do
-              cp $"\fo  {line}\f0"
-          else
-            cp $"\fgBundle created successfully\f0."
-          ()
-
+        let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
+        ()
     cp "NYI: runPush not implemented yet"
     1
 

@@ -164,40 +164,80 @@ public class CentralSettings
   /// </summary>
   /// <param name="name">
   /// The name for the new anchor. This name must be unique and valid.
+  /// If null, and the leaf of <paramref name="anchorFolder"/> is a multi-segment
+  /// name in which one of the segments is "gitvault", that segment the
+  /// anchor name is contructed from the remaining segments.
   /// </param>
   /// <param name="anchorFolder">
   /// The folder to use as the anchor. This folder must exist and is
   /// intended to be a cloud-backed folder. If the leaf folder name isn't
-  /// "GitVault", a child folder by that name will be used and created.
+  /// "GitVault", and is not a multi-segment name in which one of the segments
+  /// is "gitvault", a child folder named "{name}.gitvault" will be created
+  /// and used as the anchor folder.
   /// </param>
-  /// <exception cref="ArgumentException"></exception>
-  /// <exception cref="DirectoryNotFoundException"></exception>
-  public string? TryAddAnchor(string name, string anchorFolder)
+  /// <param name="entry">
+  /// Returns the actual entry added to the anchors dictionary. The name and
+  /// folder may differ from the parameters. Returns null if the anchor was
+  /// not registered due to an error.
+  /// </param>
+  public string? TryAddAnchor(
+    string? name, string anchorFolder, out KeyValuePair<string, string>? entry)
   {
+    entry = null;
+    anchorFolder = Path.GetFullPath(anchorFolder).TrimEnd('/', '\\');
+    var anchorLeaf = Path.GetFileName(anchorFolder);
+    var anchorLeafSegments = anchorLeaf.Split(
+      ['.'],
+      StringSplitOptions.RemoveEmptyEntries);
+    var gitVaultParts =
+      anchorLeafSegments.Where(p => p.Equals("gitvault", StringComparison.OrdinalIgnoreCase))
+      .ToList();
+    if(string.IsNullOrWhiteSpace(name))
+    {
+      if(gitVaultParts.Count != 1)
+      {
+        return
+          "No anchor name given and cannot derive it from anchor folder: " +
+          $"leaf folder '{anchorLeaf}' must have a single 'gitvault' part in the name, " +
+          "e.g. foo.gitvault or gitvault.foo";
+      }
+      var notGitVaultParts =
+        anchorLeafSegments.Where(p => !p.Equals("gitvault", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+      if(notGitVaultParts.Count == 0)
+      {
+        return
+          "No anchor name given and cannot derive it from anchor folder: " +
+          $"leaf folder '{anchorLeaf}' must have at least one part other than 'gitvault', " +
+          "e.g. foo.gitvault or gitvault.foo";
+      }
+      // Anything with more than one part won't be valid, but let the check later on to
+      // fail that, to make the error message more clear.
+      name = String.Join(".", notGitVaultParts);
+    }
     if(_anchors.ContainsKey(name))
     {
       return $"Anchor {name} already exists";
     }
-    if(!IsValidName(name, false))
+    if(!IsValidAnchor(name))
     {
       return
         $"Anchor name {name} is not valid as an anchor name. " +
         "Only letters, digits and '-' are allowed";
     }
-    anchorFolder = Path.GetFullPath(anchorFolder).TrimEnd('/', '\\');
-    if(!Directory.Exists(anchorFolder))
+    if(gitVaultParts.Count == 0)
+    {
+      anchorFolder = Path.Combine(anchorFolder, $"{name}.gitvault");
+    }
+    var anchorParent = Path.GetDirectoryName(anchorFolder);
+    if(!Directory.Exists(anchorParent))
     {
       return
-        $"Anchor path {anchorFolder} does not exist";
+        $"Parent folder of Anchor path {anchorFolder} must already exist: {anchorParent} ";
     }
-    var anchorLeaf = Path.GetFileName(anchorFolder);
-    if(!anchorLeaf.Equals("GitVault", StringComparison.OrdinalIgnoreCase))
+    if(!Directory.Exists(anchorFolder))
     {
-      anchorFolder = Path.Combine(anchorFolder, "GitVault");
-      if(!Directory.Exists(anchorFolder))
-      {
-        Directory.CreateDirectory(anchorFolder);
-      }
+      Directory.CreateDirectory(anchorFolder);
     }
     var anchorFid = FileIdentifier.FromPath(anchorFolder);
     if(anchorFid == null)
@@ -213,6 +253,7 @@ public class CentralSettings
       }
     }
     _anchors[name] = anchorFolder;
+    entry = new KeyValuePair<string, string>(name, anchorFolder);
     Modified = true;
     SaveIfModified();
     return null;
@@ -233,13 +274,25 @@ public class CentralSettings
   {
     return allowDots
       ? Regex.IsMatch(
-        itemName,
-        @"^([a-z][a-z0-9]*)([-._][a-z0-9]+)*$",
-        RegexOptions.IgnoreCase)
+          itemName,
+          @"^([a-z][a-z0-9]*)([-._][a-z0-9]+)*$",
+          RegexOptions.IgnoreCase)
       : Regex.IsMatch(
-        itemName,
-        @"^([a-z][a-z0-9]*)([-_][a-z0-9]+)*$",
-        RegexOptions.IgnoreCase);
+          itemName,
+          @"^([a-z][a-z0-9]*)([-_][a-z0-9]+)*$",
+          RegexOptions.IgnoreCase);
+  }
+
+  /// <summary>
+  /// Test if the name is a valid anchor name in addition to 
+  /// IsValidName(name, false), this also checks that the name is not
+  /// 'gitvault' (case insensitive).
+  /// </summary>
+  /// <param name="name"></param>
+  /// <returns></returns>
+  public static bool IsValidAnchor(string name)
+  {
+    return IsValidName(name, false) && !name.Equals("gitvault", StringComparison.OrdinalIgnoreCase);
   }
 
 }

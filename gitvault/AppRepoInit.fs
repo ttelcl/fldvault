@@ -8,6 +8,7 @@ open GitVaultLib.Configuration
 open FldVault.Core.Vaults
 
 open GitVaultLib.GitThings
+open GitVaultLib.VaultThings
 
 open ColorPrint
 open CommonTools
@@ -19,15 +20,68 @@ type private KeySource =
 type private Options = {
   VaultAnchorName: string
   BundleAnchorName: string
-  KeyInfo: Zkey
   RepoName: string
   RepoFolder: GitRepoFolder
   HostName: string
 }
 
 let private runAppRepoInit o =
-  cp $"\frNot Yet Implemented\f0."
-  1
+  let centralSettings = CentralSettings.Load()
+  let vaultAnchor =
+    centralSettings.Anchors.[o.VaultAnchorName]
+  let bundleAnchor =
+    centralSettings.BundleAnchors.[o.BundleAnchorName]
+  let repoFolder = o.RepoFolder
+  let repoName =
+    if o.RepoName |> String.IsNullOrEmpty then
+      repoFolder.AutoRepoName
+    else
+      o.RepoName
+  let repoVaultFolder0 = new RepoVaultFolder(vaultAnchor, repoName) // also creates folder.
+  let vaultFolder = repoVaultFolder0.VaultFolder
+  let bundleFolder = Path.Combine(bundleAnchor, o.VaultAnchorName, repoName)
+  cp "Info:"
+  cp $"  Repository    \fb{repoName,15}\f0: \fc{repoFolder.Folder}\f0 / \fb{repoFolder.GitFolder}\f0."
+  cp $"  Vault folder  \fb{o.VaultAnchorName,15}\f0: \fg{vaultFolder}\f0."
+  cp $"  Bundle folder \fb{o.BundleAnchorName,15}\f0: \fy{bundleFolder}\f0."
+  cp $"  Settings file:                 \fg{repoFolder.GitvaultSettingsFile}\f0."
+  
+  let compatible = repoVaultFolder0.GitRootsCompatible(repoFolder)
+  if compatible |> not then
+    cp $"\frFATAL:\fo The git repository at \fc{repoFolder.Folder}\fo is not compatible with the vault folder at \fy{vaultFolder}\f0."
+    failwith "Incompatible git repository (the repository and the existing vault folder seem unrelated)"
+  else
+    cp "\fgRepository and vault folder are compatible\f0."
+
+  let error, repoSettings = repoFolder.TryInitGitVaultSettings(
+    centralSettings, o.VaultAnchorName, o.BundleAnchorName, o.HostName, repoName)
+  if repoSettings = null then
+    cp $"\foError: {error}\f0. Initialization aborted"
+    1
+  else
+    if error |> String.IsNullOrEmpty |> not then
+      cp $"\foWarning: {error}\f0."
+    else
+      cp "\fgRepository initialized successfully.\f0"
+    let repoVaultFolder = repoSettings.GetRepoVaultFolder(centralSettings)
+    if repoVaultFolder.MergeRoots(repoFolder) then
+      cp "\fyMerged and saved the GIT root commits for this repository\f0."
+    else
+      cp "The GIT root commits for this repository are already up to date\f0."
+    let keyError = repoVaultFolder.CanGetKey()
+    if keyError |> String.IsNullOrEmpty |> not then
+      cp $"\foBeware!\fy {keyError}\f0."
+      cp $"You can set the key by putting its zkey file into \fc{vaultFolder}\f0."
+    else
+      let bundleInfo = repoSettings.ToBundleInfo(centralSettings)
+      cp "Bundle Info:"
+      cp $"  Bundle file: \fy{bundleInfo.BundleFile}\f0."
+      cp $"  Vault file:  \fg{bundleInfo.VaultFile}\f0."
+      // let keyText = bundleInfo.KeyInfo.ToZkeyTransferString(false)
+      // cp $"  ZKey:\n\fg{keyText}\f0."
+      cp $"   Key ID:     \fb{bundleInfo.KeyInfo.KeyGuid}\f0."
+      cp "Vault is ready for use.\f0"
+    0
 
 let run args =
   let centralSettings = CentralSettings.Load()
@@ -45,12 +99,22 @@ let run args =
       | "-h" :: _ ->
         None
       | "-a" :: name :: rest ->
+        let parts = name.Split("::", StringSplitOptions.RemoveEmptyEntries)
+        let name = parts.[0].Trim()
         let ok, _ = centralSettings.Anchors.TryGetValue(name)
         if ok |> not then
           cp $"\foVault anchor name \fy{name}\fo is not defined\f0."
           None
         else
-          rest |> parseMore { o with VaultAnchorName = name }
+          if parts.Length > 1 then
+            let repoName = parts.[1].Trim()
+            if CentralSettings.IsValidName(repoName, true) |> not then
+              cp $"\foThe name \fy{repoName}\fo is not valid as a gitvault 'repository name'\f0."
+              None
+            else
+              rest |> parseMore { o with VaultAnchorName = name; RepoName = repoName }
+          else
+            rest |> parseMore { o with VaultAnchorName = name }
       | "-b" :: name :: rest ->
         let ok, _ = centralSettings.BundleAnchors.TryGetValue(name)
         if ok |> not then
@@ -58,17 +122,6 @@ let run args =
           None
         else
           rest |> parseMore { o with BundleAnchorName = name }
-      | "-k" :: keyFile :: rest ->
-        let pkif = PassphraseKeyInfoFile.TryFromFile(keyFile)
-        if pkif = null then
-          cp $"\foKey file \fy{keyFile}\fo is not recognized as a key info source\f0."
-          None
-        else
-          let zkey = Zkey.FromPassphraseKeyInfoFile(pkif)
-          rest |> parseMore { o with KeyInfo = zkey }
-      | "-K" :: rest ->
-        cp "\fo'\fg-K\fo' option is not yet implemented\f0. Use \fg-k\f0 instead."
-        None
       | "-f" :: witness :: rest ->
         let repo = witness |> GitRepoFolder.LocateRepoRootFrom
         if repo = null then
@@ -77,13 +130,13 @@ let run args =
         else
           rest |> parseMore { o with RepoFolder = repo }
       | "-host" :: hostName :: rest ->
-        if CentralSettings.IsValidName(hostName, false) then
+        if CentralSettings.IsValidName(hostName, false) |> not then
           cp $"\foThe name \fy{hostName}\fo is not valid as a gitvault 'host name'\f0."
           None
         else
           rest |> parseMore { o with HostName = hostName }
       | "-n" :: repoName :: rest ->
-        if CentralSettings.IsValidName(repoName, true) then
+        if CentralSettings.IsValidName(repoName, true) |> not then
           cp $"\foThe name \fy{repoName}\fo is not valid as a gitvault 'repository name'\f0."
           None
         else
@@ -107,9 +160,6 @@ let run args =
         elif o.BundleAnchorName |> centralSettings.BundleAnchors.ContainsKey |> not then
           cp $"\foBundle anchor name \fy{o.BundleAnchorName}\fo is not defined\f0."
           None
-        elif o.KeyInfo = null then
-          cp "\foKey descriptor not specified\f0."
-          None
         elif o.RepoFolder = null then
           // This implies that using the current directory as the witness folder failed
           cp "\foThe current directory is not in a GIT repository (and no \fg-f\fo option given)\f0."
@@ -123,7 +173,6 @@ let run args =
     let oo = args |> parseMore {
       VaultAnchorName = null
       BundleAnchorName = "default"
-      KeyInfo = null
       RepoName = null
       RepoFolder = null
       HostName = centralSettings.DefaultHostname

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -134,4 +135,133 @@ public static class GitRunner
     var result = RunToLines(args, workingDirectory);
     return result;
   }
+
+  /// <summary>
+  /// Enumerate the root commits of the repository that
+  /// <paramref name="witnessFolder"/> is part of.
+  /// </summary>
+  /// <param name="witnessFolder">
+  /// Any folder that is part of the repository. Or null to use
+  /// the current directory as the witness folder.
+  /// </param>
+  /// <returns>
+  /// A GitRunResult containing the output of the command.
+  /// </returns>
+  public static GitRunResult EnumRoots(string? witnessFolder)
+  {
+    if(string.IsNullOrEmpty(witnessFolder))
+    {
+      witnessFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      witnessFolder = Path.GetFullPath(witnessFolder);
+    }
+    var args = new List<string> {
+      "-C",
+      witnessFolder,
+      "rev-list",
+      "--max-parents=0",
+      "--all"
+    };
+    var result = RunToLines(args, null);
+    return result;
+  }
+
+  /// <summary>
+  /// Enumerate the commit IDs plus ref names for the tips of branches and tags in the repository.
+  /// </summary>
+  public static GitRunResult EnumTips(string? witnessFolder)
+  {
+    if(string.IsNullOrEmpty(witnessFolder))
+    {
+      witnessFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      witnessFolder = Path.GetFullPath(witnessFolder);
+    }
+    var args = new List<string> {
+      "-C",
+      witnessFolder,
+      "show-ref",
+      "--branches",
+      "--tags"
+    };
+    var result = RunToLines(args, null);
+    return result;
+  }
+
+  /// <summary>
+  /// Enumerate the tips/heads of a git bundle file.
+  /// </summary>
+  public static GitRunResult TipsFromBundle(string bundleFile)
+  {
+    var args = new List<string> {
+      "bundle",
+      "list-heads",
+      bundleFile
+    };
+    var result = RunToLines(args, null);
+    return result;
+  }
+
+  /// <summary>
+  /// Create a bundle file containing all branches and tags.
+  /// If the output file already exists, it is moved to a backup file
+  /// </summary>
+  /// <param name="bundleFile">
+  /// The output file.
+  /// </param>
+  /// <param name="witnessFolder">
+  /// Any folder that is part of the repository. If null or empty,
+  /// Environment.CurrentDirectory is used as the witness folder.
+  /// </param>
+  /// <returns></returns>
+  public static GitRunResult CreateBundle(
+    string bundleFile, string? witnessFolder)
+  {
+    if(string.IsNullOrEmpty(witnessFolder))
+    {
+      witnessFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      witnessFolder = Path.GetFullPath(witnessFolder);
+    }
+    var tmpFile = bundleFile + ".tmp";
+    var args = new List<string> {
+      "-C",
+      witnessFolder,
+      "bundle",
+      "create",
+      tmpFile,
+      "--branches",
+      "--tags",
+    };
+    var result = RunToLines(args, null);
+    if(result.StatusCode != 0)
+    {
+      return result; // Return early on error
+    }
+    // If backup is true, we need to move the tmp file to the target
+    // and then rename it to the final bundle file.
+    if(File.Exists(bundleFile))
+    {
+      var backupFile = bundleFile + ".bak";
+      if(File.Exists(backupFile))
+      {
+        // If the backup file already exists, delete it
+        File.Delete(backupFile);
+      }
+      File.Replace(tmpFile, bundleFile, backupFile);
+    }
+    else
+    {
+      File.Move(tmpFile, bundleFile);
+    }
+    return result;
+  }
+
+
 }

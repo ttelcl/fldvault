@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "gitvault": {
+      "commandName": "Project",
+      "commandLineArgs": "repo init -a testing",
+      "workingDirectory": "k:\\src\\vs2022\\fldvault\\gitvault\\bin\\Debug\\net8.0"
+    }
+  }
+}

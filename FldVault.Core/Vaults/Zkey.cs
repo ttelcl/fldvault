@@ -143,6 +143,12 @@ public class Zkey
   public DateTime Created { get; }
 
   /// <summary>
+  /// Return the first 8 characters of the key ID.
+  /// </summary>
+  [JsonIgnore]
+  public string KeyTag => KeyId.Substring(0, 8);
+
+  /// <summary>
   /// Decode the salt to a byte array.
   /// </summary>
   public byte[] GetSalt()

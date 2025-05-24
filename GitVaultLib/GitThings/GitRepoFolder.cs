@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using FldVault.Core.Vaults;
 
 using GitVaultLib.Configuration;
+using GitVaultLib.VaultThings;
 
 namespace GitVaultLib.GitThings;
 
@@ -79,6 +80,12 @@ public class GitRepoFolder
           $"Folder '{GitFolder}' is not a git folder (despite its name).");
       }
     }
+    var repoName = Path.GetFileName(Folder);
+    if(repoName.EndsWith(".git", StringComparison.OrdinalIgnoreCase))
+    {
+      repoName = repoName.Substring(0, repoName.Length - 4);
+    }
+    AutoRepoName = repoName;
   }
 
   /// <summary>
@@ -95,7 +102,13 @@ public class GitRepoFolder
   public string GitFolder { get; }
 
   /// <summary>
-  /// Try to load the gitvault settings for this repository.
+  /// The repo name as derived from the git repository folder.
+  /// </summary>
+  public string AutoRepoName { get; }
+
+  /// <summary>
+  /// Try to load the gitvault settings, including the settings for
+  /// this repository.
   /// Returns null if this repo has not been initialized for use
   /// with gitvault yet.
   /// </summary>
@@ -105,21 +118,52 @@ public class GitRepoFolder
   }
 
   /// <summary>
+  /// The file name where the gitvault settings for this git repository
+  /// are stored
+  /// </summary>
+  public string GitvaultSettingsFile {
+    get {
+      return Path.Combine(
+        GitFolder,
+        "gitvault-settings.json");
+    }
+  }
+
+  /// <summary>
   /// Build a GitVaultSettings object for this repository and
   /// save it. Returns null on success, or an error message
   /// in case of failure.
   /// </summary>
-  /// <param name="centralSettings"></param>
-  /// <param name="keyinfo"></param>
-  /// <param name="vaultAnchor"></param>
-  /// <param name="bundleAnchor"></param>
-  /// <param name="hostName"></param>
-  /// <param name="repoName"></param>
+  /// <param name="centralSettings">
+  /// The gitvault central settings.
+  /// </param>
+  /// <param name="repoSettings">
+  /// Upon success, this will contain the created repo settings object.
+  /// In case of failure because the settings already exist, this will
+  /// contain the existing settings object instead.
+  /// In all other cases, this will be null.
+  /// </param>
+  /// <param name="vaultAnchor">
+  /// The key name of the vault anchor to use in the settings.
+  /// </param>
+  /// <param name="bundleAnchor">
+  /// The key name of the bundle anchor to use in the settings.
+  /// Defaults to "default", which is automatically created upon
+  /// setting up the central settings.
+  /// </param>
+  /// <param name="hostName">
+  /// The host name to use in the settings. Defaults to the
+  /// default host name defined in <paramref name="centralSettings"/>.
+  /// </param>
+  /// <param name="repoName">
+  /// The repository name to use in the settings. Defaults to the name
+  /// derived from this instance's <see cref="Folder"/> property.
+  /// </param>
   /// <returns></returns>
   public string? TryInitGitVaultSettings(
     CentralSettings centralSettings,
-    Zkey keyinfo,
     string vaultAnchor,
+    out AnchorRepoSettings? repoSettings,
     string bundleAnchor = "default",
     string? hostName = null,
     string? repoName = null)
@@ -127,25 +171,33 @@ public class GitRepoFolder
     var existingSettings = TryLoadGitVaultSettings();
     if(existingSettings != null)
     {
-      return $"GitVault is already initialized for this repository.";
+      if(existingSettings.ByAnchor.TryGetValue(vaultAnchor, out repoSettings))
+      {
+        return $"GitVault is already initialized for this repository";
+      }
     }
+    else
+    {
+      existingSettings = new RepoSettings();
+    }
+    repoSettings = null;
     if(!centralSettings.Anchors.ContainsKey(vaultAnchor))
     {
-      return $"Vault anchor '{vaultAnchor}' is not defined.";
+      return $"Vault anchor '{vaultAnchor}' is not defined";
     }
     var vaultRoot = centralSettings.Anchors[vaultAnchor];
     if(!Directory.Exists(vaultRoot))
     {
-      return $"Vault anchor folder '{vaultRoot}' does not exist.";
+      return $"Vault anchor folder '{vaultRoot}' does not exist";
     }
     if(!centralSettings.BundleAnchors.ContainsKey(bundleAnchor))
     {
-      return $"Bundle anchor '{bundleAnchor}' is not defined.";
+      return $"Bundle anchor '{bundleAnchor}' is not defined";
     }
     var bundleRoot = centralSettings.BundleAnchors[bundleAnchor];
     if(!Directory.Exists(bundleRoot))
     {
-      return $"Bundle anchor folder '{bundleRoot}' does not exist.";
+      return $"Bundle anchor folder '{bundleRoot}' does not exist";
     }
     if(String.IsNullOrEmpty(hostName))
     {
@@ -154,7 +206,7 @@ public class GitRepoFolder
     if(!CentralSettings.IsValidName(hostName, false))
     {
       return $"Host name '{hostName}' is not valid for use with GitVault. " +
-        "Only letters, digits, '-' and '_' are allowed.";
+        "Only letters, digits, '-' and '_' are allowed";
     }
     if(String.IsNullOrEmpty(repoName))
     {
@@ -167,14 +219,16 @@ public class GitRepoFolder
     if(!CentralSettings.IsValidName(repoName, true))
     {
       return $"Repository name '{repoName}' is not valid for use with GitVault. " +
-        "Only letters, digits, '-', '_' and '.' are allowed.";
+        "Only letters, digits, '-', '_' and '.' are allowed";
     }
-    var bundleFolder = Path.Combine(
-      bundleRoot,
-      repoName);
-    var vaultFolder = Path.Combine(
+    var repoVaultFolder = new RepoVaultFolder(
       vaultRoot,
       repoName);
+    var bundleFolder = Path.Combine(
+      bundleRoot,
+      vaultAnchor, // repos are only unique per vault anchor, so include it in the bundle path
+      repoName);
+    var vaultFolder = repoVaultFolder.VaultFolder;
     if(!Directory.Exists(bundleFolder))
     {
       Directory.CreateDirectory(bundleFolder);
@@ -183,15 +237,41 @@ public class GitRepoFolder
     {
       Directory.CreateDirectory(vaultFolder);
     }
-    var settings = new RepoSettings(
+    repoSettings = new AnchorRepoSettings(
       hostName,
       repoName,
-      vaultFolder,
-      bundleFolder,
-      keyinfo);
-    settings.Save(this);
+      bundleAnchor);
+    repoSettings.VaultAnchor = vaultAnchor;
+    existingSettings.ByAnchor[vaultAnchor] = repoSettings;
+    existingSettings.Save(this);
     return null;
   }
+
+  /// <summary>
+  /// Build a GitVaultSettings object for this repository and
+  /// save it. Returns null on success, or an error message
+  /// in case of failure. Same as 
+  /// <see cref="TryInitGitVaultSettings(CentralSettings, string, out AnchorRepoSettings?, string, string?, string?)"/>,
+  /// but with the out var as last argument, to be more F# friendly.
+  /// </summary>
+  public string? TryInitGitVaultSettings(
+    CentralSettings centralSettings,
+    string vaultAnchor,
+    string? bundleAnchor,
+    string? hostName,
+    string? repoName,
+    out AnchorRepoSettings? repoSettings)
+  {
+    bundleAnchor ??= "default"; // default bundle anchor
+    return TryInitGitVaultSettings(
+      centralSettings,
+      vaultAnchor,
+      out repoSettings,
+      bundleAnchor,
+      hostName,
+      repoName);
+  }
+
 
   /// <summary>
   /// Test if the folder looks like a git folder: it contains

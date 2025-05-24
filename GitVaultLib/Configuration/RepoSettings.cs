@@ -209,6 +209,7 @@ public class AnchorRepoSettings
     var bundleFile = Path.Combine(
       bundleAnchorFolder,
       VaultAnchor,
+      RepoName,
       shortBundleName);
     var repoVaultFolder = new RepoVaultFolder(vaultAnchorFolder, RepoName);
     var keyInfo = repoVaultFolder.GetVaultKey();

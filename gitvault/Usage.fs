@@ -15,10 +15,15 @@ let usage focus =
     cp "  Show settings for this machine"
     cp ""
   if showSection "anchor-add" then
-    cp "\fogitvault \fyanchor add \fg-a \fcanchorname \fg-f \fcanchorfolder\f0"
+    cp "\fogitvault \fyanchor add \f0[\fg-a \fcanchorname\f0] \fg-f \fcanchorfolder\f0"
     cp "  Register a new anchor: a folder in which your encrypted bundles (vaults) will be"
     cp "  \fg-a \fcanchorname     \f0Name of the anchor (that you use as an alias for the folder)"
+    cp "                    If \fcanchorfolder\f0 ends with \fy/\fcname\fy.gitvault\f0 or \fy/\fygitvault.\fcname\f0 this is optional"
     cp "  \fg-f \fcanchorfolder   \f0Path to the folder. Vault anchor folders should be on a cloud-backed folder"
+    cp "                    A child folder named \fcanchorname\fy.gitvault\f0 will be created in this folder"
+    cp "                    and used as the actual anchor folder, unless:"
+    cp "                    - \fcanchorfolder\f0 already ends with '\fy/\fcname\fy.gitvault\f0'"
+    cp "                    - \fcanchorfolder\f0 ends with '\fy/GitVault\f0'"
     cp ""
   if showSection "repo-init" then
     cp "\fogitvault \fyrepo init \fg-a \fcanchorname\f0 [\fg-k \fckey.zkey\f0|\fg-K\f0] [\fg-n \fcreponame\f0] [\fg-host \fchostname\f0] [\fg-f \fcwitnessfolder\f0] [\fg-b \fcbundleanchor\f0]"

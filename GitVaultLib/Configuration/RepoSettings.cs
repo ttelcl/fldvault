@@ -183,9 +183,9 @@ public class AnchorRepoSettings
   }
 
   /// <summary>
-  /// Get the name of the file storing the tips map for the latest bundle
+  /// Get the folder where the bundle files and other local files for this repository live
   /// </summary>
-  public string GetTipsFile(CentralSettings centralSettings)
+  public string GetBundleFolder(CentralSettings centralSettings)
   {
     if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
     {
@@ -195,7 +195,17 @@ public class AnchorRepoSettings
     return Path.Combine(
       bundleAnchorFolder,
       VaultAnchor,
-      RepoName,
+      RepoName);
+  }
+
+  /// <summary>
+  /// Get the name of the file storing the tips map for the latest bundle
+  /// </summary>
+  public string GetTipsFile(CentralSettings centralSettings)
+  {
+    var bundleFolder = GetBundleFolder(centralSettings);
+    return Path.Combine(
+      bundleFolder,
       $"{RepoName}.{HostName}.tips.json");
   }
 
@@ -204,17 +214,33 @@ public class AnchorRepoSettings
   /// </summary>
   public string GetBundleFileName(CentralSettings centralSettings)
   {
-    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
-    }
-    var shortBundleName = $"{RepoName}.{HostName}.-.bundle";
+    var bundleFolder = GetBundleFolder(centralSettings);
     return Path.Combine(
-      bundleAnchorFolder,
-      VaultAnchor,
-      RepoName,
-      shortBundleName);
+      bundleFolder,
+      $"{RepoName}.{HostName}.-.bundle");
+  }
+
+  /// <summary>
+  /// Get the file name for the source folder file for this repository, host and anchor.
+  /// If this file does not exists, or points to a different repository, that means that
+  /// this repository must not push to the bundle (because it is not the 'owner')
+  /// </summary>
+  public string GetSourceFileName(CentralSettings centralSettings)
+  {
+    var bundleFolder = GetBundleFolder(centralSettings);
+    return Path.Combine(
+      bundleFolder,
+      $"{RepoName}.{HostName}.source.json");
+  }
+
+  /// <summary>
+  /// Try to load the BundleSource for this repository, host and anchor. Returns null if
+  /// not found.
+  /// </summary>
+  public BundleSource? GetBundleSource(CentralSettings centralSettings)
+  {
+    var sourceFile = GetSourceFileName(centralSettings);
+    return BundleSource.TryLoad(sourceFile);
   }
 
   /// <summary>
@@ -235,24 +261,15 @@ public class AnchorRepoSettings
         $"Vault anchor folder '{vaultAnchorFolder}' does not exist.");
     }
 
-    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
-    }
     var shortBundleName = $"{RepoName}.{HostName}.-.bundle";
-    var bundleFile = Path.Combine(
-      bundleAnchorFolder,
-      VaultAnchor,
-      RepoName,
-      shortBundleName);
-    var repoVaultFolder = new RepoVaultFolder(vaultAnchorFolder, RepoName);
+    var bundleFile = GetBundleFileName(centralSettings);
+    var repoVaultFolder = GetRepoVaultFolder(centralSettings);
     var keyInfo = repoVaultFolder.GetVaultKey();
     var keyTag = keyInfo.KeyTag;
     var shortVaultName = $"{shortBundleName}.{keyTag}.mvlt";
+    var vaultFolder = repoVaultFolder.VaultFolder;
     var vaultFile = Path.Combine(
-      vaultAnchorFolder,
-      RepoName,
+      vaultFolder,
       shortVaultName);
     return new BundleInfo(
       true,

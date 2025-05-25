@@ -154,6 +154,14 @@ public class GitRepoFolder
   }
 
   /// <summary>
+  /// Create the bundle source descriptor for this repository.
+  /// </summary>
+  public BundleSource GetBundleSource()
+  {
+    return new BundleSource(Folder);
+  }
+
+  /// <summary>
   /// Build a GitVaultSettings object for this repository and
   /// save it. Returns null on success, or an error message
   /// in case of failure.

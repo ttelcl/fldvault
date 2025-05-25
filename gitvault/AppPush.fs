@@ -47,29 +47,43 @@ let private runPush o =
   if status <> 0 then
     status
   else
+    let repoBundleSource = repoRoot.GetBundleSource()
     let repotips = GitTips.ForRepository(repoRoot.Folder)
     let reporoots = GitRoots.ForRepository(repoRoot.Folder)
     for repoAnchorSettings in repoSettings.ByAnchor.Values do
+      let repoAnchorBundleSource = repoAnchorSettings.GetBundleSource(centralSettings)
       let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
       let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings)
       let bundleTips = GitTips.ForBundleFile(bundleFile) // empty if there is no bundle file
       // Todo: report differences between bundle and repo tips
-      if repotips.AreSame(bundleTips) then
-        cp $"\fgNo changes\f0 in branches or tags for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
-      else
-        cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
-        let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings) //bundleInfo.BundleFile
-        cp $"Bundling to \fc{bundleFile}\f0..."
-        let result = GitRunner.CreateBundle(bundleFile, null)
-        if result.StatusCode <> 0 then
-          cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
-          for line in result.ErrorLines do
-            cp $"\fo  {line}\f0"
+      let bundledOk =
+        if repotips.AreSame(bundleTips) then
+          cp $"\fgNo changes\f0 in branches or tags for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
+          true
+        elif repoAnchorBundleSource = null then
+          cp $"\frNo bundle source found for this anchor+repo+host.\fo This repo is not the owner\f0 (is there a name conflict with an external bundle?) Skipping."
+          false
+        elif repoBundleSource.SameSource(repoAnchorBundleSource) |> not then
+          cp $"\frThis repo is not the owner of 'its' bundle.\fo It is owned by \fc{repoAnchorBundleSource.SourceFolder}\f0. Skipping."
+          false
         else
-          cp $"\fgBundle created successfully\f0."
+          cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
+          let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings) //bundleInfo.BundleFile
+          cp $"Bundling to \fc{bundleFile}\f0..."
+          let result = GitRunner.CreateBundle(bundleFile, null)
+          if result.StatusCode <> 0 then
+            cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
+            for line in result.ErrorLines do
+              cp $"\fo  {line}\f0"
+            false
+          else
+            cp $"\fgBundle created successfully\f0."
+            true
       let keyError = repoAnchorSettings.CanGetKey(centralSettings)
       if keyError |> String.IsNullOrEmpty |> not then
         cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping encryption stage\f0."
+      elif bundledOk |> not then
+        cp "\frBundling stage failed.\fo Skipping Encryption phase\f0."
       else
         let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
         let keyId = bundleInfo.KeyInfo.KeyGuid

@@ -26,6 +26,26 @@ public static class FolderKey
     new List<string> { ".zkey", ".mvlt" };
 
   /// <summary>
+  /// Put a key file in the given folder, constructing the file name from
+  /// the folder name.
+  /// </summary>
+  /// <returns>
+  /// True if written, false if the file already exists.
+  /// </returns>
+  public static bool PutFolderKey(string folder, Zkey key)
+  {
+    folder = Path.GetFullPath(folder).TrimEnd('/', '\\');
+    // Special case the file name that is equal to the folder name with a .zkey extension
+    var keyFile = Path.Combine(folder, $"{Path.GetFileName(folder)}.zkey");
+    if(!File.Exists(keyFile))
+    {
+      key.SaveToJsonFile(keyFile);
+      return true; // Key file created
+    }
+    return false; // Key file already exists, no need to overwrite
+  }
+
+  /// <summary>
   /// Return a collection of distinct key descriptors found in files in the
   /// given folder (indexed by key GUID).
   /// </summary>

@@ -179,6 +179,7 @@ public class RepoVaultFolder
     else if(folderKeys.Count == 1)
     {
       _cachedKey = folderKeys.Single();
+      FolderKey.PutFolderKey(VaultFolder, _cachedKey);
       return null;
     }
     else

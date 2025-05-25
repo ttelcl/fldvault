@@ -201,6 +201,7 @@ public class BundleRecord
     {
       CachedZkey = folderKeys.Single();
       zkey = CachedZkey;
+      FolderKey.PutFolderKey(VaultFolder, CachedZkey);
       return null;
     }
     else

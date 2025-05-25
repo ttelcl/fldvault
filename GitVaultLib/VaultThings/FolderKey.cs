@@ -34,7 +34,20 @@ public static class FolderKey
   public static Dictionary<Guid, Zkey> KeysInFolder(string folder)
   {
     var result = new Dictionary<Guid, Zkey>();
-    folder = Path.GetFullPath(folder);
+    folder = Path.GetFullPath(folder).TrimEnd('/', '\\');
+    // Special case the file name that is equal to the folder name with a .zkey extension
+    // If it exists, than it is the key for this folder and other files are ignored.
+    var keyFile = Path.Combine(folder, $"{Path.GetFileName(folder)}.zkey");
+    if(File.Exists(keyFile))
+    {
+      var pkif = PassphraseKeyInfoFile.TryFromFile(keyFile);
+      if(pkif != null)
+      {
+        var key = pkif.ToZkey();
+        result[key.KeyGuid] = key;
+        return result; // No need to look further
+      }
+    }
     if(Directory.Exists(folder))
     {
       foreach(var extension in KeySourceExtensions)

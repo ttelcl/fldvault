@@ -1,0 +1,244 @@
+﻿/*
+ * (c) 2025  ttelcl / ttelcl
+ */
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+using FldVault.Core.Vaults;
+
+using GitVaultLib.VaultThings;
+
+namespace GitVaultLib.Configuration;
+
+/// <summary>
+/// The combination of vault anchor, repository, and host name,
+/// together uniquely identifying a bundle+vault file pair.
+/// Also stores related information, such as the local source
+/// repository folder, key, and direction.
+/// </summary>
+public class BundleRecord
+{
+  private string? _sourceRepoFolder;
+
+  /// <summary>
+  /// Create a new BundleRecord
+  /// </summary>
+  public BundleRecord(
+    CentralSettings gitvaultSettings,
+    string vaultAnchorName,
+    string repoName,
+    string hostName,
+    string bundleAnchorName = "default")
+  {
+    VaultAnchorName = vaultAnchorName;
+    RepoName = repoName;
+    HostName = hostName;
+    BundleAnchorName = bundleAnchorName;
+    if(!gitvaultSettings.Anchors.TryGetValue(vaultAnchorName, out var vaultAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Vault anchor '{vaultAnchorName}' not found in central settings.");
+    }
+    VaultAnchorFolder = vaultAnchorFolder;
+    if(!gitvaultSettings.BundleAnchors.TryGetValue(bundleAnchorName, out var bundleAnchorFolder))
+    {
+      throw new ArgumentException(
+        $"Bundle anchor '{bundleAnchorName}' not found in central settings.");
+    }
+    BundleAnchorFolder = bundleAnchorFolder;
+    BundleFolder = Path.Combine(
+      bundleAnchorFolder,
+      vaultAnchorName,
+      repoName);
+    VaultFolder = Path.Combine(
+      vaultAnchorFolder,
+      repoName);
+    FilePrefix = $"{repoName}.{hostName}";
+    BundleFileShortName = FilePrefix + ".-.bundle";
+    BundleFileName = Path.Combine(
+      BundleFolder,
+      BundleFileShortName);
+    SourceFileName = Path.Combine(
+      BundleFolder,
+      FilePrefix + ".source.json");
+    TryGetSourceRepoFolder(); // Load source folder if available and set direction
+  }
+
+  /// <summary>
+  /// The vault anchor name.
+  /// </summary>
+  public string VaultAnchorName { get; }
+
+  /// <summary>
+  /// The logical repository name.
+  /// </summary>
+  public string RepoName { get; }
+
+  /// <summary>
+  /// The 'host name', logically distinguishing different bundle sources.
+  /// </summary>
+  public string HostName { get; }
+
+  /// <summary>
+  /// The bundle anchor name. Currently this is always "default".
+  /// </summary>
+  public string BundleAnchorName { get; }
+
+  /// <summary>
+  /// The full path to the bundle anchor folder.
+  /// </summary>
+  public string BundleAnchorFolder { get; }
+  
+  /// <summary>
+  /// The bundle folder.
+  /// </summary>
+  public string BundleFolder { get; }
+
+  /// <summary>
+  /// The full path to the vault anchor folder.
+  /// </summary>
+  public string VaultAnchorFolder { get; }
+
+  /// <summary>
+  /// The vault folder.
+  /// </summary>
+  public string VaultFolder { get; }
+
+  /// <summary>
+  /// Common prefix for file names related to this record
+  /// ("{RepoName}.{HostName}")
+  /// </summary>
+  public string FilePrefix { get; }
+
+  /// <summary>
+  /// The short name of the bundle file (without path). This is
+  /// used as to construct the full bundle file name and as part of
+  /// the vault file name.
+  /// </summary>
+  public string BundleFileShortName { get; }
+
+  /// <summary>
+  /// The full path to the bundle file.
+  /// </summary>
+  public string BundleFileName { get; }
+
+  /// <summary>
+  /// The full path to the source claim file. If this is a local bundle,
+  /// this file exists and contains a JSON serialized <see cref="BundleSource"/> object.
+  /// Otherwise, this file does not exist and indicates a remote bundle.
+  /// </summary>
+  public string SourceFileName { get; }
+
+  /// <summary>
+  /// Try to get the source repository folder from the source file.
+  /// Upon success, the value is cached. Returns the source repository folder
+  /// on success, or null if the source info file does not exist.
+  /// </summary>
+  public string? TryGetSourceRepoFolder()
+  {
+    if(!File.Exists(SourceFileName))
+    {
+      _sourceRepoFolder = null;
+      return null;
+    }
+    if(!String.IsNullOrEmpty(_sourceRepoFolder))
+    {
+      return _sourceRepoFolder;
+    }
+    // Load the source folder from the source file.
+    var source = BundleSource.TryLoad(SourceFileName);
+    if(source == null)
+    {
+      return null;
+    }
+    _sourceRepoFolder = source.SourceFolder;
+    return _sourceRepoFolder;
+  }
+
+  /// <summary>
+  /// Whether this bundle record describes an outgoing bundle or incoming bundle.
+  /// This is initialized by <see cref="TryGetSourceRepoFolder"/>, which is called
+  /// by the constructor but can also be called later to refresh the source
+  /// folder information.
+  /// </summary>
+  public bool IsOutgoingBundle {
+    get {
+      // An outgoing bundle has a source folder defined.
+      return !String.IsNullOrEmpty(_sourceRepoFolder);
+    }
+  }
+
+  /// <summary>
+  /// The cached vault key, if available. Call <see cref="TryGetZkey(out Zkey?)"/>
+  /// to fill this property.
+  /// </summary>
+  public Zkey? CachedZkey { get; private set; }
+
+  /// <summary>
+  /// Try to get and cache the vault key from the vault folder, returning null if successful,
+  /// or an error message otherwise.
+  /// </summary>
+  public string? TryGetZkey(out Zkey? zkey)
+  {
+    if(CachedZkey != null)
+    {
+      zkey = CachedZkey;
+      return null;
+    }
+    var folderKeys = FolderKey.KeysInFolder(VaultFolder).Values;
+    if(folderKeys.Count == 0)
+    {
+      zkey = null;
+      return $"No keys found in vault folder '{VaultFolder}'. Please initialize the vault key first.";
+    }
+    else if(folderKeys.Count == 1)
+    {
+      CachedZkey = folderKeys.Single();
+      zkey = CachedZkey;
+      return null;
+    }
+    else
+    {
+      zkey = null;
+      return
+        $"Multiple keys found in vault folder '{VaultFolder}'. " +
+        "This is not supported by GitVault.";
+    }
+  }
+
+  /// <summary>
+  /// Try to get the vault file name for this bundle record. This will fail
+  /// if no key can be retrieved from the vault folder.
+  /// </summary>
+  /// <param name="vaultFileName">
+  /// Receives the vault file name if successful, or null on error.
+  /// </param>
+  /// <returns>
+  /// Null if successful, or an error message otherwise.
+  /// </returns>
+  public string? TryGetVaultFileName(out string? vaultFileName)
+  {
+    var error = TryGetZkey(out var zkey);
+    if(error != null)
+    {
+      vaultFileName = null;
+      return "Failed to get vault key: " + error;
+    }
+    if(zkey == null)
+    {
+      vaultFileName = null;
+      return "No vault key found (internal error).";
+    }
+    vaultFileName = Path.Combine(
+      VaultFolder,
+      $"{BundleFileShortName}.{zkey.KeyTag}.mvlt");
+    return null;
+  }
+
+}

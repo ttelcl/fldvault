@@ -20,6 +20,7 @@
     <Compile Include="AppAnchorAdd.fs" />
     <Compile Include="AppRepoInit.fs" />
     <Compile Include="AppPush.fs" />
+    <Compile Include="AppBundlesFetch.fs" />
     <Compile Include="Program.fs" />
     <None Include="README.md" />
   </ItemGroup>

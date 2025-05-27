@@ -116,13 +116,11 @@ public class AnchorRepoSettings
   /// </summary>
   public AnchorRepoSettings(
     string hostname,
-    string reponame,
-    [JsonProperty("bundle-anchor")] string bundleAnchor)
+    string reponame)
   {
     HostName = hostname;
     RepoName = reponame;
     VaultAnchor = null!; // to be set by the deserialization hook
-    BundleAnchor = bundleAnchor;
   }
 
   /// <summary>
@@ -146,13 +144,6 @@ public class AnchorRepoSettings
   //[JsonProperty("vault-anchor")]
   [JsonIgnore]
   public string VaultAnchor { get; internal set; }
-
-  /// <summary>
-  /// The tag in the central settings used to identify the full path to the
-  /// bundle anchor folder.
-  /// </summary>
-  [JsonProperty("bundle-anchor")]
-  public string BundleAnchor { get; }
 
   /// <summary>
   /// Check if the vault folder has a known key. Returns null on success,
@@ -187,13 +178,8 @@ public class AnchorRepoSettings
   /// </summary>
   public string GetBundleFolder(CentralSettings centralSettings)
   {
-    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
-    }
     return Path.Combine(
-      bundleAnchorFolder,
+      centralSettings.BundleAnchor,
       VaultAnchor,
       RepoName);
   }

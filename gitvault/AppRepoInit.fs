@@ -13,13 +13,8 @@ open GitVaultLib.VaultThings
 open ColorPrint
 open CommonTools
 
-type private KeySource =
-  | KeySpecifier of string
-  | KeyAuto
-
 type private Options = {
   VaultAnchorName: string
-  BundleAnchorName: string
   RepoName: string
   RepoFolder: GitRepoFolder
   HostName: string
@@ -30,7 +25,7 @@ let private runAppRepoInit o =
   let vaultAnchor =
     centralSettings.Anchors.[o.VaultAnchorName]
   let bundleAnchor =
-    centralSettings.BundleAnchors.[o.BundleAnchorName]
+    centralSettings.BundleAnchor
   let repoFolder = o.RepoFolder
   let repoName =
     if o.RepoName |> String.IsNullOrEmpty then
@@ -43,7 +38,7 @@ let private runAppRepoInit o =
   cp "Info:"
   cp $"  Repository    \fb{repoName,15}\f0: \fc{repoFolder.Folder}\f0 / \fb{repoFolder.GitFolder}\f0."
   cp $"  Vault folder  \fb{o.VaultAnchorName,15}\f0: \fg{vaultFolder}\f0."
-  cp $"  Bundle folder \fb{o.BundleAnchorName,15}\f0: \fy{bundleFolder}\f0."
+  cp $"  Bundle folder:                 \fy{bundleFolder}\f0."
   cp $"  Settings file:                 \fg{repoFolder.GitvaultSettingsFile}\f0."
   
   let compatible = repoVaultFolder0.GitRootsCompatible(repoFolder)
@@ -54,7 +49,7 @@ let private runAppRepoInit o =
     cp "\fgRepository and vault folder are compatible\f0."
 
   let error, repoSettings = repoFolder.TryInitGitVaultSettings(
-    centralSettings, o.VaultAnchorName, o.BundleAnchorName, o.HostName, repoName)
+    centralSettings, o.VaultAnchorName, o.HostName, repoName)
   if repoSettings = null then
     cp $"\foError: {error}\f0. Initialization aborted"
     1
@@ -115,13 +110,6 @@ let run args =
               rest |> parseMore { o with VaultAnchorName = name; RepoName = repoName }
           else
             rest |> parseMore { o with VaultAnchorName = name }
-      | "-b" :: name :: rest ->
-        let ok, _ = centralSettings.BundleAnchors.TryGetValue(name)
-        if ok |> not then
-          cp $"\foBundle anchor name \fy{name}\fo is not defined\f0."
-          None
-        else
-          rest |> parseMore { o with BundleAnchorName = name }
       | "-f" :: witness :: rest ->
         let repo = witness |> GitRepoFolder.LocateRepoRootFrom
         if repo = null then
@@ -154,12 +142,6 @@ let run args =
         elif o.VaultAnchorName |> centralSettings.Anchors.ContainsKey |> not then
           cp $"\foVault anchor name \fy{o.VaultAnchorName}\fo is not defined\f0."
           None
-        elif o.BundleAnchorName |> String.IsNullOrEmpty then
-          cp "\foBundle anchor name not specified\f0."
-          None
-        elif o.BundleAnchorName |> centralSettings.BundleAnchors.ContainsKey |> not then
-          cp $"\foBundle anchor name \fy{o.BundleAnchorName}\fo is not defined\f0."
-          None
         elif o.RepoFolder = null then
           // This implies that using the current directory as the witness folder failed
           cp "\foThe current directory is not in a GIT repository (and no \fg-f\fo option given)\f0."
@@ -172,7 +154,6 @@ let run args =
         None
     let oo = args |> parseMore {
       VaultAnchorName = null
-      BundleAnchorName = "default"
       RepoName = null
       RepoFolder = null
       HostName = centralSettings.DefaultHostname

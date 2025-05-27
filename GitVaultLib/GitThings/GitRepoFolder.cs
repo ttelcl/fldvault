@@ -178,11 +178,6 @@ public class GitRepoFolder
   /// <param name="vaultAnchor">
   /// The key name of the vault anchor to use in the settings.
   /// </param>
-  /// <param name="bundleAnchor">
-  /// The key name of the bundle anchor to use in the settings.
-  /// Defaults to "default", which is automatically created upon
-  /// setting up the central settings.
-  /// </param>
   /// <param name="hostName">
   /// The host name to use in the settings. Defaults to the
   /// default host name defined in <paramref name="centralSettings"/>.
@@ -196,7 +191,6 @@ public class GitRepoFolder
     CentralSettings centralSettings,
     string vaultAnchor,
     out AnchorRepoSettings? repoSettings,
-    string bundleAnchor = "default",
     string? hostName = null,
     string? repoName = null)
   {
@@ -222,11 +216,7 @@ public class GitRepoFolder
     {
       return $"Vault anchor folder '{vaultRoot}' does not exist";
     }
-    if(!centralSettings.BundleAnchors.ContainsKey(bundleAnchor))
-    {
-      return $"Bundle anchor '{bundleAnchor}' is not defined";
-    }
-    var bundleRoot = centralSettings.BundleAnchors[bundleAnchor];
+    var bundleRoot = centralSettings.BundleAnchor;
     if(!Directory.Exists(bundleRoot))
     {
       return $"Bundle anchor folder '{bundleRoot}' does not exist";
@@ -285,8 +275,7 @@ public class GitRepoFolder
 
     repoSettings = new AnchorRepoSettings(
       hostName,
-      repoName,
-      bundleAnchor);
+      repoName);
     repoSettings.VaultAnchor = vaultAnchor;
     existingSettings.ByAnchor[vaultAnchor] = repoSettings;
     existingSettings.Save(this);
@@ -297,23 +286,20 @@ public class GitRepoFolder
   /// Build a GitVaultSettings object for this repository and
   /// save it. Returns null on success, or an error message
   /// in case of failure. Same as 
-  /// <see cref="TryInitGitVaultSettings(CentralSettings, string, out AnchorRepoSettings?, string, string?, string?)"/>,
+  /// <see cref="TryInitGitVaultSettings(CentralSettings, string, out AnchorRepoSettings?, string?, string?)"/>,
   /// but with the out var as last argument, to be more F# friendly.
   /// </summary>
   public string? TryInitGitVaultSettings(
     CentralSettings centralSettings,
     string vaultAnchor,
-    string? bundleAnchor,
     string? hostName,
     string? repoName,
     out AnchorRepoSettings? repoSettings)
   {
-    bundleAnchor ??= "default"; // default bundle anchor
     return TryInitGitVaultSettings(
       centralSettings,
       vaultAnchor,
       out repoSettings,
-      bundleAnchor,
       hostName,
       repoName);
   }

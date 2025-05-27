@@ -33,24 +33,18 @@ public class BundleRecord
     CentralSettings gitvaultSettings,
     string vaultAnchorName,
     string repoName,
-    string hostName,
-    string bundleAnchorName = "default")
+    string hostName)
   {
     VaultAnchorName = vaultAnchorName;
     RepoName = repoName;
     HostName = hostName;
-    BundleAnchorName = bundleAnchorName;
     if(!gitvaultSettings.Anchors.TryGetValue(vaultAnchorName, out var vaultAnchorFolder))
     {
       throw new ArgumentException(
         $"Vault anchor '{vaultAnchorName}' not found in central settings.");
     }
     VaultAnchorFolder = vaultAnchorFolder;
-    if(!gitvaultSettings.BundleAnchors.TryGetValue(bundleAnchorName, out var bundleAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Bundle anchor '{bundleAnchorName}' not found in central settings.");
-    }
+    var bundleAnchorFolder = gitvaultSettings.BundleAnchor;
     BundleAnchorFolder = bundleAnchorFolder;
     BundleFolder = Path.Combine(
       bundleAnchorFolder,
@@ -84,11 +78,6 @@ public class BundleRecord
   /// The 'host name', logically distinguishing different bundle sources.
   /// </summary>
   public string HostName { get; }
-
-  /// <summary>
-  /// The bundle anchor name. Currently this is always "default".
-  /// </summary>
-  public string BundleAnchorName { get; }
 
   /// <summary>
   /// The full path to the bundle anchor folder.

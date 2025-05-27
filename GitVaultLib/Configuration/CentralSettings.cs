@@ -31,7 +31,8 @@ public class CentralSettings
   public CentralSettings(
     Dictionary<string, string> anchors,
     string hostname,
-    [JsonProperty("bundle-anchors")] Dictionary<string, string> bundleAnchors)
+    [JsonProperty("bundle-anchor")] string? bundleAnchor = null,
+    [JsonProperty("bundle-anchors")] Dictionary<string, string>? bundleAnchors = null)
   {
     _anchors = new Dictionary<string, string>(
       StringComparer.OrdinalIgnoreCase);
@@ -43,13 +44,21 @@ public class CentralSettings
 
     _bundleAnchors = new Dictionary<string, string>(
       StringComparer.OrdinalIgnoreCase);
+#pragma warning disable CS0618 // Type or member is obsolete
     BundleAnchors = _bundleAnchors;
-    foreach(var kv in bundleAnchors)
+#pragma warning restore CS0618 // Type or member is obsolete
+    if(bundleAnchors != null)
     {
-      _bundleAnchors[kv.Key] = kv.Value;
+      foreach(var kv in bundleAnchors)
+      {
+        _bundleAnchors[kv.Key] = kv.Value;
+      }
     }
-
-    if(!_bundleAnchors.ContainsKey("default"))
+    if(String.IsNullOrEmpty(bundleAnchor))
+    {
+      _bundleAnchors.TryGetValue("default", out bundleAnchor);
+    }
+    if(String.IsNullOrEmpty(bundleAnchor))
     {
       var defaultBundleAnchor = Path.Combine(
         DefaultCentralSettingsFolder,
@@ -58,9 +67,11 @@ public class CentralSettings
       {
         Directory.CreateDirectory(defaultBundleAnchor);
       }
-      _bundleAnchors["default"] = defaultBundleAnchor;
+      bundleAnchor = defaultBundleAnchor;
       Modified = true;
     }
+    _bundleAnchors["default"] = bundleAnchor;
+    BundleAnchor = bundleAnchor;
 
     DefaultHostname = hostname;
   }
@@ -81,8 +92,7 @@ public class CentralSettings
     {
       settings = new CentralSettings(
         [],
-        Environment.MachineName,
-        []);
+        Environment.MachineName);
       settings.Modified = true;
       settings.SaveIfModified();
       return settings;
@@ -120,13 +130,37 @@ public class CentralSettings
   public IReadOnlyDictionary<string, string> Anchors { get; }
 
   /// <summary>
+  /// DEPRECATED - retained for backward compatibility.
+  /// Replaced by <see cref="BundleAnchor"/>; the only valid entry here is "default".
   /// Folders elegible as bundle anchors. Normally this only
   /// contains the anchor named "default".
   /// Bundle anchor folder must be NOT inside a cloud-backed folder, but in
   /// a local disk folder.
   /// </summary>
   [JsonProperty("bundle-anchors")]
+  [Obsolete("Use BundleAnchor instead")]
   public IReadOnlyDictionary<string, string> BundleAnchors { get; }
+
+  /// <summary>
+  /// Test if the bundle anchors dictionary should be serialized. It is expected that
+  /// it is not.
+  /// </summary>
+  public bool ShouldSerializeBundleAnchors()
+  {
+    // This is to avoid serializing the bundle anchors if they are already determined
+    // by the BundleAnchor property.
+#pragma warning disable CS0618 // Type or member is obsolete
+    return BundleAnchors.Count != 1 ||
+           !BundleAnchors.ContainsKey("default") ||
+           BundleAnchors["default"] != BundleAnchor;
+#pragma warning restore CS0618 // Type or member is obsolete
+  }
+
+  /// <summary>
+  /// The one anchor folder for bundles (previously 'BundleAnchors["default"]').
+  /// </summary>
+  [JsonProperty("bundle-anchor")]
+  public string BundleAnchor { get; }
 
   /// <summary>
   /// The default hostname for repositories

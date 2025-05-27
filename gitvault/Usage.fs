@@ -26,18 +26,23 @@ let usage focus =
     cp "                    - \fcanchorfolder\f0 ends with '\fy/GitVault\f0'"
     cp ""
   if showSection "repo-init" then
-    cp "\fogitvault \fyrepo init \fg-a \fcanchorname\f0[\fo::\fcreponame\f0] [\fg-host \fchostname\f0] [\fg-f \fcwitnessfolder\f0] [\fg-b \fcbundleanchor\f0]"
+    cp "\fogitvault \fyrepo init \fg-a \fcanchorname\f0[\fo::\fcreponame\f0] [\fg-host \fchostname\f0] [\fg-f \fcwitnessfolder\f0]"
     cp "  Initialize an existing git repository for use with gitvault. Note that key initialization is separate"
     cp "  \fg-a \fcanchorname     \f0Alias for the vault anchor folder in which the repo vaults will be published"
     cp "  \fo   ::\fcreponame     \f0Name of the repository (default: derived from the current repo folder name as set via \fg-f\f0)"
     cp "  \fg-f \fcwitnessfolder  \f0Path to any folder in the git repository. (default: current directory)"
     cp "  \fg-host \fchostname    \f0Name used as 'host' (default: the value set as default host name for this computer)"
-    cp "  \fg-b \fcbundleanchor   \f0Name of the bundle anchor folder below which the raw bundles will be stored. Default '\fodefault\f0'."
     cp ""
   if showSection "push" then
-    cp "\fogitvault \fypush \f0[\fg-all]\f0"
-    cp "  Update the bundle(s) and encrypt the updated bundle(s) to a new vault(s)."
+    cp "\fogitvault \fyrepo push \f0[\fg-all\f0]"
+    cp "  Update the bundle(s) and encrypt the updated bundle(s) for the current repo to a new vault(s)."
     cp "  There can be multiple anchors connected; this command will push to all of them."
+    cp "  \fg-all\f0              Push to all anchors - this is the default behavior, and this flag is currently a dummy."
+    cp ""
+  if showSection "bundles-fetch" then
+    cp "\fogitvault \fybundles fetch \f0[\fg-all\f0]"
+    cp "  Decrypt all incoming vaults for the current repo to their bundles"
+    cp "  \fg-all\f0              Same but for all vaults, not just the current repo"
     cp ""
   cp "\fg-v               \f0Verbose mode"
 

@@ -31,24 +31,24 @@ public class BundleRecord
   /// </summary>
   public BundleRecord(
     CentralSettings gitvaultSettings,
-    string vaultAnchorName,
+    string anchorName,
     string repoName,
     string hostName)
   {
-    VaultAnchorName = vaultAnchorName;
+    AnchorName = anchorName;
     RepoName = repoName;
     HostName = hostName;
-    if(!gitvaultSettings.Anchors.TryGetValue(vaultAnchorName, out var vaultAnchorFolder))
+    if(!gitvaultSettings.Anchors.TryGetValue(anchorName, out var vaultAnchorFolder))
     {
       throw new ArgumentException(
-        $"Vault anchor '{vaultAnchorName}' not found in central settings.");
+        $"Vault anchor '{anchorName}' not found in central settings.");
     }
-    VaultAnchorFolder = vaultAnchorFolder;
+    AnchorFolder = vaultAnchorFolder;
     var bundleAnchorFolder = gitvaultSettings.BundleAnchor;
     BundleAnchorFolder = bundleAnchorFolder;
     BundleFolder = Path.Combine(
       bundleAnchorFolder,
-      vaultAnchorName,
+      anchorName,
       repoName);
     VaultFolder = Path.Combine(
       vaultAnchorFolder,
@@ -67,7 +67,7 @@ public class BundleRecord
   /// <summary>
   /// The vault anchor name.
   /// </summary>
-  public string VaultAnchorName { get; }
+  public string AnchorName { get; }
 
   /// <summary>
   /// The logical repository name.
@@ -90,12 +90,12 @@ public class BundleRecord
   public string BundleFolder { get; }
 
   /// <summary>
-  /// The full path to the vault anchor folder.
+  /// The full path to the (vault) anchor folder.
   /// </summary>
-  public string VaultAnchorFolder { get; }
+  public string AnchorFolder { get; }
 
   /// <summary>
-  /// The vault folder.
+  /// The vault folder (nested under <see cref="AnchorFolder"/>).
   /// </summary>
   public string VaultFolder { get; }
 

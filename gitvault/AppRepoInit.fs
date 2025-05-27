@@ -14,7 +14,7 @@ open ColorPrint
 open CommonTools
 
 type private Options = {
-  VaultAnchorName: string
+  AnchorName: string
   RepoName: string
   RepoFolder: GitRepoFolder
   HostName: string
@@ -23,7 +23,7 @@ type private Options = {
 let private runAppRepoInit o =
   let centralSettings = CentralSettings.Load()
   let vaultAnchor =
-    centralSettings.Anchors.[o.VaultAnchorName]
+    centralSettings.Anchors.[o.AnchorName]
   let bundleAnchor =
     centralSettings.BundleAnchor
   let repoFolder = o.RepoFolder
@@ -34,10 +34,10 @@ let private runAppRepoInit o =
       o.RepoName
   let repoVaultFolder0 = new RepoVaultFolder(vaultAnchor, repoName) // also creates folder.
   let vaultFolder = repoVaultFolder0.VaultFolder
-  let bundleFolder = Path.Combine(bundleAnchor, o.VaultAnchorName, repoName)
+  let bundleFolder = Path.Combine(bundleAnchor, o.AnchorName, repoName)
   cp "Info:"
   cp $"  Repository    \fb{repoName,15}\f0: \fc{repoFolder.Folder}\f0 / \fb{repoFolder.GitFolder}\f0."
-  cp $"  Vault folder  \fb{o.VaultAnchorName,15}\f0: \fg{vaultFolder}\f0."
+  cp $"  Vault folder  \fb{o.AnchorName,15}\f0: \fg{vaultFolder}\f0."
   cp $"  Bundle folder:                 \fy{bundleFolder}\f0."
   cp $"  Settings file:                 \fg{repoFolder.GitvaultSettingsFile}\f0."
   
@@ -49,7 +49,7 @@ let private runAppRepoInit o =
     cp "\fgRepository and vault folder are compatible\f0."
 
   let error, repoSettings = repoFolder.TryInitGitVaultSettings(
-    centralSettings, o.VaultAnchorName, o.HostName, repoName)
+    centralSettings, o.AnchorName, o.HostName, repoName)
   if repoSettings = null then
     cp $"\foError: {error}\f0. Initialization aborted"
     1
@@ -107,9 +107,9 @@ let run args =
               cp $"\foThe name \fy{repoName}\fo is not valid as a gitvault 'repository name'\f0."
               None
             else
-              rest |> parseMore { o with VaultAnchorName = name; RepoName = repoName }
+              rest |> parseMore { o with AnchorName = name; RepoName = repoName }
           else
-            rest |> parseMore { o with VaultAnchorName = name }
+            rest |> parseMore { o with AnchorName = name }
       | "-f" :: witness :: rest ->
         let repo = witness |> GitRepoFolder.LocateRepoRootFrom
         if repo = null then
@@ -136,11 +136,11 @@ let run args =
             { o with RepoFolder = repo }
           else
             o
-        if o.VaultAnchorName |> String.IsNullOrEmpty then
+        if o.AnchorName |> String.IsNullOrEmpty then
           cp "\foVault anchor name not specified\f0."
           None
-        elif o.VaultAnchorName |> centralSettings.Anchors.ContainsKey |> not then
-          cp $"\foVault anchor name \fy{o.VaultAnchorName}\fo is not defined\f0."
+        elif o.AnchorName |> centralSettings.Anchors.ContainsKey |> not then
+          cp $"\foVault anchor name \fy{o.AnchorName}\fo is not defined\f0."
           None
         elif o.RepoFolder = null then
           // This implies that using the current directory as the witness folder failed
@@ -153,7 +153,7 @@ let run args =
         cp $"\foUnknown option \fy{x}\f0."
         None
     let oo = args |> parseMore {
-      VaultAnchorName = null
+      AnchorName = null
       RepoName = null
       RepoFolder = null
       HostName = centralSettings.DefaultHostname

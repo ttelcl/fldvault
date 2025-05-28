@@ -31,29 +31,25 @@ public class BundleRecord
   /// </summary>
   public BundleRecord(
     CentralSettings gitvaultSettings,
-    string anchorName,
-    string repoName,
-    string hostName)
+    BundleKey key)
   {
-    AnchorName = anchorName;
-    RepoName = repoName;
-    HostName = hostName;
-    if(!gitvaultSettings.Anchors.TryGetValue(anchorName, out var vaultAnchorFolder))
+    Key = key;
+    if(!gitvaultSettings.Anchors.TryGetValue(AnchorName, out var vaultAnchorFolder))
     {
       throw new ArgumentException(
-        $"Vault anchor '{anchorName}' not found in central settings.");
+        $"Vault anchor '{AnchorName}' not found in central settings.");
     }
     AnchorFolder = vaultAnchorFolder;
     var bundleAnchorFolder = gitvaultSettings.BundleAnchor;
     BundleAnchorFolder = bundleAnchorFolder;
     BundleFolder = Path.Combine(
       bundleAnchorFolder,
-      anchorName,
-      repoName);
+      AnchorName,
+      RepoName);
     VaultFolder = Path.Combine(
       vaultAnchorFolder,
-      repoName);
-    FilePrefix = $"{repoName}.{hostName}";
+      RepoName);
+    FilePrefix = $"{RepoName}.{HostName}";
     BundleFileShortName = FilePrefix + ".-.bundle";
     BundleFileName = Path.Combine(
       BundleFolder,
@@ -65,19 +61,26 @@ public class BundleRecord
   }
 
   /// <summary>
-  /// The vault anchor name.
+  /// The bundle key, which uniquely identifies the bundle and vault.
+  /// It contains the anchor name, repository name, and host name.
   /// </summary>
-  public string AnchorName { get; }
+  public BundleKey Key { get; }
 
   /// <summary>
-  /// The logical repository name.
+  /// The vault anchor name (shortcut for Key.AmchorName).
   /// </summary>
-  public string RepoName { get; }
+  public string AnchorName => Key.AnchorName;
+
+  /// <summary>
+  /// The logical repository name (shortcut for Key.RepoName).
+  /// </summary>
+  public string RepoName => Key.RepoName;
 
   /// <summary>
   /// The 'host name', logically distinguishing different bundle sources.
+  /// (shortcut for Key.HostName).
   /// </summary>
-  public string HostName { get; }
+  public string HostName => Key.HostName;
 
   /// <summary>
   /// The full path to the bundle anchor folder.

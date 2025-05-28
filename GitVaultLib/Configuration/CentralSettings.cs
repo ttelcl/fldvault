@@ -294,6 +294,14 @@ public class CentralSettings
   }
 
   /// <summary>
+  /// Create a new BundleRecord instance for the given bundle key triplet.
+  /// </summary>
+  public BundleRecord CreateBundleRecord(BundleKey key)
+  {
+    return new BundleRecord(this, key);
+  }
+
+  /// <summary>
   /// Checks that the name is valid for use in gitvault parts
   /// (anchors, hosts, etc.)
   /// </summary>

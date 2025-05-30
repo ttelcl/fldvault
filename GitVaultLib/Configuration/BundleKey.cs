@@ -112,7 +112,7 @@ public class BundleKey: IEquatable<BundleKey>
     }
     bundleFileName = Path.GetFileName(bundleFileName);
     var segments = bundleFileName.Split('.');
-    if(segments.Length < 6)
+    if(segments.Length < 4)
     {
       throw new ArgumentException(
         $"Bundle file name '{bundleFileName}' is not valid. " +

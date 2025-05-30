@@ -46,6 +46,11 @@ let usage focus =
     cp "  \fg-all\f0              Same but for all vaults, not just the current repo"
     cp "  \fg-current\f0          (Default) process only the current logical repo"
     cp ""
+  if showSection "bundles-status" then
+    cp "\fogitvault \fybundles status \f0[\fg-f \fcwitnessfolder\f0]"
+    cp "  Show status information for all bundles / vaults for the current repository."
+    cp "  \fg-f \fcwitnessfolder  \f0Path to any folder in the git repository (default: current directory)"
+    cp ""
   cp "\fg-v               \f0Verbose mode"
 
 

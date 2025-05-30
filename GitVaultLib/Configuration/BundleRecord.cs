@@ -154,19 +154,6 @@ public class BundleRecord
   }
 
   /// <summary>
-  /// Whether this bundle record describes an outgoing bundle or incoming bundle.
-  /// This is initialized by <see cref="TryGetSourceRepoFolder"/>, which is called
-  /// by the constructor but can also be called later to refresh the source
-  /// folder information.
-  /// </summary>
-  public bool IsOutgoingBundle {
-    get {
-      // An outgoing bundle has a source folder defined.
-      return !String.IsNullOrEmpty(_sourceRepoFolder);
-    }
-  }
-
-  /// <summary>
   /// The cached vault key, if available. Call <see cref="TryGetZkey(out Zkey?)"/>
   /// to fill this property.
   /// </summary>
@@ -261,6 +248,64 @@ public class BundleRecord
         "Failed to get vault file name: " + error);
     }
     return vaultFileName!;
+  }
+
+  /// <summary>
+  /// The time stamp of the bundle file, or null if the bundle file does not exist.
+  /// </summary>
+  public DateTimeOffset? BundleTime { 
+    get {
+      if(!File.Exists(BundleFileName))
+      {
+        return null;
+      }
+      var fi = new FileInfo(BundleFileName);
+      return fi.LastWriteTimeUtc;
+    }
+  }
+
+  /// <summary>
+  /// The time stamp of the vault file, or null if the vault file does not exist
+  /// (or the vault key is unknown)
+  /// </summary>
+  public DateTimeOffset? VaultTime {
+    get {
+      var _ = TryGetZkey(out var zkey);
+      if(zkey == null)
+      {
+        return null; // No key, no vault file
+      }
+      var vaultFileName = GetVaultFileNameOrFail();
+      if(!File.Exists(vaultFileName))
+      {
+        return null; // Vault file does not exist
+      }
+      var fi = new FileInfo(vaultFileName);
+      return fi.LastWriteTimeUtc;
+    }
+  }
+
+  /// <summary>
+  /// True if a source folder file exists for this bundle record, even if 
+  /// the folder it points to does not exist. This indicates that this bundle
+  /// is a local bundle, at some point associated with a source repository.
+  /// See <see cref="TryGetSourceRepoFolder"/> to see if the repo folder
+  /// still exists.
+  /// </summary>
+  public bool HasSourceFile { get => File.Exists(SourceFileName); }
+
+  /// <summary>
+  /// True if a source repository folder exists, implying that this bundle
+  /// is outgoing.
+  /// </summary>
+  public bool HasSourceRepoFolder {
+    get {
+      if(!HasSourceFile)
+      {
+        return false; // No source file, no source folder
+      }
+      return TryGetSourceRepoFolder() != null;
+    }
   }
 
 }

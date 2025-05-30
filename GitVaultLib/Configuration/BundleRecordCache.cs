@@ -4,10 +4,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
+
+using FileUtilities;
+
+using GitVaultLib.GitThings;
 
 namespace GitVaultLib.Configuration;
 
@@ -118,6 +123,11 @@ public class BundleRecordCache
   }
 
   /// <summary>
+  /// The mapping from bundle keys to bundle records
+  /// </summary>
+  public IReadOnlyDictionary<BundleKey, BundleRecord> Records => _bundleRecords;
+
+  /// <summary>
   /// Get the BundleRecord for the given key (creating it if it does not exist yet).
   /// Equivalent to the indexer <see cref="this[BundleKey]"/>.
   /// </summary>
@@ -166,4 +176,186 @@ public class BundleRecordCache
     _bundleRecords[record.Key] = record;
   }
 
+  /// <summary>
+  /// Register a Bundle Record in this cache based on a vault file name.
+  /// </summary>
+  /// <param name="vaultFile">
+  /// The name of the vault file. The file does not need to exist.
+  /// </param>
+  /// <param name="anchor">
+  /// The anchor name to use for this vault file. Optional if <see cref="AnchorRestriction"/>
+  /// is not null, otherwise required.
+  /// </param>
+  public BundleRecord RegisterVaultFile(string vaultFile, string? anchor = null)
+  {
+    if(anchor != null 
+      && AnchorRestriction != null 
+      && !AnchorRestriction.Equals(anchor, StringComparison.OrdinalIgnoreCase))
+    {
+      throw new ArgumentException(
+        $"Anchor name '{anchor}' does not match the anchor restriction '{AnchorRestriction}' " +
+        "for this cache.");
+    }
+    anchor ??= AnchorRestriction;
+    if(anchor == null)
+    {
+      throw new ArgumentNullException(
+        nameof(anchor), "Anchor name must not be null for this cache.");
+    }
+    var key = BundleKey.FromVaultFileName(anchor, vaultFile);
+    return GetBundleRecord(key);
+  }
+
+  /// <summary>
+  /// Register a Bundle Record in this cache based on a bundle file name.
+  /// </summary>
+  /// <param name="bundleFile">
+  /// The name of the bundle file. The file does not need to exist.
+  /// </param>
+  /// <param name="anchor">
+  /// The anchor name to use for this bundle file. Optional if <see cref="AnchorRestriction"/>
+  /// is not null, otherwise required.
+  /// </param>
+  public BundleRecord RegisterBundleFile(string bundleFile, string? anchor = null)
+  {
+    if(anchor != null
+      && AnchorRestriction != null
+      && !AnchorRestriction.Equals(anchor, StringComparison.OrdinalIgnoreCase))
+    {
+      throw new ArgumentException(
+        $"Anchor name '{anchor}' does not match the anchor restriction '{AnchorRestriction}' " +
+        "for this cache.");
+    }
+    anchor ??= AnchorRestriction;
+    if(anchor == null)
+    {
+      throw new ArgumentNullException(
+        nameof(anchor), "Anchor name must not be null for this cache.");
+    }
+    var key = BundleKey.FromBundleFileName(anchor, bundleFile);
+    return GetBundleRecord(key);
+  }
+
+  /// <summary>
+  /// Register all vault files in the given vault folder, returning a set of
+  /// their bundle keys.
+  /// </summary>
+  /// <param name="vaultFolder">
+  /// The folder to scan for vault files.
+  /// </param>
+  /// <param name="anchor">
+  /// The anchor name to use for the vault files. Optional if <see cref="AnchorRestriction"/>
+  /// is not null, otherwise required.
+  /// </param>
+  public HashSet<BundleKey> RegisterVaultFolder(
+    string vaultFolder,
+    string? anchor = null)
+  {
+    if(anchor != null
+      && AnchorRestriction != null
+      && !AnchorRestriction.Equals(anchor, StringComparison.OrdinalIgnoreCase))
+    {
+      throw new ArgumentException(
+        $"Anchor name '{anchor}' does not match the anchor restriction '{AnchorRestriction}' " +
+        "for this cache.");
+    }
+    var keys = new HashSet<BundleKey>();
+    anchor ??= AnchorRestriction;
+    if(anchor == null)
+    {
+      throw new ArgumentNullException(
+        nameof(anchor), "Anchor name must not be null for this cache.");
+    }
+    if(Directory.Exists(vaultFolder))
+    {
+      var di = new DirectoryInfo(vaultFolder);
+      foreach(var vaultFile in di.EnumerateFiles("*.mvlt"))
+      {
+        keys.Add(RegisterVaultFile(vaultFile.FullName, anchor).Key);
+      }
+    }
+    return keys;
+  }
+
+  /// <summary>
+  /// Register all bundle files in the given bundle folder, returning a set of
+  /// their bundle keys.
+  /// </summary>
+  /// <param name="bundleFolder">
+  /// The folder to scan for bundle files.
+  /// </param>
+  /// <param name="anchor">
+  /// The anchor name to use for the bundle files. Optional if <see cref="AnchorRestriction"/>
+  /// is not null, otherwise required.
+  /// </param>
+  public HashSet<BundleKey> RegisterBundleFolder(
+    string bundleFolder,
+    string? anchor = null)
+  {
+    if(anchor != null
+      && AnchorRestriction != null
+      && !AnchorRestriction.Equals(anchor, StringComparison.OrdinalIgnoreCase))
+    {
+      throw new ArgumentException(
+        $"Anchor name '{anchor}' does not match the anchor restriction '{AnchorRestriction}' " +
+        "for this cache.");
+    }
+    var keys = new HashSet<BundleKey>();
+    anchor ??= AnchorRestriction;
+    if(anchor == null)
+    {
+      throw new ArgumentNullException(
+        nameof(anchor), "Anchor name must not be null for this cache.");
+    }
+    if(Directory.Exists(bundleFolder))
+    {
+      var di = new DirectoryInfo(bundleFolder);
+      foreach(var bundleFile in di.EnumerateFiles("*.bundle"))
+      {
+        keys.Add(RegisterBundleFile(bundleFile.FullName, anchor).Key);
+      }
+    }
+    return keys;
+  }
+
+  /// <summary>
+  /// Ensure the anchor-specific source repository setting has a record in this cache
+  /// and validate it.
+  /// </summary>
+  /// <param name="gitRepo">
+  /// The <see cref="GitRepoFolder"/> instance describing the source repository
+  /// </param>
+  /// <param name="repoSettings">
+  /// The anchor segment of the repo's gitvault settings to create a record for
+  /// </param>
+  /// <returns>
+  /// The <see cref="BundleKey"/> identifying the created (or existing) bundle record.
+  /// </returns>
+  public BundleKey RegisterSourceRepository(
+    GitRepoFolder gitRepo,
+    AnchorRepoSettings repoSettings)
+  {
+    if(AnchorRestriction != null
+      && !AnchorRestriction.Equals(repoSettings.VaultAnchor, StringComparison.OrdinalIgnoreCase))
+    {
+      throw new InvalidOperationException(
+        "Attempt to register a source repo for a different gitvault anchor");
+    }
+    var key = MakeBundleKey(
+      repoSettings.VaultAnchor, repoSettings.RepoName, repoSettings.HostName);
+    var record = GetBundleRecord(key);
+    var recordSource = record.TryGetSourceRepoFolder();
+    if(recordSource is null)
+    {
+      throw new InvalidOperationException(
+        "Expecting the bundle record for the source repository to have a source folder");
+    }
+    if(!FileIdentifier.AreSame(recordSource, gitRepo.Folder))
+    {
+      throw new InvalidOperationException(
+        "Mismatch between actual repo source folder and the registered one: " + 
+        $"{gitRepo.Folder} vs {recordSource}");
+    }
+    return key;
+  }
 }

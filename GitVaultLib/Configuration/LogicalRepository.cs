@@ -122,4 +122,35 @@ public class LogicalRepository
     return _bundleRecordCache.GetBundleRecord(key);
   }
 
+  /// <summary>
+  /// Make sure all vaults in the vault folder are covered by the bundle record cache
+  /// </summary>
+  public void RegisterVaults()
+  {
+    _bundleRecordCache.RegisterVaultFolder(VaultFolder.VaultFolder, AnchorName);
+  }
+
+  /// <summary>
+  /// Make sure all vaults in the vault folder are covered by the bundle record cache
+  /// </summary>
+  public void RegisterBundles()
+  {
+    _bundleRecordCache.RegisterBundleFolder(BundleFolder, AnchorName);
+  }
+
+  /// <summary>
+  /// Register a source repository (creating a record in the record cache)
+  /// </summary>
+  public BundleRecord RegisterSourceRepository(
+    GitRepoFolder gitRepo, AnchorRepoSettings anchorRepoSettings)
+  {
+    var key = _bundleRecordCache.RegisterSourceRepository(gitRepo, anchorRepoSettings);
+    return GetBundleRecord(key);
+  }
+
+  /// <summary>
+  /// Get the bundle record cache for this logical repository. Initially it will
+  /// be empty.
+  /// </summary>
+  public BundleRecordCache RecordCache { get => _bundleRecordCache; }
 }

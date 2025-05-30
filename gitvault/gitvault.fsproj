@@ -21,6 +21,7 @@
     <Compile Include="AppRepoInit.fs" />
     <Compile Include="AppPush.fs" />
     <Compile Include="AppBundlesFetch.fs" />
+    <Compile Include="AppBundlesStatus.fs" />
     <Compile Include="Program.fs" />
     <None Include="README.md" />
   </ItemGroup>

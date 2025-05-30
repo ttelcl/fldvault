@@ -30,6 +30,10 @@ let rec run arglist =
   | "ingest" :: rest 
   | "bundles" :: "ingest" :: rest ->
     rest |> AppBundlesFetch.run
+  | "bundles" :: "status" :: rest 
+  | "status" :: rest 
+  | "bundles" :: "info" :: rest ->
+    rest |> AppBundlesStatus.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

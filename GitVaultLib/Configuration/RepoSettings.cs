@@ -230,10 +230,25 @@ public class AnchorRepoSettings
   }
 
   /// <summary>
+  /// Get or create the BundleRecord for this repository, host and anchor from
+  /// the given BundleRecordCache.
+  /// </summary>
+  public BundleRecord GetBundleRecord(BundleRecordCache cache)
+  {
+    var key = cache.MakeBundleKey(
+      anchorName: VaultAnchor,
+      repoName: RepoName,
+      hostName: HostName);
+    var record = cache.GetBundleRecord(key);
+    return record;
+  }
+
+  /// <summary>
   /// Materializes the abstract information in this object to a
   /// concrete outgoing BundleInfo object by looking up the anchor names and constructing
   /// the file names. Throws an exception if the vault folder has no known key.
   /// </summary>
+  [Obsolete("To be redesigned to BundleRecord instead")]
   public BundleInfo ToBundleInfo(CentralSettings centralSettings)
   {
     if(!centralSettings.Anchors.TryGetValue(VaultAnchor, out var vaultAnchorFolder))

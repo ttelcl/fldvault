@@ -150,9 +150,40 @@ public class BundleKey: IEquatable<BundleKey>
   public string HostName { get; }
 
   /// <summary>
+  /// Ensure that the non-null parameters match the triplet (case insensitive).
+  /// </summary>
+  /// <param name="anchorName">
+  /// The anchor name to match. If null, it is ignored.
+  /// </param>
+  /// <param name="repoName">
+  /// The repository name to match. If null, it is ignored.
+  /// </param>
+  /// <param name="hostName">
+  /// The host name to match. If null, it is ignored.
+  /// </param>
+  /// <returns></returns>
+  public bool PartialMatch(string? anchorName, string? repoName, string? hostName)
+  {
+    if(anchorName is not null && !AnchorName.Equals(anchorName, StringComparison.OrdinalIgnoreCase))
+    {
+      return false;
+    }
+    if(repoName is not null && !RepoName.Equals(repoName, StringComparison.OrdinalIgnoreCase))
+    {
+      return false;
+    }
+    if(hostName is not null && !HostName.Equals(hostName, StringComparison.OrdinalIgnoreCase))
+    {
+      return false;
+    }
+    return true;
+  }
+
+  /// <summary>
   /// A unique string for this triplet (AnchorName|RepoName|HostName).
   /// A '|' is used as separator instead of '.', because '.' is a legal
-  /// character in repository names.
+  /// character in repository names. This token should be treated as
+  /// case insensitive.
   /// </summary>
   public string KeyToken { get; }
 
@@ -164,7 +195,7 @@ public class BundleKey: IEquatable<BundleKey>
   {
     if(obj is BundleKey other)
     {
-      return KeyToken == other.KeyToken;
+      return KeyToken.Equals(other.KeyToken, StringComparison.OrdinalIgnoreCase);
     }
     return false;
   }
@@ -173,12 +204,12 @@ public class BundleKey: IEquatable<BundleKey>
   public bool Equals(BundleKey? other)
   {
     return other is not null &&
-           KeyToken == other.KeyToken;
+           KeyToken.Equals(other.KeyToken, StringComparison.OrdinalIgnoreCase);
   }
 
   /// <inheritdoc />
   public override int GetHashCode()
   {
-    return KeyToken.GetHashCode();
+    return KeyToken.GetHashCode(StringComparison.OrdinalIgnoreCase);
   }
 }

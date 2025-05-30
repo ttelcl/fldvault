@@ -30,6 +30,7 @@ type private Options = {
 
 let private runPush o =
   let centralSettings = CentralSettings.Load()
+  let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
   let kss = new KeyServerService()
   use keychain = new KeyChain()
   let status, repoRoot, repoSettings =
@@ -85,14 +86,17 @@ let private runPush o =
       elif bundledOk |> not then
         cp "\frBundling stage failed.\fo Skipping Encryption phase\f0."
       else
-        let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
-        let keyId = bundleInfo.KeyInfo.KeyGuid
+        let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
+        //let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
+        let keyInfo = bundleRecord.GetZkeyOrFail()
+        let vaultFileName = bundleRecord.GetVaultFileNameOrFail()
+        let keyId = keyInfo.KeyGuid
         let vaultIsOutdated =
-          FileUtils.IsFileOutdated(bundleInfo.VaultFile, bundleInfo.BundleFile)
+          FileUtils.IsFileOutdated(vaultFileName, bundleRecord.BundleFileName)
         if vaultIsOutdated |> not then
-          cp $"\fgVault file is up-to-date\f0 ({bundleInfo.VaultFile})"
+          cp $"\fgVault file is up-to-date\f0 ({vaultFileName})"
         else
-          cp $"Vault file is out-of-date \f0(\fc{bundleInfo.VaultFile}\f0)"
+          cp $"Vault file is out-of-date \f0(\fc{vaultFileName}\f0)"
           let keyLoaded =
             if keyId |> keychain.ContainsKey |> not then
               if kss.ServerAvailable then
@@ -128,10 +132,10 @@ let private runPush o =
               task {
                 let! writtenFile =
                   MvltWriter.CompressAndEncrypt(
-                    bundleInfo.BundleFile,
-                    bundleInfo.VaultFile,
+                    bundleRecord.BundleFileName,
+                    vaultFileName,
                     keychain,
-                    bundleInfo.KeyInfo.ToPassphraseKeyInfoFile(),
+                    keyInfo.ToPassphraseKeyInfoFile(),
                     ?metadata = Some(metadata))
                 return writtenFile
               }

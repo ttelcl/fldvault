@@ -22,6 +22,7 @@ type private Options = {
 
 let private runAppRepoInit o =
   let centralSettings = CentralSettings.Load()
+  let bundleRecordCache = new BundleRecordCache(centralSettings, o.AnchorName, null, null)
   let vaultAnchor =
     centralSettings.Anchors.[o.AnchorName]
   let bundleAnchor =
@@ -67,16 +68,29 @@ let private runAppRepoInit o =
     if keyError |> String.IsNullOrEmpty |> not then
       cp $"\foBeware!\fy {keyError}\f0."
       cp $"You can set the key by putting its zkey file into \fc{vaultFolder}\f0."
+      1
     else
-      let bundleInfo = repoSettings.ToBundleInfo(centralSettings)
-      cp "Bundle Info:"
-      cp $"  Bundle file: \fy{bundleInfo.BundleFile}\f0."
-      cp $"  Vault file:  \fg{bundleInfo.VaultFile}\f0."
-      // let keyText = bundleInfo.KeyInfo.ToZkeyTransferString(false)
-      // cp $"  ZKey:\n\fg{keyText}\f0."
-      cp $"   Key ID:     \fb{bundleInfo.KeyInfo.KeyGuid}\f0."
-      cp "Vault is ready for use.\f0"
-    0
+      let bundleKey = bundleRecordCache.MakeBundleKey(o.AnchorName, repoName, repoSettings.HostName)
+      let bundleRecord = bundleRecordCache.GetBundleRecord(bundleKey)
+
+      // let bundleInfo = repoSettings.ToBundleInfo(centralSettings)
+      let err, vaultFileName = bundleRecord.TryGetVaultFileName()
+      if err |> String.IsNullOrEmpty |> not then
+        cp $"\frError: {err}\f0."
+        1
+      else
+        cp "Bundle Info:"
+        cp $"  Bundle file: \fy{bundleRecord.BundleFileName}\f0."
+        cp $"  Vault file:  \fg{vaultFileName}\f0."
+        let err2, zkey = bundleRecord.TryGetZkey()
+        if err2 |> String.IsNullOrEmpty |> not then
+          failwith $"\frInternal Error: {err2}\f0."
+        else
+        // let keyText = bundleInfo.KeyInfo.ToZkeyTransferString(false)
+        // cp $"  ZKey:\n\fg{keyText}\f0."
+        cp $"   Key ID:     \fb{zkey.KeyGuid}\f0."
+        cp "Vault is ready for use.\f0"
+        0
 
 let run args =
   let centralSettings = CentralSettings.Load()

@@ -40,9 +40,11 @@ let usage focus =
     cp "  \fg-all\f0              Push to all anchors - this is the default behavior, and this flag is currently a dummy."
     cp ""
   if showSection "bundles-fetch" then
-    cp "\fogitvault \fybundles fetch \f0[\fg-all\f0]"
-    cp "  Decrypt all incoming vaults for the current repo to their bundles"
+    cp "\fogitvault \fybundles ingest \f0[\fg-all\f0|\fg-current\f0]"
+    cp "  Decrypt all incoming vaults for the current repo to their bundles."
+    cp "  (Aliases: \fogitvault ingest\f0 or \fogitvault bundles fetch\f0)"
     cp "  \fg-all\f0              Same but for all vaults, not just the current repo"
+    cp "  \fg-current\f0          (Default) process only the current logical repo"
     cp ""
   cp "\fg-v               \f0Verbose mode"
 

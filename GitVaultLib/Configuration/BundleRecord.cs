@@ -206,6 +206,20 @@ public class BundleRecord
   }
 
   /// <summary>
+  /// Get the vault key descriptor, throwing an exception if it is not known.
+  /// </summary>
+  public Zkey GetZkeyOrFail()
+  {
+    var error = TryGetZkey(out var zkey);
+    if(error != null)
+    {
+      throw new InvalidOperationException(
+        "Failed to get vault key: " + error);
+    }
+    return zkey!;
+  }
+
+  /// <summary>
   /// Try to get the vault file name for this bundle record. This will fail
   /// if no key can be retrieved from the vault folder.
   /// </summary>
@@ -232,6 +246,21 @@ public class BundleRecord
       VaultFolder,
       $"{BundleFileShortName}.{zkey.KeyTag}.mvlt");
     return null;
+  }
+
+  /// <summary>
+  /// Get the vault file name, throwing an exception if the key is not known.
+  /// Consider using <see cref="TryGetVaultFileName(out string?)"/> instead.
+  /// </summary>
+  public string GetVaultFileNameOrFail()
+  {
+    var error = TryGetVaultFileName(out var vaultFileName);
+    if(error != null)
+    {
+      throw new InvalidOperationException(
+        "Failed to get vault file name: " + error);
+    }
+    return vaultFileName!;
   }
 
 }

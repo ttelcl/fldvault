@@ -396,8 +396,8 @@ public class VaultCryptoTests
       var elemTree2 = readVault.Blocks.BuildElementTree();
       Assert.NotNull(elemTree2);
       Assert.Equal(3, elemTree2.Children.Count);
-      Assert.Equal(0, elemTree2.Children[0].Children.Count);
-      Assert.Equal(0, elemTree2.Children[1].Children.Count);
+      Assert.Empty(elemTree2.Children[0].Children);
+      Assert.Empty(elemTree2.Children[1].Children);
       Assert.Equal(3, elemTree2.Children[2].Children.Count);
     }
   }
@@ -444,8 +444,8 @@ public class VaultCryptoTests
       var elemTree2 = readVault.Blocks.BuildElementTree();
       Assert.NotNull(elemTree2);
       Assert.Equal(3, elemTree2.Children.Count);
-      Assert.Equal(0, elemTree2.Children[0].Children.Count);
-      Assert.Equal(0, elemTree2.Children[1].Children.Count);
+      Assert.Empty(elemTree2.Children[0].Children);
+      Assert.Empty(elemTree2.Children[1].Children);
       Assert.Equal(5, elemTree2.Children[2].Children.Count);
     }
   }

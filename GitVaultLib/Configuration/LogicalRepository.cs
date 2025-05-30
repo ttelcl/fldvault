@@ -91,23 +91,6 @@ public class LogicalRepository
   /// </summary>
   public string BundleFolder { get; }
 
-  ///// <summary>
-  ///// Get or create a bundle key for the given host name
-  ///// (returning a cached instance if it already exists).
-  ///// </summary>
-  //public BundleKey GetKeyForHost(string hostName)
-  //{
-  //  if(!CentralSettings.IsValidName(hostName, false))
-  //  {
-  //    throw new ArgumentException(
-  //      $"Host name '{hostName}' is not valid. " +
-  //      "Only letters, digits, '-', and '_' are allowed.");
-  //  }
-  //  var key = _bundleRecordCache.MakeBundleKey(hostName: hostName);
-  //  var record = _bundleRecordCache.GetBundleRecord(key);
-  //  return record.Key;
-  //}
-
   /// <summary>
   /// Given the host name, return the bundle record for this repository,
   /// creating it if it does not yet exist.

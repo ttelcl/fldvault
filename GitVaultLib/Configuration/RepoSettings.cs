@@ -243,42 +243,4 @@ public class AnchorRepoSettings
     return record;
   }
 
-  /// <summary>
-  /// Materializes the abstract information in this object to a
-  /// concrete outgoing BundleInfo object by looking up the anchor names and constructing
-  /// the file names. Throws an exception if the vault folder has no known key.
-  /// </summary>
-  [Obsolete("To be redesigned to BundleRecord instead")]
-  public BundleInfo ToBundleInfo(CentralSettings centralSettings)
-  {
-    if(!centralSettings.Anchors.TryGetValue(VaultAnchor, out var vaultAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Vault anchor '{VaultAnchor}' not found in central settings.");
-    }
-    if(!Directory.Exists(vaultAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Vault anchor folder '{vaultAnchorFolder}' does not exist.");
-    }
-
-    var shortBundleName = $"{RepoName}.{HostName}.-.bundle";
-    var bundleFile = GetBundleFileName(centralSettings);
-    var repoVaultFolder = GetRepoVaultFolder(centralSettings);
-    var keyInfo = repoVaultFolder.GetVaultKey();
-    var keyTag = keyInfo.KeyTag;
-    var shortVaultName = $"{shortBundleName}.{keyTag}.mvlt";
-    var vaultFolder = repoVaultFolder.VaultFolder;
-    var vaultFile = Path.Combine(
-      vaultFolder,
-      shortVaultName);
-    return new BundleInfo(
-      true,
-      HostName,
-      RepoName,
-      bundleFile,
-      vaultFile,
-      keyInfo);
-  }
-
 }

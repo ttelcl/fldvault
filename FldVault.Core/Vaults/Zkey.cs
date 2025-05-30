@@ -73,7 +73,7 @@ public class Zkey
   public void SaveToJsonFile(string fileName)
   {
     var json = ToString(true);
-    File.WriteAllText(fileName, json, Encoding.UTF8);
+    File.WriteAllText(fileName, json);
   }
 
   /// <summary>

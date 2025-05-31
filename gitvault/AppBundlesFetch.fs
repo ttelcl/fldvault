@@ -26,6 +26,7 @@ type private RepoSource =
   | GitRepo of WitnessFolder: string
   | AnchorRepo of AnchorName: string * RepoName: string
   | AnchorAll of AnchorName: string
+  | Everything
 
 type private Options = {
   Source: RepoSource
@@ -145,7 +146,7 @@ let private ingestRepoAnchor kinf (repoDb: LogicalRepository) =
           let vaultName = record.GetVaultFileNameOrFail()
           decryptVault kinf.Chain keyId vaultName bundleName
 
-let private runIngestGit kinf witnessFolder =
+let private runIngestGit (settings: CentralSettings) kinf witnessFolder =
   let repo = witnessFolder |> GitRepoFolder.LocateRepoRootFrom
   if repo = null then
     cp "\foNo git repository found here\f0."
@@ -157,7 +158,6 @@ let private runIngestGit kinf witnessFolder =
       1
     else
       cp $"Processing incoming bundles related to GIT repository \fo{repo.Folder}\f0:"
-      let settings = CentralSettings.Load()
       for anchorSettings in repoSettings.ByAnchor.Values do
         let repoDb = new LogicalRepository(settings, anchorSettings.VaultAnchor, anchorSettings.RepoName)
         let anchorSettings = anchorSettings |> Some
@@ -165,8 +165,7 @@ let private runIngestGit kinf witnessFolder =
         repoDb |> ingestRepoAnchor kinf
       0
 
-let private runIngestAnchorRepo kinf anchorName repoName =
-  let settings = CentralSettings.Load()
+let private runIngestAnchorRepo (settings: CentralSettings) kinf anchorName repoName =
   if anchorName |> settings.Anchors.ContainsKey |> not then
     cp $"\foanchor name '{anchorName}\fo' is unknown\f0."
     let anchorNames = settings.Anchors.Keys |> Seq.sort |> Seq.toArray
@@ -179,8 +178,7 @@ let private runIngestAnchorRepo kinf anchorName repoName =
     repoDb |> ingestRepoAnchor kinf
     0
 
-let private runIngestAnchorAll kinf anchorName =
-  let settings = CentralSettings.Load()
+let private runIngestAnchorAll (settings: CentralSettings) kinf anchorName =
   if anchorName |> settings.Anchors.ContainsKey |> not then
     cp $"\foanchor name '{anchorName}\fo' is unknown\f0."
     let anchorNames = settings.Anchors.Keys |> Seq.sort |> Seq.toArray
@@ -201,16 +199,27 @@ let private runIngestAnchorAll kinf anchorName =
         repoDb |> ingestRepoAnchor kinf
       0
 
+let private runIngestEverything (settings: CentralSettings) kinf =
+  let mutable status = 0
+  for anchorName in settings.Anchors.Keys do
+    if status = 0 then
+      let newStatus = anchorName |> runIngestAnchorAll settings kinf
+      status <- newStatus
+  status
+
 let private runIngest o =
+  let settings = CentralSettings.Load()
   use keyChain = new KeyChain()
   let kinf = keyChain |> createInfrastructure
   match o.Source with
   | GitRepo(witnessFolder) ->
-    witnessFolder |> runIngestGit kinf
+    witnessFolder |> runIngestGit settings kinf
   | AnchorRepo(anchorName, repoName) ->
-    runIngestAnchorRepo kinf anchorName repoName
+    runIngestAnchorRepo settings kinf anchorName repoName
   | AnchorAll(anchorName) ->
-    anchorName |> runIngestAnchorAll kinf
+    anchorName |> runIngestAnchorAll settings kinf
+  | Everything ->
+    runIngestEverything settings kinf
 
 let run args =
   let rec parseMore o args =
@@ -237,6 +246,8 @@ let run args =
       else
         cp $"Unrecognized format in \fg-a\f0 argument '\fc{anchorAndRepo}\f0'"
         None
+    | "-all" :: rest ->
+      rest |> parseMore { o with Source = Everything }
     | [] ->
       Some o
     | x :: _ ->

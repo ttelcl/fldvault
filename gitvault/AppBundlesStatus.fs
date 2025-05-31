@@ -24,6 +24,7 @@ type private RepoSource =
   | GitRepo of WitnessFolder: string
   | AnchorRepo of AnchorName: string * RepoName: string
   | AnchorAll of AnchorName: string
+  | Everything
 
 type private Options = {
   Source: RepoSource
@@ -97,7 +98,7 @@ let private processRepoAnchor repo anchorSettings (repoDb: LogicalRepository) =
       cpx $"Vault: {vaultTime,-23} {arrow} Bundle: {bundleTime,-23}"
       cp ""
 
-let private runBundleStatusGit witnessFolder =
+let private runBundleStatusGit (settings: CentralSettings) witnessFolder =
   let repo = witnessFolder |> GitRepoFolder.LocateRepoRootFrom
   if repo = null then
     cp "\foNo git repository found here\f0."
@@ -109,7 +110,6 @@ let private runBundleStatusGit witnessFolder =
       1
     else
       cp $"Status of bundles related to GIT repository \fo{repo.Folder}\f0:"
-      let settings = CentralSettings.Load()
       for anchorSettings in repoSettings.ByAnchor.Values do
         let repoDb = new LogicalRepository(settings, anchorSettings.VaultAnchor, anchorSettings.RepoName)
         let anchorSettings = anchorSettings |> Some
@@ -117,8 +117,7 @@ let private runBundleStatusGit witnessFolder =
         repoDb |> processRepoAnchor repo anchorSettings
       0
 
-let private runBundleStatusAnchorRepo anchorName repoName =
-  let settings = CentralSettings.Load()
+let private runBundleStatusAnchorRepo (settings: CentralSettings) anchorName repoName =
   if anchorName |> settings.Anchors.ContainsKey |> not then
     cp $"\foanchor name '{anchorName}\fo' is unknown\f0."
     let anchorNames = settings.Anchors.Keys |> Seq.sort |> Seq.toArray
@@ -131,8 +130,7 @@ let private runBundleStatusAnchorRepo anchorName repoName =
     repoDb |> processRepoAnchor None None
     0
 
-let private runBundleStatusAnchorAll anchorName =
-  let settings = CentralSettings.Load()
+let private runBundleStatusAnchorAll (settings: CentralSettings) anchorName =
   if anchorName |> settings.Anchors.ContainsKey |> not then
     cp $"\foanchor name '{anchorName}\fo' is unknown\f0."
     let anchorNames = settings.Anchors.Keys |> Seq.sort |> Seq.toArray
@@ -153,14 +151,26 @@ let private runBundleStatusAnchorAll anchorName =
         repoDb |> processRepoAnchor None None
       0
 
+let private runBundleStatusEverything (settings: CentralSettings) =
+  let mutable status = 0
+  for anchorName in settings.Anchors.Keys do
+    if status = 0 then
+      let newStatus = anchorName |> runBundleStatusAnchorAll settings
+      status <- newStatus
+  status  
+    
+
 let private runBundlesStatus o =
+  let settings = CentralSettings.Load()
   match o.Source with
   | GitRepo(witnessFolder) ->
-    witnessFolder |> runBundleStatusGit
+    witnessFolder |> runBundleStatusGit settings
   | AnchorRepo(anchorName, repoName) ->
-    runBundleStatusAnchorRepo anchorName repoName
+    runBundleStatusAnchorRepo settings anchorName repoName
   | AnchorAll(anchorName) ->
-    anchorName |> runBundleStatusAnchorAll
+    anchorName |> runBundleStatusAnchorAll settings
+  | Everything ->
+    runBundleStatusEverything settings
 
 let run args =
   let rec parseMore o args =
@@ -187,6 +197,8 @@ let run args =
       else
         cp $"Unrecognized format in \fg-a\f0 argument '\fc{anchorAndRepo}\f0'"
         None
+    | "-all" :: rest ->
+      rest |> parseMore { o with Source = Everything }
     | [] ->
       Some o
     | x :: _ ->

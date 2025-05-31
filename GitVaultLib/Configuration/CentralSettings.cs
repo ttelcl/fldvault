@@ -13,6 +13,10 @@ using System.Threading.Tasks;
 
 using FileUtilities;
 
+using FldVault.Core.Vaults;
+
+using GitVaultLib.VaultThings;
+
 using Newtonsoft.Json;
 
 namespace GitVaultLib.Configuration;
@@ -158,6 +162,7 @@ public class CentralSettings
 
   /// <summary>
   /// The one anchor folder for bundles (previously 'BundleAnchors["default"]').
+  /// This must be a folder that is local, not cloud backed up.
   /// </summary>
   [JsonProperty("bundle-anchor")]
   public string BundleAnchor { get; }
@@ -335,6 +340,47 @@ public class CentralSettings
   public static bool IsValidAnchor(string name)
   {
     return IsValidName(name, false) && !name.Equals("gitvault", StringComparison.OrdinalIgnoreCase);
+  }
+
+  /// <summary>
+  /// Enumerates vault folders within the vault anchor folder identified by
+  /// <paramref name="anchorName"/>. To be elegible to be considered a vault folder,
+  /// a child folder of the anchor folder must have a valid repo name, define one
+  /// single unique zkey (possibly reused in multiple *.zkey and *.mvlt files) and
+  /// contain a 'git-roots.json' file.
+  /// </summary>
+  /// <param name="anchorName"></param>
+  /// <returns></returns>
+  public IEnumerable<RepoVaultFolder> EnumerateRepoVaultFolders(string anchorName)
+  {
+    if(!Anchors.TryGetValue(anchorName, out var anchorFolder))
+    {
+      throw new ArgumentException(
+        $"Unknown vault anchor '{anchorName}'",
+        nameof(anchorName));
+    }
+    var anchorInfo = new DirectoryInfo(anchorFolder);
+    var vaultCandidates = anchorInfo.GetDirectories();
+    foreach(var vaultCandidate in vaultCandidates)
+    {
+      var repoName = vaultCandidate.Name;
+      if(!IsValidName(repoName, true))
+      {
+        continue;
+      }
+      var gitRootsName = Path.Combine(vaultCandidate.FullName, "git-roots.json");
+      if(!File.Exists(gitRootsName))
+      {
+        continue;
+      }
+      var folderKeys = FolderKey.KeysInFolder(vaultCandidate.FullName).Values;
+      if(folderKeys.Count != 1)
+      {
+        continue;
+      }
+      var rvf = new RepoVaultFolder(anchorFolder, repoName);
+      yield return rvf;
+    }
   }
 
 }

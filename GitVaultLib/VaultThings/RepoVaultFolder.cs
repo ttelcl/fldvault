@@ -85,6 +85,21 @@ public class RepoVaultFolder
   }
 
   /// <summary>
+  /// Get the name of the canonical zkey file for the folder.
+  /// </summary>
+  /// <param name="put">
+  /// If false, the key file is not guaranteed to exist upon exit.
+  /// If true, the key file is created if it did not exist. In this case some 
+  /// other key carrying file needs to exist already, otherwise an exception is thrown
+  /// </param>
+  /// <returns></returns>
+  public string GetFolderKeyFileName(bool put)
+  {
+    var zkey = put ? GetVaultKey() : null;
+    return FolderKey.GetFolderKeyFileName(VaultFolder, zkey);
+  }
+
+  /// <summary>
   /// Get the git roots for the associated repositories. Returns an empty
   /// GitRoots if the git roots file does not exist yet in the vault folder.
   /// </summary>

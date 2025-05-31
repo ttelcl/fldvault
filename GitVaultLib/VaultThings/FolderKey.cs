@@ -46,6 +46,29 @@ public static class FolderKey
   }
 
   /// <summary>
+  /// Return the name of the canonical zkey file associated with the folder.
+  /// Optionally create that file if it was missing
+  /// </summary>
+  /// <param name="folder">
+  /// The folder to get the key file name for
+  /// </param>
+  /// <param name="putKey">
+  /// If not null, and the key file does not yet exist: save this zkey as the
+  /// folder key file
+  /// </param>
+  /// <returns></returns>
+  public static string GetFolderKeyFileName(string folder, Zkey? putKey = null)
+  {
+    folder = Path.GetFullPath(folder).TrimEnd('/', '\\');
+    var keyFile = Path.Combine(folder, $"{Path.GetFileName(folder)}.zkey");
+    if(putKey != null && !File.Exists(keyFile))
+    {
+      putKey.SaveToJsonFile(keyFile);
+    }
+    return keyFile;
+  }
+
+  /// <summary>
   /// Return a collection of distinct key descriptors found in files in the
   /// given folder (indexed by key GUID).
   /// </summary>

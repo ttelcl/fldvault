@@ -16,6 +16,7 @@
     <Compile Include="PrintUtils.fs" />
     <Compile Include="ExceptionTool.fs" />
     <Compile Include="Usage.fs" />
+    <Compile Include="KeyTools.fs" />
     <Compile Include="AppSettingsShow.fs" />
     <Compile Include="AppAnchorAdd.fs" />
     <Compile Include="AppRepoInit.fs" />

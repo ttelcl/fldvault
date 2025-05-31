@@ -49,6 +49,7 @@ let private processRepoAnchor repo anchorSettings (repoDb: LogicalRepository) =
     if byhost.Length = 0 then
       let filler = "-------"
       cp $"\fr{repoDb.AnchorName,14}\f0.\fy{filler,-15}\f0 \fono vaults or bundles found\f0."
+    // no need for an explicit 'else': the collection is empty, so the 'for' doesn't do anything.
     for record in byhost do
       cpx $"\fg{repoDb.AnchorName,14}\f0.\fc{record.HostName,-15}\f0 "
       let kind =
@@ -148,7 +149,6 @@ let private runBundleStatusAnchorAll anchorName =
       1
     else
       for vaultRepoFolder in vaultFolders do
-        //cp $"Repo \fm{vaultRepoFolder.RepoName}\f0:"
         let repoDb = new LogicalRepository(settings, anchorName, vaultRepoFolder.RepoName)
         repoDb |> processRepoAnchor None None
       0

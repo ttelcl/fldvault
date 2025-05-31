@@ -7,6 +7,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Security;
 using System.Text;
@@ -44,6 +45,35 @@ public class Zkey
     return
       JsonConvert.DeserializeObject<Zkey>(json)
       ?? throw new ArgumentException("Invalid JSON");
+  }
+
+  /// <summary>
+  /// Load from a *.zkey file.
+  /// </summary>
+  /// <param name="fileName">
+  /// The file name of the Zkey file to load.
+  /// </param>
+  /// <returns>
+  /// The loaded Zkey object.
+  /// </returns>
+  /// <exception cref="FileNotFoundException"></exception>
+  public static Zkey FromJsonFile(string fileName)
+  {
+    if(!File.Exists(fileName))
+    {
+      throw new FileNotFoundException("Zkey file not found", fileName);
+    }
+    var json = File.ReadAllText(fileName, Encoding.UTF8);
+    return FromJson(json);
+  }
+
+  /// <summary>
+  /// Save the Zkey to a *.zkey (JSON) file.
+  /// </summary>
+  public void SaveToJsonFile(string fileName)
+  {
+    var json = ToString(true);
+    File.WriteAllText(fileName, json);
   }
 
   /// <summary>

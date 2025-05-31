@@ -40,7 +40,7 @@ let startFile name =
 /// Use 'finishfile' after writing to rename it to its final name
 let startFileBinary name =
   let tmp = name + ".tmp"
-  name |> sprintf "Writing '\fo%s\f0'" |> cp
+  name |> sprintf "Writing '\fc%s\f0'" |> cp
   File.Create(tmp)
 
 /// Finish the the file that was written starting from 'startfile' (and create a backup

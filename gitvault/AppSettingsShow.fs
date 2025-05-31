@@ -28,6 +28,7 @@ let run args =
   cp $"---\n\fw{json}\f0\n---\n"
 
   let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
+  let bundleRecordCache = new BundleRecordCache(settings, null, null, null)
   if repoRoot <> null then
     cp $"Repository root: \fg{repoRoot.Folder}\f0."
     let repoSettings = repoRoot.TryLoadGitVaultSettings()
@@ -39,12 +40,16 @@ let run args =
       for anchor in repoSettings.ByAnchor.Values do
         let keyError = anchor.CanGetKey(settings)
         if keyError |> String.IsNullOrEmpty then
-          let bundleInfo = anchor.ToBundleInfo(settings)
-          cp $"Vault key id: \fc{bundleInfo.KeyInfo.KeyGuid}\f0."
-          let vaultFileStatus = bundleInfo.VaultFile |> formatFileStatus 
-          cp $"Vault file:   \fg{bundleInfo.VaultFile}\f0 ({vaultFileStatus}\f0)"
-          let bundleFileStatus = bundleInfo.BundleFile |> formatFileStatus
-          cp $"Bundle file:  \fy{bundleInfo.BundleFile}\f0 ({bundleFileStatus}\f0)"
+          let bundleRecord = anchor.GetBundleRecord(bundleRecordCache)
+          let e, zkey = bundleRecord.TryGetZkey()
+          // let bundleInfo = anchor.ToBundleInfo(settings)
+          cp $"Vault key id: \fc{zkey.KeyGuid}\f0."
+          let vaultFile = bundleRecord.GetVaultFileNameOrFail()
+          let vaultFileStatus =  vaultFile |> formatFileStatus 
+          cp $"Vault file:   \fg{vaultFile}\f0 ({vaultFileStatus}\f0)"
+          let bundleFile = bundleRecord.BundleFileName
+          let bundleFileStatus = bundleFile |> formatFileStatus
+          cp $"Bundle file:  \fy{bundleFile}\f0 ({bundleFileStatus}\f0)"
         else
           cp $"Key is not available yet: \fo{keyError}\f0."
           let rvf = anchor.GetRepoVaultFolder(settings)

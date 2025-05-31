@@ -13,6 +13,10 @@ using System.Threading.Tasks;
 
 using FileUtilities;
 
+using FldVault.Core.Vaults;
+
+using GitVaultLib.VaultThings;
+
 using Newtonsoft.Json;
 
 namespace GitVaultLib.Configuration;
@@ -31,7 +35,8 @@ public class CentralSettings
   public CentralSettings(
     Dictionary<string, string> anchors,
     string hostname,
-    [JsonProperty("bundle-anchors")] Dictionary<string, string> bundleAnchors)
+    [JsonProperty("bundle-anchor")] string? bundleAnchor = null,
+    [JsonProperty("bundle-anchors")] Dictionary<string, string>? bundleAnchors = null)
   {
     _anchors = new Dictionary<string, string>(
       StringComparer.OrdinalIgnoreCase);
@@ -43,13 +48,21 @@ public class CentralSettings
 
     _bundleAnchors = new Dictionary<string, string>(
       StringComparer.OrdinalIgnoreCase);
+#pragma warning disable CS0618 // Type or member is obsolete
     BundleAnchors = _bundleAnchors;
-    foreach(var kv in bundleAnchors)
+#pragma warning restore CS0618 // Type or member is obsolete
+    if(bundleAnchors != null)
     {
-      _bundleAnchors[kv.Key] = kv.Value;
+      foreach(var kv in bundleAnchors)
+      {
+        _bundleAnchors[kv.Key] = kv.Value;
+      }
     }
-
-    if(!_bundleAnchors.ContainsKey("default"))
+    if(String.IsNullOrEmpty(bundleAnchor))
+    {
+      _bundleAnchors.TryGetValue("default", out bundleAnchor);
+    }
+    if(String.IsNullOrEmpty(bundleAnchor))
     {
       var defaultBundleAnchor = Path.Combine(
         DefaultCentralSettingsFolder,
@@ -58,9 +71,11 @@ public class CentralSettings
       {
         Directory.CreateDirectory(defaultBundleAnchor);
       }
-      _bundleAnchors["default"] = defaultBundleAnchor;
+      bundleAnchor = defaultBundleAnchor;
       Modified = true;
     }
+    _bundleAnchors["default"] = bundleAnchor;
+    BundleAnchor = bundleAnchor;
 
     DefaultHostname = hostname;
   }
@@ -81,8 +96,7 @@ public class CentralSettings
     {
       settings = new CentralSettings(
         [],
-        Environment.MachineName,
-        []);
+        Environment.MachineName);
       settings.Modified = true;
       settings.SaveIfModified();
       return settings;
@@ -120,13 +134,38 @@ public class CentralSettings
   public IReadOnlyDictionary<string, string> Anchors { get; }
 
   /// <summary>
+  /// DEPRECATED - retained for backward compatibility.
+  /// Replaced by <see cref="BundleAnchor"/>; the only valid entry here is "default".
   /// Folders elegible as bundle anchors. Normally this only
   /// contains the anchor named "default".
   /// Bundle anchor folder must be NOT inside a cloud-backed folder, but in
   /// a local disk folder.
   /// </summary>
   [JsonProperty("bundle-anchors")]
+  [Obsolete("Use BundleAnchor instead")]
   public IReadOnlyDictionary<string, string> BundleAnchors { get; }
+
+  /// <summary>
+  /// Test if the bundle anchors dictionary should be serialized. It is expected that
+  /// it is not.
+  /// </summary>
+  public bool ShouldSerializeBundleAnchors()
+  {
+    // This is to avoid serializing the bundle anchors if they are already determined
+    // by the BundleAnchor property.
+#pragma warning disable CS0618 // Type or member is obsolete
+    return BundleAnchors.Count != 1 ||
+           !BundleAnchors.ContainsKey("default") ||
+           BundleAnchors["default"] != BundleAnchor;
+#pragma warning restore CS0618 // Type or member is obsolete
+  }
+
+  /// <summary>
+  /// The one anchor folder for bundles (previously 'BundleAnchors["default"]').
+  /// This must be a folder that is local, not cloud backed up.
+  /// </summary>
+  [JsonProperty("bundle-anchor")]
+  public string BundleAnchor { get; }
 
   /// <summary>
   /// The default hostname for repositories
@@ -260,6 +299,14 @@ public class CentralSettings
   }
 
   /// <summary>
+  /// Create a new BundleRecord instance for the given bundle key triplet.
+  /// </summary>
+  public BundleRecord CreateBundleRecord(BundleKey key)
+  {
+    return new BundleRecord(this, key);
+  }
+
+  /// <summary>
   /// Checks that the name is valid for use in gitvault parts
   /// (anchors, hosts, etc.)
   /// </summary>
@@ -293,6 +340,47 @@ public class CentralSettings
   public static bool IsValidAnchor(string name)
   {
     return IsValidName(name, false) && !name.Equals("gitvault", StringComparison.OrdinalIgnoreCase);
+  }
+
+  /// <summary>
+  /// Enumerates vault folders within the vault anchor folder identified by
+  /// <paramref name="anchorName"/>. To be elegible to be considered a vault folder,
+  /// a child folder of the anchor folder must have a valid repo name, define one
+  /// single unique zkey (possibly reused in multiple *.zkey and *.mvlt files) and
+  /// contain a 'git-roots.json' file.
+  /// </summary>
+  /// <param name="anchorName"></param>
+  /// <returns></returns>
+  public IEnumerable<RepoVaultFolder> EnumerateRepoVaultFolders(string anchorName)
+  {
+    if(!Anchors.TryGetValue(anchorName, out var anchorFolder))
+    {
+      throw new ArgumentException(
+        $"Unknown vault anchor '{anchorName}'",
+        nameof(anchorName));
+    }
+    var anchorInfo = new DirectoryInfo(anchorFolder);
+    var vaultCandidates = anchorInfo.GetDirectories();
+    foreach(var vaultCandidate in vaultCandidates)
+    {
+      var repoName = vaultCandidate.Name;
+      if(!IsValidName(repoName, true))
+      {
+        continue;
+      }
+      var gitRootsName = Path.Combine(vaultCandidate.FullName, "git-roots.json");
+      if(!File.Exists(gitRootsName))
+      {
+        continue;
+      }
+      var folderKeys = FolderKey.KeysInFolder(vaultCandidate.FullName).Values;
+      if(folderKeys.Count != 1)
+      {
+        continue;
+      }
+      var rvf = new RepoVaultFolder(anchorFolder, repoName);
+      yield return rvf;
+    }
   }
 
 }

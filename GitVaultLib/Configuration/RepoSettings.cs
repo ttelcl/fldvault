@@ -116,13 +116,11 @@ public class AnchorRepoSettings
   /// </summary>
   public AnchorRepoSettings(
     string hostname,
-    string reponame,
-    [JsonProperty("bundle-anchor")] string bundleAnchor)
+    string reponame)
   {
     HostName = hostname;
     RepoName = reponame;
     VaultAnchor = null!; // to be set by the deserialization hook
-    BundleAnchor = bundleAnchor;
   }
 
   /// <summary>
@@ -146,13 +144,6 @@ public class AnchorRepoSettings
   //[JsonProperty("vault-anchor")]
   [JsonIgnore]
   public string VaultAnchor { get; internal set; }
-
-  /// <summary>
-  /// The tag in the central settings used to identify the full path to the
-  /// bundle anchor folder.
-  /// </summary>
-  [JsonProperty("bundle-anchor")]
-  public string BundleAnchor { get; }
 
   /// <summary>
   /// Check if the vault folder has a known key. Returns null on success,
@@ -187,13 +178,8 @@ public class AnchorRepoSettings
   /// </summary>
   public string GetBundleFolder(CentralSettings centralSettings)
   {
-    if(!centralSettings.BundleAnchors.TryGetValue(BundleAnchor, out var bundleAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Bundle anchor '{BundleAnchor}' not found in central settings.");
-    }
     return Path.Combine(
-      bundleAnchorFolder,
+      centralSettings.BundleAnchor,
       VaultAnchor,
       RepoName);
   }
@@ -244,40 +230,17 @@ public class AnchorRepoSettings
   }
 
   /// <summary>
-  /// Materializes the abstract information in this object to a
-  /// concrete outgoing BundleInfo object by looking up the anchor names and constructing
-  /// the file names. Throws an exception if the vault folder has no known key.
+  /// Get or create the BundleRecord for this repository, host and anchor from
+  /// the given BundleRecordCache.
   /// </summary>
-  public BundleInfo ToBundleInfo(CentralSettings centralSettings)
+  public BundleRecord GetBundleRecord(BundleRecordCache cache)
   {
-    if(!centralSettings.Anchors.TryGetValue(VaultAnchor, out var vaultAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Vault anchor '{VaultAnchor}' not found in central settings.");
-    }
-    if(!Directory.Exists(vaultAnchorFolder))
-    {
-      throw new ArgumentException(
-        $"Vault anchor folder '{vaultAnchorFolder}' does not exist.");
-    }
-
-    var shortBundleName = $"{RepoName}.{HostName}.-.bundle";
-    var bundleFile = GetBundleFileName(centralSettings);
-    var repoVaultFolder = GetRepoVaultFolder(centralSettings);
-    var keyInfo = repoVaultFolder.GetVaultKey();
-    var keyTag = keyInfo.KeyTag;
-    var shortVaultName = $"{shortBundleName}.{keyTag}.mvlt";
-    var vaultFolder = repoVaultFolder.VaultFolder;
-    var vaultFile = Path.Combine(
-      vaultFolder,
-      shortVaultName);
-    return new BundleInfo(
-      true,
-      HostName,
-      RepoName,
-      bundleFile,
-      vaultFile,
-      keyInfo);
+    var key = cache.MakeBundleKey(
+      anchorName: VaultAnchor,
+      repoName: RepoName,
+      hostName: HostName);
+    var record = cache.GetBundleRecord(key);
+    return record;
   }
 
 }

@@ -34,17 +34,12 @@
                 Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                 Kind="{Binding StatusIcon}" />
         </Border>
-        <Grid Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2"
+        <DockPanel Grid.Column="1" Grid.Row="0" Grid.ColumnSpan="2"
             Background="{Binding Status, Converter={StaticResource StatusBack}}"
             >
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
             <!-- Use a TextBox that looks like a TextBlock - that way the key id can be copied -->
             <TextBox
-                Grid.Column="0"
+                DockPanel.Dock="Left"
                 Padding="5,5"
                 VerticalContentAlignment="Bottom"
                 Background="#22000000"
@@ -54,19 +49,32 @@
                 FontFamily="Lucida Sans Typewriter"
                 Foreground="{Binding Status, Converter={StaticResource StatusFore}}"
                 Text="{Binding KeyId, Mode=OneWay}"/>
-            <StackPanel Orientation="Horizontal" Grid.Column="2">
-                <TextBlock
-                    Padding="5,5"
-                    VerticalAlignment="Bottom"
-                    Foreground="{StaticResource MahApps.Brushes.Gray5}"
-                    Text="{Binding StampReason}"/>
-                <TextBlock
-                    Padding="5,5"
-                    VerticalAlignment="Bottom"
-                    Foreground="{StaticResource MahApps.Brushes.Gray5}"
-                    Text="{Binding StampText}"/>
-            </StackPanel>
-        </Grid>
+            <TextBlock
+                DockPanel.Dock="Right"
+                Padding="5,5"
+                VerticalAlignment="Bottom"
+                Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                Text="{Binding StampText}"/>
+            <Button
+                Grid.Column="1"
+                Padding="2" 
+                Command="{Binding CopyKeyIdCommand}"
+                VerticalAlignment="Center"
+                Height="20"
+                BorderThickness="0"
+                ToolTip="Copy Key ID"
+                Style="{DynamicResource MahApps.Styles.Button.Circle}"
+                Foreground="{Binding Status, Converter={StaticResource StatusFore}}">
+                <iconPacks:PackIconMaterial Padding="1" Margin="0" Kind="ContentCopy" />
+            </Button>
+            <TextBlock
+                DockPanel.Dock="Right"
+                Padding="5,5"
+                VerticalAlignment="Bottom"
+                Foreground="{StaticResource MahApps.Brushes.Gray5}"
+                Text="{Binding StampReason}"/>
+            <Grid> <!-- filler --> </Grid>
+        </DockPanel>
         <DockPanel Grid.Column="1" Grid.Row="1">
             <Border DockPanel.Dock="Top"
                 Padding="5,2"

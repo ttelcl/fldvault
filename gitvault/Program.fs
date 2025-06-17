@@ -12,21 +12,25 @@ let rec run arglist =
   | "-v" :: rest ->
     verbose <- true
     rest |> run
-  | "--help" :: _
-  | "-h" :: _
   | [] ->
     Usage.usage ""
     0  // program return status code to the operating system; 0 == "OK"
-  | "settings" :: "show" :: rest ->
+  | "--help" :: _
+  | "-help" :: _
+  | "help" :: _
+  | "-h" :: _ ->
+    Usage.usage "all"
+    0  // program return status code to the operating system; 0 == "OK"
+  | "settings" :: "show" :: rest
+  | "settings" :: rest ->
     rest |> AppSettingsShow.run
   | "repo" :: "init" :: rest ->
     rest |> AppRepoInit.run
   | "anchor" :: "add" :: rest ->
     rest |> AppAnchorAdd.run
-  | "push" :: rest
-  | "repo" :: "push" :: rest ->
+  | "send" :: rest
+  | "repo" :: "send" :: rest ->
     rest |> AppPush.run
-  | "bundles" :: "fetch" :: rest 
   | "ingest" :: rest 
   | "bundles" :: "ingest" :: rest ->
     rest |> AppBundlesFetch.run

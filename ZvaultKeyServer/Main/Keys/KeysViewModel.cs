@@ -518,17 +518,22 @@ public class KeysViewModel: ViewModelBase
   {
     if(showing)
     {
-      var mayHaveZkey = false;
-      if(Clipboard.ContainsText())
-      {
-        var text = Clipboard.GetText();
-        var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None).ToList();
-        mayHaveZkey =
-          lines.Contains("<ZKEY>") &&
-          lines.Contains("</ZKEY>");
-      }
-      ClipBoardMayHaveZkey = mayHaveZkey;
+      CheckClipboard();
     }
+  }
+
+  public void CheckClipboard()
+  {
+    var mayHaveZkey = false;
+    if(Clipboard.ContainsText())
+    {
+      var text = Clipboard.GetText();
+      var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None).ToList();
+      mayHaveZkey =
+        lines.Contains("<ZKEY>") &&
+        lines.Contains("</ZKEY>");
+    }
+    ClipBoardMayHaveZkey = mayHaveZkey;
   }
 
   public void TrySelectKey(Guid keyId)

@@ -55,6 +55,8 @@ public class KeyViewModel: ViewModelBase
     CopyZkeyCommand = new DelegateCommand(
       p => CopyZkey(),
       p => Status == KeyStatus.Published);
+    CopyKeyIdCommand = new DelegateCommand(
+      p => CopyKeyId());
     KeyFiles = new(this);
     ResetTimer();
     SyncModel();
@@ -69,6 +71,8 @@ public class KeyViewModel: ViewModelBase
   public ICommand SaveZkeyCommand { get; }
 
   public ICommand CopyZkeyCommand { get; }
+
+  public ICommand CopyKeyIdCommand { get; }
 
   public KeyState Model { get; }
 
@@ -441,11 +445,21 @@ public class KeyViewModel: ViewModelBase
       Clipboard.SetText(transferstring);
       Owner.StatusHost.StatusMessage =
         $"<ZKEY> for {KeyId} copied to clipboard";
+      Owner.CheckClipboard();
     }
     else
     {
       MessageBox.Show("Copying a Z-key for this type of key is not yet supported");
     }
+  }
+
+  private void CopyKeyId()
+  {
+    var keyId = Model.KeyId.ToString();
+    Clipboard.SetText(keyId);
+    Owner.StatusHost.StatusMessage =
+        $"Copied key ID '{KeyId}' to clipboard";
+    Owner.CheckClipboard();
   }
 
   /// <summary>

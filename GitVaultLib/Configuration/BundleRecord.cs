@@ -67,7 +67,7 @@ public class BundleRecord
   public BundleKey Key { get; }
 
   /// <summary>
-  /// The vault anchor name (shortcut for Key.AmchorName).
+  /// The vault anchor name (shortcut for Key.AnchorName).
   /// </summary>
   public string AnchorName => Key.AnchorName;
 

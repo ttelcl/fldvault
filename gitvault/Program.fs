@@ -38,6 +38,8 @@ let rec run arglist =
   | "status" :: rest 
   | "bundles" :: "info" :: rest ->
     rest |> AppBundlesStatus.run
+  | "connect" :: rest ->
+    rest |> AppBundlesConnect.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

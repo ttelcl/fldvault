@@ -67,6 +67,15 @@ let usage focus =
     cp "  \fg-all \fx\f0                       Process all repos in all anchors"
     cp "  (without \fg-f\f0, \fg-a\f0, or \fg-all\f0 the effect is equivalent to '\fg-f \fc.\f0')"
     cp ""
+  if showSection "bundles-connect" then
+    cp "\fogitvault \fyconnect \f0[\fg-all\f0|\fg-a \fcanchorname\f0[\fo.\fchostname\f0]]"
+    cp "  Make sure there is a git 'remote' defined for the given anchor+host combination(s)"
+    cp "  (use \fogitvault status\f0 to list anchors and hosts for this repo)"
+  if showDetail "bundles-connect" then
+    cp "  \fg-all \fx\f0                       Create missing remotes all hosts in all anchors"
+    cp "  \fg-a \fcanchorname\f0\fo.\fchostname\f0  Create the remote if missing"
+    cp "  \fg-a \fcanchorname\f0\f0            Create missing remotes for all hosts"
+    cp ""
   cp "\fg-v               \f0Verbose mode"
 
 

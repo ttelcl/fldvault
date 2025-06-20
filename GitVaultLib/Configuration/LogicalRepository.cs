@@ -123,6 +123,23 @@ public class LogicalRepository
   }
 
   /// <summary>
+  /// Return all bundle records other than the one implied by the given host name
+  /// </summary>
+  public IEnumerable<BundleRecord> GetOtherRecords(string hostName)
+  {
+    if(!CentralSettings.IsValidName(hostName, false))
+    {
+      throw new ArgumentException(
+        $"Host name '{hostName}' is not valid. " +
+        "Only letters, digits, '-', and '_' are allowed.");
+    }
+    var excludeKey = _bundleRecordCache.MakeBundleKey(hostName: hostName);
+    var excludeBundle = _bundleRecordCache.GetBundleRecord(excludeKey);
+    return
+      _bundleRecordCache.Records.Values.Where(r => !Object.Equals(r, excludeBundle));
+  }
+
+  /// <summary>
   /// Make sure all vaults in the vault folder are covered by the bundle record cache
   /// </summary>
   public void RegisterVaults()
@@ -131,7 +148,7 @@ public class LogicalRepository
   }
 
   /// <summary>
-  /// Make sure all vaults in the vault folder are covered by the bundle record cache
+  /// Make sure all bundles in the bundle folder are covered by the bundle record cache
   /// </summary>
   public void RegisterBundles()
   {

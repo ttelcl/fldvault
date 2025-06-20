@@ -35,6 +35,39 @@ public class GitRemoteInfo
   public string Name { get; }
 
   /// <summary>
+  /// Find the target of the given mode. Returns null if missing.
+  /// Throws an exception if there is more than one
+  /// </summary>
+  /// <param name="mode">
+  /// The mode to look for
+  /// </param>
+  public GitRemoteTarget? GetTarget(string mode)
+  {
+    var targets =
+      Targets.Where(grt => grt.Mode == mode).ToList();
+    if(targets.Count == 0)
+    {
+      return null;
+    }
+    if(targets.Count == 1)
+    {
+      return targets[0];
+    }
+    throw new InvalidOperationException(
+      $"Multiple '{mode}' targets defined for remote '{Name}'");
+  }
+
+  /// <summary>
+  /// Get the fetch target (returning null if missing)
+  /// </summary>
+  public GitRemoteTarget? FetchTarget => GetTarget("fetch");
+
+  /// <summary>
+  /// Get the push target (returning null if missing)
+  /// </summary>
+  public GitRemoteTarget? PushTarget => GetTarget("push");
+
+  /// <summary>
   /// Target(s) of the remote including their modes.
   /// </summary>
   public IReadOnlyList<GitRemoteTarget> Targets { get; }

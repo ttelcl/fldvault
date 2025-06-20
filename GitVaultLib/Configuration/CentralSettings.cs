@@ -343,6 +343,16 @@ public class CentralSettings
   }
 
   /// <summary>
+  /// Test if <paramref name="name"/> is a valid "host name"
+  /// </summary>
+  /// <param name="name"></param>
+  /// <returns></returns>
+  public static bool IsValidHost(string name)
+  {
+    return IsValidName(name, false);
+  }
+
+  /// <summary>
   /// Enumerates vault folders within the vault anchor folder identified by
   /// <paramref name="anchorName"/>. To be elegible to be considered a vault folder,
   /// a child folder of the anchor folder must have a valid repo name, define one

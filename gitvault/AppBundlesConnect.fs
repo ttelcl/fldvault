@@ -93,6 +93,8 @@ let private fetchRemote (repo:GitRepoFolder) remoteName =
     cp $"    Fetching \fg{remoteName}\f0."
     for line in result.OutputLines do
       cp $"    {line}"
+    for line in result.ErrorLines do
+      cp $"    {line}"
 
 let private runConnect o =
   let centralSettings = CentralSettings.Load()

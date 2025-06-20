@@ -358,4 +358,48 @@ public class BundleRecordCache
     }
     return key;
   }
+
+  /// <summary>
+  /// Check that the given git repository is indeed a source repo for this
+  /// bundle cache, returning null on success or an error message in case
+  /// of failure
+  /// </summary>
+  /// <param name="gitRepo">
+  /// The <see cref="GitRepoFolder"/> instance describing the source repository
+  /// </param>
+  /// <param name="repoSettings">
+  /// The anchor segment of the repo's gitvault settings to check
+  /// </param>
+  /// <returns>
+  /// null on success or an error message on failure
+  /// </returns>
+  public string? CheckSourceRepository(
+    GitRepoFolder gitRepo,
+    AnchorRepoSettings repoSettings)
+  {
+    if(AnchorRestriction != null
+      && !AnchorRestriction.Equals(repoSettings.VaultAnchor, StringComparison.OrdinalIgnoreCase))
+    {
+      return
+        "This bundle folder is for a different anchor " +
+        $"('{AnchorRestriction}' vs '{repoSettings.VaultAnchor}')";
+    }
+    var key = MakeBundleKey(
+      repoSettings.VaultAnchor, repoSettings.RepoName, repoSettings.HostName);
+    var record = GetBundleRecord(key);
+    var recordSource = record.TryGetSourceRepoFolder();
+    if(recordSource is null)
+    {
+      return
+        "Corrupted repo registration: the bundle folder does not " +
+        $"tag any source repo at all: {key}";
+    }
+    if(!FileIdentifier.AreSame(recordSource, gitRepo.Folder))
+    {
+      return
+        "Mismatch between actual repo source folder and the registered one: " +
+        $"{gitRepo.Folder} vs {recordSource}";
+    }
+    return null;
+  }
 }

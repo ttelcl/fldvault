@@ -137,6 +137,21 @@ public static class GitRunner
   }
 
   /// <summary>
+  /// Fetch a remote by remote name
+  /// </summary>
+  public static GitRunResult FetchRemote(
+    string workingDirectory,
+    string remoteName)
+  {
+    var args = new List<string> {
+      "fetch",
+      remoteName,
+    };
+    var result = RunToLines(args, workingDirectory);
+    return result;
+  }
+
+  /// <summary>
   /// Enumerate the root commits of the repository that
   /// <paramref name="witnessFolder"/> is part of.
   /// </summary>

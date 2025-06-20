@@ -67,7 +67,7 @@ public class BundleRecord
   public BundleKey Key { get; }
 
   /// <summary>
-  /// The vault anchor name (shortcut for Key.AmchorName).
+  /// The vault anchor name (shortcut for Key.AnchorName).
   /// </summary>
   public string AnchorName => Key.AnchorName;
 
@@ -81,6 +81,11 @@ public class BundleRecord
   /// (shortcut for Key.HostName).
   /// </summary>
   public string HostName => Key.HostName;
+
+  /// <summary>
+  /// The name to use as git remote name in sibling repositories
+  /// </summary>
+  public string RemoteName => String.Concat(Key.AnchorName, ".", Key.HostName).ToLowerInvariant();
 
   /// <summary>
   /// The full path to the bundle anchor folder.
@@ -116,7 +121,7 @@ public class BundleRecord
   public string BundleFileShortName { get; }
 
   /// <summary>
-  /// The full path to the bundle file.
+  /// The full path to the bundle file. This file may not yet exist
   /// </summary>
   public string BundleFileName { get; }
 

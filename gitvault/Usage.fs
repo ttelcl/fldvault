@@ -74,7 +74,7 @@ let usage focus =
     cp "  Optionally '\fmgit fetch\f0' them."
     cp "  (use \fogitvault status\f0 to list anchors and hosts for this repo)"
   if showDetail "bundles-connect" then
-    cp "  \fg-all \fx\fx\f0                    Create missing remotes all hosts in all anchors"
+    cp "  \fg-all \fx\fx\f0                    Create missing remotes all hosts in all anchors. This is default for \fogitvault receive\f0."
     cp "  \fg-a \fcanchorname\f0\fo.\fchostname\f0   Create the remote if missing"
     cp "  \fg-a \fcanchorname\f0\f0            Create missing remotes for all hosts"
     cp "  \fg-nofetch \fx\f0\f0                Do not fetch the remote(s). This is default for \fogitvault connect\f0."

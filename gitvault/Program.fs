@@ -39,9 +39,9 @@ let rec run arglist =
   | "bundles" :: "info" :: rest ->
     rest |> AppBundlesStatus.run
   | "connect" :: rest ->
-    rest |> AppBundlesConnect.run
+    rest |> AppBundlesConnect.run false
   | "receive" :: rest ->
-    "-fetch" :: rest |> AppBundlesConnect.run
+    rest |> AppBundlesConnect.run true
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

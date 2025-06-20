@@ -172,10 +172,9 @@ let private runConnect o =
                       fetchRemote repo remoteName
                   else
                     cp $"  \fo{remoteName,-20}\f0 \fyalready exists as a different target\f0 (different bundle)."
-        cp "\fmNYI\f0."
-        1
+        0
 
-let run args =
+let run receiveMode args =
   let rec parseMore o args =
     match args with
     | "-v" :: rest ->
@@ -225,10 +224,15 @@ let run args =
     | x :: _ ->
       cp $"\frUnknown option: \fy{x}\f0."
       None
-  let oo = args |> parseMore {
-    Target = None
-    Fetch = false
-  }
+  let defaults =
+     if receiveMode then {
+       Target = Some(ConnectTarget.All)
+       Fetch = true
+     } else {
+       Target = None
+       Fetch = false
+     }
+  let oo = args |> parseMore defaults
   match oo with
   | None ->
     Usage.usage "bundles-connect"

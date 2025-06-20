@@ -68,13 +68,17 @@ let usage focus =
     cp "  (without \fg-f\f0, \fg-a\f0, or \fg-all\f0 the effect is equivalent to '\fg-f \fc.\f0')"
     cp ""
   if showSection "bundles-connect" then
-    cp "\fogitvault \fyconnect \f0[\fg-all\f0|\fg-a \fcanchorname\f0[\fo.\fchostname\f0]]"
+    cp "\fogitvault \fyconnect \f0[\fg-all\f0|\fg-a \fcanchorname\f0[\fo.\fchostname\f0]] [\fg-fetch\f0]"
+    cp "\fogitvault \fyreceive \f0[\fg-all\f0|\fg-a \fcanchorname\f0[\fo.\fchostname\f0]] [\fg-nofetch\f0]"
     cp "  Make sure there is a git 'remote' defined for the given anchor+host combination(s)"
+    cp "  Optionally '\fmgit fetch\f0' them."
     cp "  (use \fogitvault status\f0 to list anchors and hosts for this repo)"
   if showDetail "bundles-connect" then
-    cp "  \fg-all \fx\f0                       Create missing remotes all hosts in all anchors"
-    cp "  \fg-a \fcanchorname\f0\fo.\fchostname\f0  Create the remote if missing"
+    cp "  \fg-all \fx\fx\f0                    Create missing remotes all hosts in all anchors"
+    cp "  \fg-a \fcanchorname\f0\fo.\fchostname\f0   Create the remote if missing"
     cp "  \fg-a \fcanchorname\f0\f0            Create missing remotes for all hosts"
+    cp "  \fg-nofetch \fx\f0\f0                Do not fetch the remote(s). This is default for \fogitvault connect\f0."
+    cp "  \fg-fetch \fx\f0\f0                  Also fetch the remote(s). This is default for \fogitvault receive\f0."
     cp ""
   cp "\fg-v               \f0Verbose mode"
 

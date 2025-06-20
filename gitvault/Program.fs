@@ -40,6 +40,8 @@ let rec run arglist =
     rest |> AppBundlesStatus.run
   | "connect" :: rest ->
     rest |> AppBundlesConnect.run
+  | "receive" :: rest ->
+    "-fetch" :: rest |> AppBundlesConnect.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

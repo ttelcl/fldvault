@@ -145,7 +145,7 @@ public static class GitRunner
   {
     var args = new List<string> {
       "fetch",
-      "-v",
+      //"-v",
       remoteName,
     };
     var result = RunToLines(args, workingDirectory);

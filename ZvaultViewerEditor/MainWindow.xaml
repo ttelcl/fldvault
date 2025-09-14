@@ -68,9 +68,14 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <Grid
-                Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}">
-                <local:VaultOuterView DataContext="{Binding CurrentVault}"/>
+            <Grid>
+                <Grid Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}">
+                    <!-- dummy wrapper grid to keep the visibility binding understandable to mere mortals -->
+                    <local:VaultOuterView DataContext="{Binding CurrentVault}"/>
+                </Grid>
+                <Grid Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNull}}">
+                    <local:NoVaultView DataContext="{Binding NoVault}"/>
+                </Grid>
             </Grid>
         </Border>
     </DockPanel>

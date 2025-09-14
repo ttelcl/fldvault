@@ -38,6 +38,8 @@ public class KeyEntryViewModel: ViewModelBase
 
   public ICommand RefreshKeyCommand => Owner.RefreshKeyCommand;
 
+  public ICommand CloseCommand => Owner.ApplicationModel.CloseVaultCommand;
+
   public IApplicationModel ApplicationModel => Owner.ApplicationModel;
 
   public ICommand SubmitCommand { get; }

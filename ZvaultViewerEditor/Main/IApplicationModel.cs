@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 
 using FldVault.Core.Crypto;
 using FldVault.KeyServer;
@@ -23,5 +24,9 @@ public interface IApplicationModel
   string StatusMessage { get; set; }
 
   KeyServerService KeyServer { get; }
+
+  bool TryOpenVault(string vaultFileName);
+
+  ICommand CloseVaultCommand { get; }
 }
 

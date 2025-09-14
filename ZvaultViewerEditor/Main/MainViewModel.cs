@@ -29,6 +29,7 @@ public class MainViewModel: ViewModelBase, IApplicationModel
   {
     KeyChain = keyChain;
     KeyServer = new KeyServerService();
+    NoVault = new NoVaultViewModel(this);
     OpenVaultCommand = new DelegateCommand(
       p => OpenVault(),
       p => CurrentVault == null);
@@ -65,6 +66,13 @@ public class MainViewModel: ViewModelBase, IApplicationModel
     }
   }
   private VaultOuterViewModel? _currentVault;
+
+  /// <summary>
+  /// The stub VM used when there is no vault loaded.
+  /// Note that this exists also when there is a vault loaded,
+  /// it is just not in use in that case.
+  /// </summary>
+  public NoVaultViewModel NoVault { get; }
 
   public bool HasVault => CurrentVault != null;
 

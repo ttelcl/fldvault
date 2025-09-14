@@ -38,6 +38,8 @@ public class VaultOuterViewModel: ViewModelBase
     RefreshKeyCommand = new DelegateCommand(
       p => UpdateKeyStatus(),
       p => true);
+    // Create this, to match the initial state of IsVaultKeyKnown
+    KeyEntryModel = new KeyEntryViewModel(this);
     UpdateKeyStatus();
   }
 
@@ -70,9 +72,11 @@ public class VaultOuterViewModel: ViewModelBase
         if(_vaultKeyKnown)
         {
           InnerModel = new VaultInnerViewModel(this);
+          KeyEntryModel = null;
         }
         else
         {
+          KeyEntryModel = new KeyEntryViewModel(this);
           InnerModel = null;
         }
       }
@@ -89,6 +93,17 @@ public class VaultOuterViewModel: ViewModelBase
     }
   }
   private VaultInnerViewModel? _innerModel;
+
+  public KeyEntryViewModel? KeyEntryModel {
+    get => _keyEntryModel;
+    private set {
+      if(SetNullableInstanceProperty(ref _keyEntryModel, value))
+      {
+      }
+    }
+  }
+  private KeyEntryViewModel? _keyEntryModel;
+
 
   public string KeyStatus {
     get => _keyStatus;

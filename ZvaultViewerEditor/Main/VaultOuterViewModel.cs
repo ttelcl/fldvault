@@ -72,6 +72,8 @@ public class VaultOuterViewModel: ViewModelBase
         if(_vaultKeyKnown)
         {
           InnerModel = new VaultInnerViewModel(this);
+          // Make sure password storage is cleared:
+          KeyEntryModel?.UnbindPasswordBox();
           KeyEntryModel = null;
         }
         else
@@ -115,6 +117,9 @@ public class VaultOuterViewModel: ViewModelBase
   }
   private string _keyStatus = "Not yet checked";
 
+  /// <summary>
+  /// Update the key status from the server
+  /// </summary>
   public void UpdateKeyStatus() 
   {
     Task.Run(async () => await UpdateKeyStatusAsync());
@@ -169,7 +174,11 @@ public class VaultOuterViewModel: ViewModelBase
     }
   }
 
-  private void CheckVaultKeyKnown()
+  /// <summary>
+  /// Update <see cref="IsVaultKeyKnown"/>, which in turn can toggle the
+  /// UI between the "key known" and "key unknown" states if appropriate.
+  /// </summary>
+  internal void CheckVaultKeyKnown()
   {
     IsVaultKeyKnown = Vault != null && KeyChain.ContainsKey(Vault.KeyId);
   }

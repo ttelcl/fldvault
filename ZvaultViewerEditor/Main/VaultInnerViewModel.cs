@@ -55,6 +55,8 @@ public class VaultInnerViewModel: ViewModelBase
     var fileName = OuterModel.Vault.FileName;
     FileReadOnly =
       (File.GetAttributes(fileName) & FileAttributes.ReadOnly) != 0;
+    var hasContent = Vault.HasContent();
+    AllowWrite = !hasContent && !FileReadOnly;
     ReloadEntries();
   }
 

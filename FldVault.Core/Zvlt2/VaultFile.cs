@@ -203,6 +203,22 @@ public class VaultFile: IBlockElementContainer
   public Guid KeyId { get => Header.KeyId; }
 
   /// <summary>
+  /// Return true if there are any blocks other than overhead blocks in this file.
+  /// Overhead blocks are <see cref="Zvlt2BlockType.ZvltFile"/> and
+  /// <see cref="Zvlt2BlockType.PassphraseLink"/>.
+  /// </summary>
+  /// <returns></returns>
+  public bool HasContent()
+  {
+    var overheadBlockKinds = new HashSet<int> {
+      Zvlt2BlockType.ZvltFile,
+      Zvlt2BlockType.PassphraseLink,
+    };
+    return Blocks.Blocks.Any(
+      bi => !overheadBlockKinds.Contains(bi.Kind));
+  }
+
+  /// <summary>
   /// Create a matching <see cref="VaultCryptor"/>
   /// </summary>
   /// <param name="keyChain">

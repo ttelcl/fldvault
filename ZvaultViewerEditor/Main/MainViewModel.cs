@@ -36,7 +36,7 @@ public class MainViewModel: ViewModelBase, IApplicationModel
       p => CloseVault(),
       p => CurrentVault != null);
     _clearStatusTimer = new DispatcherTimer {
-      Interval = TimeSpan.FromMilliseconds(500),
+      Interval = TimeSpan.FromMilliseconds(1000),
       IsEnabled = false,
     };
     _clearStatusTimer.Tick += (s, e) => CheckStatusClearing();

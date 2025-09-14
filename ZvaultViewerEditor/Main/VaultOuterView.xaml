@@ -90,14 +90,12 @@
                     <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <local:KeyEntryView
-                            Grid.Row="1" Grid.Column="1"
+                            Grid.Row="0" Grid.Column="0"
                             DataContext="{Binding KeyEntryModel}"/>
                     </Grid>
                 </Grid>

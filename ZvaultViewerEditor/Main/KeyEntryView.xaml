@@ -5,27 +5,88 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
     xmlns:local="clr-namespace:ZvaultViewerEditor.Main"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     mc:Ignorable="d" 
     d:DataContext="{d:DesignInstance local:KeyEntryViewModel, IsDesignTimeCreatable=False}"
     d:DesignHeight="450" d:DesignWidth="800">
-    <StackPanel Orientation="Vertical" HorizontalAlignment="Stretch">
-        <Button
-            HorizontalAlignment="Center"
-            Command="{Binding RefreshKeyCommand}">
-            <StackPanel Orientation="Horizontal">
-                <iconPacks:PackIconMaterial
-                    Kind="Refresh"
-                    Height="24"
-                    Width="24"
-                    Foreground="{DynamicResource MahApps.Brushes.AccentBase}"/>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Border
+            Grid.Row="1"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            >
+            <DockPanel
+                Margin="10,0,10,10">
                 <TextBlock
-                    VerticalAlignment="Center"
-                    FontSize="16"
-                    Padding="10,0">
-                    Check Key Server Again
+                    DockPanel.Dock="Top"
+                    Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                    FontStyle="Italic"
+                    FontSize="14"
+                    Margin="0,5,0,10">
+                    Retrieve key from key server
                 </TextBlock>
-            </StackPanel>
-        </Button>
-    </StackPanel>
+                <Button
+                    Grid.Row="1"
+                    HorizontalAlignment="Center"
+                    Command="{Binding RefreshKeyCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Kind="Refresh"
+                            Height="20"
+                            Width="20"
+                            Margin="20,0,10,0"
+                            Foreground="{DynamicResource MahApps.Brushes.AccentBase}"/>
+                        <TextBlock
+                            VerticalAlignment="Center"
+                            FontSize="14"
+                            Margin="10,0,30,0">
+                            Check Key Server Again
+                        </TextBlock>
+                    </StackPanel>
+                </Button>
+            </DockPanel>
+        </Border>
+        <Border
+            Grid.Row="3"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.Accent2}"
+            >
+            <DockPanel
+                Margin="10,0,10,20">
+                <TextBlock
+                    DockPanel.Dock="Top"
+                    Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                    FontStyle="Italic"
+                    FontSize="14"
+                    Margin="0,5,0,10">
+                    Enter passphrase directly
+                </TextBlock>
+                <Button
+                    Command="{Binding SubmitCommand}"
+                    Margin="10,0,0,0"
+                    DockPanel.Dock="Right">
+                    <TextBlock
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        Padding="10,0">
+                        Unlock
+                    </TextBlock>
+                </Button>
+                <PasswordBox
+                    Grid.Row="3"
+                    Padding="5"
+                    mah:TextBoxHelper.ClearTextButton="True"
+                    mah:TextBoxHelper.Watermark="Passphrase"
+                    DataContextChanged="PasswordBox_DataContextChanged"/>
+            </DockPanel>
+        </Border>
+    </Grid>
 </UserControl>

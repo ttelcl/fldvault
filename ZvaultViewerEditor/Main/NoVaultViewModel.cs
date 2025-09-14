@@ -12,6 +12,9 @@ using System.Threading.Tasks;
 using System.Windows;
 
 using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
+
+using Microsoft.Win32;
 
 using ZvaultViewerEditor.WpfUtilities;
 
@@ -51,8 +54,8 @@ public class NoVaultViewModel: ViewModelBase
       {
         Trace.TraceWarning(
           $"Only expecting files being dropped one at a time, but got {files.Length}");
-        ApplicationModel.StatusMessage =
-          $"Only expecting files being dropped one at a time, but got {files.Length}";
+        SetStatus(
+          $"Only expecting files being dropped one at a time, but got {files.Length}");
       }
       else
       {
@@ -70,41 +73,12 @@ public class NoVaultViewModel: ViewModelBase
         else if(__fileTypesToTemplate.Any(
           ext => file.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
         {
-          var shortName = Path.GetFileName(file);
-          var pkif = PassphraseKeyInfoFile.TryFromFile(file);
-          if(pkif == null)
-          {
-            Trace.TraceError(
-              $"Retrieving PKIF from file failed: {file}");
-            ApplicationModel.StatusMessage =
-              $"Unable to retrieve key information from '{shortName}'";
-          }
-          else
-          {
-            var kss = ApplicationModel.KeyServer;
-            if(kss.ServerAvailable)
-            {
-              var guid = kss.RegisterFileSync(file, ApplicationModel.KeyChain);
-              if(guid.HasValue)
-              {
-                Trace.TraceInformation(
-                  $"Registered {shortName} with server. Key {guid} is available and loaded.");
-              }
-              else
-              {
-                Trace.TraceInformation(
-                  $"Registered {shortName} with server. Key is not available (yet).");
-              }
-            }
-            ApplicationModel.StatusMessage =
-              $"NYI - creating new vaults based on a *.mvlt / *.zkey / *.pass.key-info is not yet implemented";
-          }
+          CreateNewVaultBasedOn(file);
         }
         else
         {
           Trace.TraceError($"Unrecognized dropped file: {file}");
-          ApplicationModel.StatusMessage =
-            $"Unrecognized file format";
+          SetStatus($"Unrecognized file format");
         }
       }
     }
@@ -149,5 +123,60 @@ public class NoVaultViewModel: ViewModelBase
       ApplicationModel.StatusMessage = "Only file drops are supported";
     }
     e.Handled = true;
+  }
+
+  private void CreateNewVaultBasedOn(string keyBearingFile)
+  {
+    var file = Path.GetFullPath(keyBearingFile);
+    var shortName = Path.GetFileName(file);
+    var folder = Path.GetDirectoryName(file);
+    var pkif = PassphraseKeyInfoFile.TryFromFile(file);
+    if(pkif == null)
+    {
+      Trace.TraceError(
+        $"Retrieving PKIF from file failed: {file}");
+      SetStatus($"Unable to retrieve key information from '{shortName}'");
+    }
+    else
+    {
+      var kss = ApplicationModel.KeyServer;
+      if(kss.ServerAvailable)
+      {
+        var guid = kss.RegisterFileSync(file, ApplicationModel.KeyChain);
+        if(guid.HasValue)
+        {
+          Trace.TraceInformation(
+            $"Registered {shortName} with server. Key {guid} is available and loaded.");
+        }
+        else
+        {
+          Trace.TraceInformation(
+            $"Registered {shortName} with server. Key is not available (yet).");
+        }
+      }
+      var keyTag = pkif.KeyId.ToString().Substring(0, 8);
+      var proposedName = $"new-vault.{keyTag}.zvlt";
+      var dialog = new SaveFileDialog() {
+        Filter = "Z-Vault files (*.zvlt)|*.zvlt",
+        OverwritePrompt = true,
+        CheckPathExists = true,
+        DefaultExt = ".zvlt",
+        FileName = proposedName,
+        InitialDirectory = folder,
+        Title = $"Create new vault with key of {shortName}"
+      };
+      if(dialog.ShowDialog() == true)
+      {
+        var newVault = VaultFile.CreateEmpty(dialog.FileName, pkif);
+        SetStatus($"Created {dialog.FileName}");
+        Trace.TraceInformation($"Created new vault file {dialog.FileName}");
+        ApplicationModel.TryOpenVault(dialog.FileName);
+      }
+    }
+  }
+
+  private void SetStatus(string message)
+  {
+    ApplicationModel.StatusMessage = message;
   }
 }

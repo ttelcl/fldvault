@@ -301,100 +301,105 @@ public class VaultInnerViewModel: ViewModelBase
     if(response == true)
     {
       var fileNames = dialog.FileNames.ToList();
-      if(fileNames.Count == 0)
+      AppendFiles(fileNames);
+    }
+  }
+
+  public void AppendFiles(ICollection<string> fileNames)
+  {
+    if(fileNames.Count == 0)
+    {
+      return;
+    }
+    if(fileNames.Any(
+      fnm => fnm.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)))
+    {
+      var response1 = MessageBox.Show(
+        "One or more of the selected files is a metadata file.\n" +
+        "These will be included automatically as metadata for the file they describe\n" +
+        "and should normally not be included explicitly.\n"+
+        "'Yes' to remove them, 'No' to add the as normal files too",
+        "Remove metadata files as main entries?",
+        MessageBoxButton.YesNoCancel,
+        MessageBoxImage.Question);
+      if(response1 == MessageBoxResult.Cancel)
       {
         return;
       }
-      if(fileNames.Any(
-        fnm => fnm.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase)))
+      if(response1 == MessageBoxResult.Yes)
       {
-        var response1 = MessageBox.Show(
-          "One or more of the selected files is a metadata file.\n" +
-          "These will be included automatically as metadata for the file they describe\n" +
-          "and should normally not be included explicitly.\n"+
-          "'Yes' to remove them, 'No' to add the as normal files too",
-          "Remove metadata files as main entries?",
-          MessageBoxButton.YesNoCancel,
-          MessageBoxImage.Question);
-        if(response1 == MessageBoxResult.Cancel)
-        {
-          return;
-        }
-        if(response1 == MessageBoxResult.Yes)
-        {
-          fileNames = fileNames.Where(
-            fnm => !fnm.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        }
+        fileNames = fileNames.Where(
+          fnm => !fnm.EndsWith(".meta.json", StringComparison.OrdinalIgnoreCase))
+          .ToList();
       }
-      var duplicates =
-        fileNames
-        .Where(fnm => Entries.Any(
-          ve => Path.GetFileName(fnm).Equals(
-            ve.FileName, StringComparison.OrdinalIgnoreCase)))
-        .ToHashSet(StringComparer.OrdinalIgnoreCase);
-      if(duplicates.Count > 0)
+    }
+    var duplicates =
+      fileNames
+      .Where(fnm => Entries.Any(
+        ve => Path.GetFileName(fnm).Equals(
+          ve.FileName, StringComparison.OrdinalIgnoreCase)))
+      .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    if(duplicates.Count > 0)
+    {
+      var response2 = MessageBox.Show(
+        $"One or more of the selected files already exist in the vault.\n" +
+        "Ok to ignore these? 'Yes' to ignore, 'No' to create duplicate named entries.",
+        "Duplicate file names",
+        MessageBoxButton.YesNoCancel,
+        MessageBoxImage.Warning);
+      if(response2 == MessageBoxResult.Cancel)
       {
-        var response2 = MessageBox.Show(
-          $"One or more of the selected files already exist in the vault.\n" +
-          "Ok to ignore these? 'Yes' to ignore, 'No' to create duplicate named entries.",
-          "Duplicate file names",
-          MessageBoxButton.YesNoCancel,
-          MessageBoxImage.Warning);
-        if(response2 == MessageBoxResult.Cancel)
-        {
-          return;
-        }
-        if(response2 == MessageBoxResult.Yes)
-        {
-          fileNames = fileNames.Where(
-            fnm => !duplicates.Contains(fnm))
-            .ToList();
-        }
+        return;
       }
-      Mouse.OverrideCursor = Cursors.Wait;
-      try
+      if(response2 == MessageBoxResult.Yes)
       {
-        using var cryptor = Vault.CreateCryptor(KeyChain);
-        using(var vfw = new VaultFileWriter(Vault, cryptor))
+        fileNames = fileNames.Where(
+          fnm => !duplicates.Contains(fnm))
+          .ToList();
+      }
+    }
+    Mouse.OverrideCursor = Cursors.Wait;
+    try
+    {
+      using var cryptor = Vault.CreateCryptor(KeyChain);
+      using(var vfw = new VaultFileWriter(Vault, cryptor))
+      {
+        foreach(var fileName in fileNames)
         {
-          foreach(var fileName in fileNames)
+          var fi = new FileInfo(fileName);
+          var fileGuid = Guid.NewGuid(); // Maybe base on Hash in the future
+          var meta = new FileMetadata(
+            fi.Name,
+            EpochTicks.FromUtc(fi.LastWriteTimeUtc),
+            fi.Length);
+          var customMetaName = fileName + ".meta.json";
+          if(File.Exists(customMetaName))
           {
-            var fi = new FileInfo(fileName);
-            var fileGuid = Guid.NewGuid(); // Maybe base on Hash in the future
-            var meta = new FileMetadata(
-              fi.Name,
-              EpochTicks.FromUtc(fi.LastWriteTimeUtc),
-              fi.Length);
-            var customMetaName = fileName + ".meta.json";
-            if(File.Exists(customMetaName))
-            {
-              meta.TryMergeMetadata(customMetaName);
-            }
-            using var stream = File.OpenRead(fileName);
-            // This overload provides more control:
-            var be = vfw.AppendFile(
-              stream,
-              meta,
-              ZvltCompression.Auto,
-              DateTime.UtcNow, // encryption time, not file time!!
-              fileGuid);
+            meta.TryMergeMetadata(customMetaName);
           }
+          using var stream = File.OpenRead(fileName);
+          // This overload provides more control:
+          var be = vfw.AppendFile(
+            stream,
+            meta,
+            ZvltCompression.Auto,
+            DateTime.UtcNow, // encryption time, not file time!!
+            fileGuid);
         }
-        ReloadEntries();
       }
-      catch(Exception ex)
-      {
-        MessageBox.Show(
-          $"Error appending files: {ex.Message}",
-          "Error appending files",
-          MessageBoxButton.OK,
-          MessageBoxImage.Error);
-      }
-      finally
-      {
-        Mouse.OverrideCursor = null;
-      }
+      ReloadEntries();
+    }
+    catch(Exception ex)
+    {
+      MessageBox.Show(
+        $"Error appending files: {ex.Message}",
+        "Error appending files",
+        MessageBoxButton.OK,
+        MessageBoxImage.Error);
+    }
+    finally
+    {
+      Mouse.OverrideCursor = null;
     }
   }
 
@@ -549,4 +554,46 @@ public class VaultInnerViewModel: ViewModelBase
       $"Copied {entries.Count} entries to {shortTargetName}";
   }
 
+  internal void OnDrop(DragEventArgs e)
+  {
+    if(e.Data.GetDataPresent(DataFormats.FileDrop))
+    {
+      if(!AllowWrite)
+      {
+        ApplicationModel.StatusMessage =
+          "Cannot drop files: this vault is currently set to read-only";
+      }
+      else
+      {
+        var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+        AppendFiles(files);
+      }
+    }
+    e.Handled = true;
+  }
+
+  internal void OnDragOver(DragEventArgs e)
+  {
+    if(e.Data.GetDataPresent(DataFormats.FileDrop))
+    {
+      if(!AllowWrite)
+      {
+        e.Effects = DragDropEffects.None;
+        ApplicationModel.StatusMessage =
+          "This vault is currently set to read-only";
+      }
+      else
+      {
+        // This is not the place for interactive feedback dialogs, so allow any files
+        // here and handle duplicates and metadata files in the actual drop
+        e.Effects = DragDropEffects.Copy;
+      }
+    }
+    else
+    {
+      e.Effects = DragDropEffects.None;
+      ApplicationModel.StatusMessage = "Only file drops are supported";
+    }
+    e.Handled = true;
+  }
 }

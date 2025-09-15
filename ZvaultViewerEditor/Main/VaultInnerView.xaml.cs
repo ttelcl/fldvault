@@ -13,16 +13,32 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ZvaultViewerEditor.Main
+namespace ZvaultViewerEditor.Main;
+
+/// <summary>
+/// Interaction logic for VaultInnerView.xaml
+/// </summary>
+public partial class VaultInnerView: UserControl
 {
-    /// <summary>
-    /// Interaction logic for VaultInnerView.xaml
-    /// </summary>
-    public partial class VaultInnerView : UserControl
+  public VaultInnerView()
+  {
+    InitializeComponent();
+  }
+
+  protected override void OnDrop(DragEventArgs e)
+  {
+    if(DataContext is VaultInnerViewModel vivm)
     {
-        public VaultInnerView()
-        {
-            InitializeComponent();
-        }
+      vivm.OnDrop(e);
     }
+  }
+
+  protected override void OnDragOver(DragEventArgs e)
+  {
+    if(DataContext is VaultInnerViewModel vivm)
+    {
+      vivm.OnDragOver(e);
+    }
+  }
 }
+

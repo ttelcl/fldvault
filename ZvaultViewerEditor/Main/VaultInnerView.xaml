@@ -9,7 +9,7 @@
     mc:Ignorable="d" 
     d:DataContext="{d:DesignInstance local:VaultInnerViewModel, IsDesignTimeCreatable=False}"
     d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
+    <Grid AllowDrop="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>

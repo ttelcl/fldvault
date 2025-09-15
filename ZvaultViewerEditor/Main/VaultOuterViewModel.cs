@@ -4,20 +4,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Threading;
 
 using FldVault.Core.Crypto;
+using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
+using FldVault.KeyServer;
 
 using ZvaultViewerEditor.WpfUtilities;
-using FldVault.KeyServer;
-using System.Threading;
-using System.Windows.Threading;
-using System.Windows.Input;
 
 namespace ZvaultViewerEditor.Main;
 
@@ -38,12 +40,20 @@ public class VaultOuterViewModel: ViewModelBase
     RefreshKeyCommand = new DelegateCommand(
       p => UpdateKeyStatus(),
       p => true);
+    CopyFullKeyIdCommand = new DelegateCommand(
+      p => CopyKeyId(true));
+    CopyShortKeyIdCommand = new DelegateCommand(
+      p => CopyKeyId(false));
     // Create this, to match the initial state of IsVaultKeyKnown
     KeyEntryModel = new KeyEntryViewModel(this);
     UpdateKeyStatus();
   }
 
   public ICommand RefreshKeyCommand { get; }
+
+  public ICommand CopyFullKeyIdCommand { get; }
+
+  public ICommand CopyShortKeyIdCommand { get; }
 
   public IApplicationModel ApplicationModel { get; }
 
@@ -63,6 +73,8 @@ public class VaultOuterViewModel: ViewModelBase
   public string FilePath => Path.GetDirectoryName(Vault.FileName) ?? "";
 
   public Guid KeyId => Vault.KeyId;
+
+  public string KeyIdShort => Vault.KeyId.ToString().Substring(0, 8);
 
   public bool IsVaultKeyKnown {
     get => _vaultKeyKnown;
@@ -183,4 +195,11 @@ public class VaultOuterViewModel: ViewModelBase
     IsVaultKeyKnown = Vault != null && KeyChain.ContainsKey(Vault.KeyId);
   }
 
+  private void CopyKeyId(bool full)
+  {
+    var id = full ? KeyId.ToString() : KeyIdShort;
+    Clipboard.SetText(id);
+    ApplicationModel.StatusMessage =
+        $"Copied key ID '{id}' to clipboard";
+  }
 }

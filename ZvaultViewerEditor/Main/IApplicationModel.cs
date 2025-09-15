@@ -28,5 +28,7 @@ public interface IApplicationModel
   bool TryOpenVault(string vaultFileName);
 
   ICommand CloseVaultCommand { get; }
+
+  void CreateNewVaultBasedOn(string keyBearingFile);
 }
 

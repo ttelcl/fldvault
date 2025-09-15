@@ -29,6 +29,13 @@
                             Kind="FolderOpen"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Header="_New vault reusing existing key..." Command="{Binding NewVaultFromExistingKeyCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial
+                            Padding="5,0,0,0" Height="20" Width="25"
+                            Kind="FolderMultiplePlus"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="_Close..." Command="{Binding CloseVaultCommand}">
                     <MenuItem.Icon>
                         <iconPacks:PackIconMaterial

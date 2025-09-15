@@ -209,6 +209,9 @@ public class KeyServerService
       {
         case KeyServerMessages.KeyNotFoundCode:
           return null;
+        case KeyServerMessages.KeyNotAllowedCode:
+          Trace.TraceInformation("Key is already known in server, but cloaked");
+          return null;
         case KeyServerMessages.KeyResponseCode:
           return frameIn.ReadKeyResponse(keyChain);
         case MessageCodes.ErrorText:
@@ -260,6 +263,9 @@ public class KeyServerService
       switch(messageCode)
       {
         case KeyServerMessages.KeyNotFoundCode:
+          return null;
+        case KeyServerMessages.KeyNotAllowedCode:
+          Trace.TraceInformation("Key is already known in server, but cloaked");
           return null;
         case KeyServerMessages.KeyResponseCode:
           return frameIn.ReadKeyResponse(keyChain);

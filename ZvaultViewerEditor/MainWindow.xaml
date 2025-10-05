@@ -29,6 +29,13 @@
                             Kind="FolderOpen"/>
                     </MenuItem.Icon>
                 </MenuItem>
+                <MenuItem Header="_New vault reusing existing key..." Command="{Binding NewVaultFromExistingKeyCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial
+                            Padding="5,0,0,0" Height="20" Width="25"
+                            Kind="FolderMultiplePlus"/>
+                    </MenuItem.Icon>
+                </MenuItem>
                 <MenuItem Header="_Close..." Command="{Binding CloseVaultCommand}">
                     <MenuItem.Icon>
                         <iconPacks:PackIconMaterial
@@ -68,9 +75,14 @@
         <Border
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
-            <Grid
-                Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}">
-                <local:VaultOuterView DataContext="{Binding CurrentVault}"/>
+            <Grid>
+                <Grid Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNotNull}}">
+                    <!-- dummy wrapper grid to keep the visibility binding understandable to mere mortals -->
+                    <local:VaultOuterView DataContext="{Binding CurrentVault}"/>
+                </Grid>
+                <Grid Visibility="{Binding CurrentVault, Converter={StaticResource VisibleIfNull}}">
+                    <local:NoVaultView DataContext="{Binding NoVault}"/>
+                </Grid>
             </Grid>
         </Border>
     </DockPanel>

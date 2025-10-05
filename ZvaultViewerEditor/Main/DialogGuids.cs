@@ -17,8 +17,11 @@ namespace ZvaultViewerEditor.Main;
 public static class DialogGuids
 {
   public static readonly Guid VaultFileGuid =
-    new Guid("FD183F85-70B0-4EC7-B06B-62E0C6D414DB");
+    new("FD183F85-70B0-4EC7-B06B-62E0C6D414DB");
 
   public static readonly Guid PeerFolderGuid =
-    new Guid("0C60482F-D992-453D-8C93-63F360EC7D6C");
+    new("0C60482F-D992-453D-8C93-63F360EC7D6C");
+
+  public static readonly Guid KeyFileGuid =
+    new("8ffe8ad3-b0c4-429e-a14e-56f6ca25625b");
 }

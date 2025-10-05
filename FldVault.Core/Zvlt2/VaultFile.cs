@@ -174,6 +174,34 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
+  /// Create an empty passphrase based vault file
+  /// </summary>
+  /// <param name="fileName"></param>
+  /// <param name="pkif"></param>
+  /// <returns></returns>
+  public static VaultFile CreateEmpty(
+    string fileName,
+    PassphraseKeyInfoFile pkif)
+  {
+    fileName = Path.GetFullPath(fileName);
+    if(File.Exists(fileName))
+    {
+      var bak = fileName + ".bak";
+      if(File.Exists(bak))
+      {
+        File.Delete(bak);
+      }
+      File.Move(fileName, bak);
+    }
+    using(var stream = File.Create(fileName))
+    {
+      VaultHeader.WriteSync(stream, pkif.KeyId);
+      pkif.WriteBlock(stream);
+    }
+    return new VaultFile(fileName);
+  }
+
+  /// <summary>
   /// Open an existing vault file. This method exists for symmetry with the 
   /// OpenOrCreate() factory methods but is just an alias for the constructor.
   /// </summary>
@@ -201,6 +229,22 @@ public class VaultFile: IBlockElementContainer
   /// The key id for the encryption key used in this vault
   /// </summary>
   public Guid KeyId { get => Header.KeyId; }
+
+  /// <summary>
+  /// Return true if there are any blocks other than overhead blocks in this file.
+  /// Overhead blocks are <see cref="Zvlt2BlockType.ZvltFile"/> and
+  /// <see cref="Zvlt2BlockType.PassphraseLink"/>.
+  /// </summary>
+  /// <returns></returns>
+  public bool HasContent()
+  {
+    var overheadBlockKinds = new HashSet<int> {
+      Zvlt2BlockType.ZvltFile,
+      Zvlt2BlockType.PassphraseLink,
+    };
+    return Blocks.Blocks.Any(
+      bi => !overheadBlockKinds.Contains(bi.Kind));
+  }
 
   /// <summary>
   /// Create a matching <see cref="VaultCryptor"/>

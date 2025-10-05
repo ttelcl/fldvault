@@ -1,0 +1,55 @@
+﻿<UserControl
+    x:Class="ZvaultViewerEditor.Main.NoVaultView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:ZvaultViewerEditor.Main"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    mc:Ignorable="d" 
+    AllowDrop="True"
+    d:DataContext="{d:DesignInstance local:NoVaultViewModel, IsDesignTimeCreatable=False}"
+    Background="Transparent"
+    d:DesignHeight="450" d:DesignWidth="800">
+    <!-- The 'Transparent' background enables catching drag/drop events -->
+    <Grid>
+        <StackPanel
+            Orientation="Vertical"
+            VerticalAlignment="Center"
+            TextBlock.FontSize="14">
+            <Border
+                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                Margin="0,30"
+                MaxWidth="400"
+                BorderThickness="1">
+                <TextBlock
+                    Margin="10"
+                    FontSize="32"
+                    HorizontalAlignment="Center">
+                    <Run Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                         Text="No vault file loaded."/>
+                </TextBlock>
+            </Border>
+            <TextBlock
+                Margin="0,20"
+                FontSize="20"
+                HorizontalAlignment="Center">
+                Drop a
+                <Run Foreground="Lime" Text="*.zvlt"/>
+                file to load it.
+            </TextBlock>
+            <TextBlock
+                Margin="0,20"
+                MaxWidth="400" TextWrapping="Wrap"
+                HorizontalAlignment="Center">
+                Or drop
+                an <Run Foreground="CornflowerBlue" Text="*.mvlt"/> file,
+                a <Run Foreground="Magenta" Text="*.zkey"/> file,
+                or a <Run Foreground="Chocolate" Text="*.pass.key-info"/> file
+                file to start creating a new 
+                <Run Foreground="Lime" Text="*.zvlt"/> file using the same key.
+            </TextBlock>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -4,16 +4,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Windows.Input;
 
 namespace ZvaultViewerEditor.WpfUtilities;
 
 /// <summary>
-/// Standard DelegateCommand implementation
+/// Standard 'DelegateCommand' implementation
 /// </summary>
 public class DelegateCommand: ICommand
 {
@@ -21,9 +21,18 @@ public class DelegateCommand: ICommand
   private readonly Action<object?> _execute;
 
   /// <summary>
-  /// Create a DelegateCommand whose executability
+  /// Create a <see cref="DelegateCommand"/> whose executability
   /// is variable
   /// </summary>
+  /// <param name="execute">
+  /// The delegate to execute when the command is executed. The argument
+  /// is the command parameter,
+  /// </param>
+  /// <param name="canExecute">
+  /// Optional: the delegate executed to determine if the command can
+  /// be executed (putting the command into a disabled state if returning
+  /// false). If not given, the command is always enabled.
+  /// </param>
   public DelegateCommand(
     Action<object?> execute,
     Predicate<object?>? canExecute = null)
@@ -33,7 +42,7 @@ public class DelegateCommand: ICommand
   }
 
   /// <summary>
-  /// Test if the commend can be executed
+  /// Test if the command can be executed
   /// </summary>
   public bool CanExecute(object? parameter)
   {
@@ -41,7 +50,7 @@ public class DelegateCommand: ICommand
   }
 
   /// <summary>
-  /// Execute the commend
+  /// Execute the command
   /// </summary>
   public void Execute(object? parameter)
   {
@@ -49,7 +58,7 @@ public class DelegateCommand: ICommand
   }
 
   /// <summary>
-  /// Attaches the event to CommandManager.RequerySuggested
+  /// Attaches the event to <see cref="CommandManager.RequerySuggested"/>
   /// </summary>
   public event EventHandler? CanExecuteChanged {
     add {

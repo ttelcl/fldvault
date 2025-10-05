@@ -9,6 +9,11 @@
     <ApplicationIcon>Assets\zvault-256.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- This prevents other language resources being emitted -->
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Remove="Assets\zvault-256.png" />
   </ItemGroup>

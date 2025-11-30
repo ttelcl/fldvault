@@ -16,29 +16,28 @@ using System.Windows.Shapes;
 namespace ZvaultViewerEditor.Main;
 
 /// <summary>
-/// Interaction logic for VaultInnerView.xaml
+/// Interaction logic for NoVaultView.xaml
 /// </summary>
-public partial class VaultInnerView: UserControl
+public partial class NoVaultView: UserControl
 {
-  public VaultInnerView()
+  public NoVaultView()
   {
     InitializeComponent();
   }
 
   protected override void OnDrop(DragEventArgs e)
   {
-    if(DataContext is VaultInnerViewModel vivm)
+    if(DataContext is NoVaultViewModel nvvm)
     {
-      vivm.OnDrop(e);
+      nvvm.DropEvent(e);
     }
   }
 
   protected override void OnDragOver(DragEventArgs e)
   {
-    if(DataContext is VaultInnerViewModel vivm)
+    if(DataContext is NoVaultViewModel nvvm)
     {
-      vivm.OnDragOver(e);
+      nvvm.DragOverEvent(e);
     }
   }
 }
-

@@ -15,7 +15,7 @@ let usage focus =
   if showSection "settings-show" then
     cp "\fogitvault \fysettings\f0"
     cp "  Show settings for this machine"
-    cp "  (alias: \fogitvault \fysettings show\f0)"
+    cp "  (aliases: \fogitvault \fysettings show\f0,  \fogitvault \fyanchors\f0)"
   if showDetail "settings-show" then
     cp ""
   if showSection "anchor-add" then

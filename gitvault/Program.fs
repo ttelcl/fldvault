@@ -22,6 +22,7 @@ let rec run arglist =
     Usage.usage "all"
     0  // program return status code to the operating system; 0 == "OK"
   | "settings" :: "show" :: rest
+  | "anchors" :: rest
   | "settings" :: rest ->
     rest |> AppSettingsShow.run
   | "repo" :: "init" :: rest ->

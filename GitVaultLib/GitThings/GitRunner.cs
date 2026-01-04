@@ -279,5 +279,72 @@ public static class GitRunner
     return result;
   }
 
-
+  /// <summary>
+  /// Create a bundle file containing the objects implied by <paramref name="revListArgs"/>.
+  /// </summary>
+  /// <param name="bundleFile">
+  /// The name of the bundle file to create
+  /// </param>
+  /// <param name="witnessFolder">
+  /// If not null: a folder within the target repository. Defaults to
+  /// the current directory.
+  /// </param>
+  /// <param name="revListArgs">
+  /// Revisions, branches, tags, refs etc. to include. Or to Exclude, when prefixed with '^'.
+  /// Also accepts other filter options as documented for <c>git bundle</c>
+  /// (see https://git-scm.com/docs/git-bundle).
+  /// </param>
+  /// <returns></returns>
+  /// <remarks>
+  /// Example 1 (same as <see cref="CreateBundle(string, string?)"/>):
+  /// <code>["--branches", "--tags"]</code>
+  /// Example 2 (all 'release/*' branches, but exclude anything reachable from the
+  /// 'main' branch):
+  /// <code>["^refs/heads/main", "--glob", "refs/heads/release/*"]</code>
+  /// </remarks>
+  public static GitRunResult CreateBundle(
+    string bundleFile,
+    string? witnessFolder,
+    IEnumerable<string> revListArgs)
+  {
+    if(string.IsNullOrEmpty(witnessFolder))
+    {
+      witnessFolder = Environment.CurrentDirectory;
+    }
+    else
+    {
+      witnessFolder = Path.GetFullPath(witnessFolder);
+    }
+    var tmpFile = bundleFile + ".tmp";
+    var args = new List<string> {
+      "-C",
+      witnessFolder,
+      "bundle",
+      "create",
+      tmpFile,
+    };
+    args.AddRange(revListArgs);
+    var result = RunToLines(args, null);
+    if(result.StatusCode != 0)
+    {
+      return result; // Return early on error
+    }
+    // If backup is true, we need to move the tmp file to the target
+    // and then rename it to the final bundle file.
+    if(File.Exists(bundleFile))
+    {
+      var backupFile = bundleFile + ".bak";
+      if(File.Exists(backupFile))
+      {
+        // If the backup file already exists, delete it
+        File.Delete(backupFile);
+      }
+      File.Replace(tmpFile, bundleFile, backupFile);
+    }
+    else
+    {
+      File.Move(tmpFile, bundleFile);
+    }
+    return result;
+  }
 }

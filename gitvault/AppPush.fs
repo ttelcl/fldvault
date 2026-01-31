@@ -14,6 +14,7 @@ open FldVault.Core.Mvlt
 open FldVault.Core.Vaults
 
 open GitVaultLib.Configuration
+open GitVaultLib.Delta
 open GitVaultLib.GitThings
 open GitVaultLib.VaultThings
 
@@ -26,6 +27,7 @@ type private PushTarget =
 
 type private Options = {
   Targets: PushTarget
+  Full: bool
 }
 
 let private runPush o =
@@ -44,7 +46,18 @@ let private runPush o =
         cp $"\foNo gitvault settings found in repository \fg{repoRoot.Folder}\f0."
         1, repoRoot, null
       else
-        0, repoRoot, repoSettings
+        let recipes = DeltaRecipes.TryLoad(repoRoot)
+        let hasRecipes = recipes <> null && recipes.Recipes.Count > 0;
+        if hasRecipes && not(o.Full) then
+          cp $"\foThis repository has delta recipes. Pass \fg-full\fo to confirm full send mode\f0."
+          cp "(\foor use \fygitvault delta send\fo instead to use delta mode\f0)"
+          1, repoRoot, repoSettings
+        else
+          if hasRecipes then
+            cp "Using full bundle mode (delta recipes ignored)\f0."
+          else
+            cp "\fkUsing full bundle mode (no delta recipes found)\f0."
+          0, repoRoot, repoSettings
   if status <> 0 then
     status
   else
@@ -156,6 +169,8 @@ let run args =
       None
     | "-all" :: rest ->
       rest |> parseMore { o with Targets = All }
+    | "-full" :: rest ->
+      rest |> parseMore { o with Full = true }
     | [] ->
       Some o
     | x :: _ ->
@@ -163,6 +178,7 @@ let run args =
       None
   let oo = args |> parseMore {
     Targets = All
+    Full = false
   }
   match oo with
   | None ->

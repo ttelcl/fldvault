@@ -22,10 +22,13 @@ public class DeltaRecipes
   /// Create a new <see cref="DeltaRecipes"/> instance
   /// </summary>
   /// <param name="recipes"></param>
+  /// <param name="defaultRecipe"></param>
   public DeltaRecipes(
-    IReadOnlyDictionary<string, DeltaRecipe> recipes)
+    IReadOnlyDictionary<string, DeltaRecipe> recipes,
+    [JsonProperty("default")] string? defaultRecipe = null)
   {
     _recipes = new Dictionary<string, DeltaRecipe>(recipes);
+    DefaultRecipe=defaultRecipe;
   }
 
   /// <summary>
@@ -52,12 +55,54 @@ public class DeltaRecipes
   public IReadOnlyDictionary<string, DeltaRecipe> Recipes => _recipes;
 
   /// <summary>
+  /// The name of the default recipe, if any. Use <see cref="ChangeDefault(string?)"/>
+  /// to modify, and subsequently call <see cref="SaveIfModified(GitRepoFolder)"/>.
+  /// </summary>
+  [JsonProperty("default")]
+  public string? DefaultRecipe { get; private set; }
+
+  /// <summary>
   /// A flag set when a recipe is added, replaced or removed. Not set when
   /// recipes are changed!
   /// is called.
   /// </summary>
   [JsonIgnore]
   public bool Modified { get; private set; }
+
+  /// <summary>
+  /// Change the recorded default recipe. Call <see cref="SaveIfModified(GitRepoFolder)"/>
+  /// afterward to save the change; this method does not do that (because it does not know
+  /// where to save it)
+  /// </summary>
+  /// <param name="recipeName"></param>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if the argument is not null and not a known recipe name
+  /// </exception>
+  public void ChangeDefault(string? recipeName)
+  {
+    Modified = true;
+    if(recipeName != null && !_recipes.ContainsKey(recipeName))
+    {
+      throw new InvalidOperationException(
+        $"Unknow recipe '{recipeName}'");
+    }
+    DefaultRecipe = recipeName;
+  }
+
+  /// <summary>
+  /// Get the default recipe instance, if defined.
+  /// Returns null if no default is configured or if the configured default
+  /// does not actually exist.
+  /// </summary>
+  /// <returns></returns>
+  public DeltaRecipe? GetDefaultRecipe()
+  {
+    if(DefaultRecipe != null && _recipes.TryGetValue(DefaultRecipe, out var defaultRecipe))
+    {
+      return defaultRecipe;
+    }
+    return null;
+  }
 
   /// <summary>
   /// Add or replace a recipe
@@ -70,7 +115,8 @@ public class DeltaRecipes
   }
 
   /// <summary>
-  /// Remove a recipe
+  /// Remove a recipe. If this is the default recipe, <see cref="DefaultRecipe"/>
+  /// is also set to null.
   /// </summary>
   /// <param name="recipeName"></param>
   /// <returns></returns>
@@ -79,6 +125,10 @@ public class DeltaRecipes
     if(_recipes.Remove(recipeName))
     {
       Modified = true;
+      if(DefaultRecipe == recipeName)
+      {
+        DefaultRecipe = null;
+      }
       return true;
     }
     return false;

@@ -62,6 +62,12 @@ public class DeltaRecipes
   public string? DefaultRecipe { get; private set; }
 
   /// <summary>
+  /// True if a default recipe is defined
+  /// </summary>
+  [JsonIgnore]
+  public bool HasDefaultRecipe => !String.IsNullOrEmpty(DefaultRecipe);
+
+  /// <summary>
   /// A flag set when a recipe is added, replaced or removed. Not set when
   /// recipes are changed!
   /// is called.

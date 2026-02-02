@@ -27,8 +27,21 @@ public class DeltaRecipes
     IReadOnlyDictionary<string, DeltaRecipe> recipes,
     [JsonProperty("default")] string? defaultRecipe = null)
   {
-    _recipes = new Dictionary<string, DeltaRecipe>(recipes);
+    _recipes = new Dictionary<string, DeltaRecipe>(recipes, StringComparer.OrdinalIgnoreCase);
     DefaultRecipe=defaultRecipe;
+  }
+
+  /// <summary>
+  /// Create a brand new, empty, <see cref="DeltaRecipes"/> instance.
+  /// This pseudo-constructor does not save it to a file, but does set the
+  /// <see cref="Modified"/> flag.
+  /// </summary>
+  /// <returns></returns>
+  public static DeltaRecipes CreateNew()
+  {
+    var recipes = new DeltaRecipes(new Dictionary<string, DeltaRecipe>(StringComparer.OrdinalIgnoreCase), null);
+    recipes.Modified = true;
+    return recipes;
   }
 
   /// <summary>
@@ -49,7 +62,7 @@ public class DeltaRecipes
   }
 
   /// <summary>
-  /// A mapping from recipe name to recipe instance
+  /// A mapping from recipe name to recipe instance. Recipe names are case insensitive.
   /// </summary>
   [JsonProperty("recipes")]
   public IReadOnlyDictionary<string, DeltaRecipe> Recipes => _recipes;

@@ -100,7 +100,6 @@ let private runPush o =
         cp "\frBundling stage failed.\fo Skipping Encryption phase\f0."
       else
         let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
-        //let bundleInfo = repoAnchorSettings.ToBundleInfo(centralSettings)
         let keyInfo = bundleRecord.GetZkeyOrFail()
         let vaultFileName = bundleRecord.GetVaultFileNameOrFail()
         let keyId = keyInfo.KeyGuid

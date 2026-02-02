@@ -13,8 +13,8 @@ namespace GitVaultLib.Delta;
 /// </summary>
 public class DeltaRecipe
 {
-  private readonly List<string> _seeds;
-  private readonly List<string> _exclusions;
+  private readonly HashSet<string> _seeds;
+  private readonly HashSet<string> _exclusions;
 
   /// <summary>
   /// Create a new <see cref="DeltaRecipe"/>. Also used as JSON constructor.
@@ -31,10 +31,10 @@ public class DeltaRecipe
   public DeltaRecipe(string name, IEnumerable<string> seeds, IEnumerable<string> exclusions)
   {
     Name = name;
-    _seeds = seeds.ToList();
-    _exclusions = exclusions.ToList();
-    Seeds = _seeds.AsReadOnly();
-    Exclusions = _exclusions.AsReadOnly();
+    _seeds = seeds.ToHashSet();
+    _exclusions = exclusions.ToHashSet();
+    Seeds = _seeds;
+    Exclusions = _exclusions;
   }
 
   /// <summary>
@@ -50,7 +50,7 @@ public class DeltaRecipe
   /// "--branches", "--tags", "--all". Note that commit IDs are not valid here.
   /// </summary>
   [JsonProperty("seeds")]
-  public IReadOnlyList<string> Seeds { get; }
+  public IReadOnlySet<string> Seeds { get; }
 
   /// <summary>
   /// Specifies zero or more refs that are assumed to be known and are excluded from
@@ -58,7 +58,7 @@ public class DeltaRecipe
   /// bundle will be a full bundle instead of a delta bundle.
   /// </summary>
   [JsonProperty("exclusions")]
-  public IReadOnlyList<string> Exclusions { get; }
+  public IReadOnlySet<string> Exclusions { get; }
 
   /// <summary>
   /// A flag set when <see cref="Zap"/>, <see cref="AddSeed(string)"/> or <see cref="AddExclusion(string)"/>

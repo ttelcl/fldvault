@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using GitVaultLib.Delta;
+
 namespace GitVaultLib.GitThings;
 
 /// <summary>
@@ -223,7 +225,7 @@ public static class GitRunner
   }
 
   /// <summary>
-  /// Create a bundle file containing all branches and tags.
+  /// Create a (full) bundle file containing all branches and tags.
   /// If the output file already exists, it is moved to a backup file
   /// </summary>
   /// <param name="bundleFile">
@@ -346,5 +348,32 @@ public static class GitRunner
       File.Move(tmpFile, bundleFile);
     }
     return result;
+  }
+
+  /// <summary>
+  /// Create a delta bundle file as implied by <paramref name="recipe"/>,
+  /// bundling the <see cref="DeltaRecipe.Seeds"/> but assuming the
+  /// <see cref="DeltaRecipe.Exclusions"/> already known.
+  /// </summary>
+  /// <param name="bundleFile">
+  /// The name for the output file
+  /// </param>
+  /// <param name="witnessFolder">
+  /// Any folder in the repository, used to locate the repository root
+  /// </param>
+  /// <param name="recipe">
+  /// The recipe specifying which commits to bundle and which to assume as known.
+  /// </param>
+  /// <returns></returns>
+  public static GitRunResult CreateBundle(
+    string bundleFile,
+    string? witnessFolder,
+    DeltaRecipe recipe)
+  {
+    var revArgs =
+      recipe.Seeds
+      .Concat(
+        recipe.Exclusions.Select(x => "^" + x));
+    return CreateBundle(bundleFile, witnessFolder, revArgs);
   }
 }

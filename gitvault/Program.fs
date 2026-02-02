@@ -43,6 +43,8 @@ let rec run arglist =
     rest |> AppBundlesConnect.run false
   | "receive" :: rest ->
     rest |> AppBundlesConnect.run true
+  | "delta" :: rest ->
+    rest |> AppDelta.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

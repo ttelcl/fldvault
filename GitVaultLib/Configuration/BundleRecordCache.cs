@@ -269,7 +269,7 @@ public class BundleRecordCache
     if(Directory.Exists(vaultFolder))
     {
       var di = new DirectoryInfo(vaultFolder);
-      foreach(var vaultFile in di.EnumerateFiles("*.mvlt"))
+      foreach(var vaultFile in di.EnumerateFiles("*.-.bundle.*.mvlt"))
       {
         keys.Add(RegisterVaultFile(vaultFile.FullName, anchor).Key);
       }
@@ -310,7 +310,7 @@ public class BundleRecordCache
     if(Directory.Exists(bundleFolder))
     {
       var di = new DirectoryInfo(bundleFolder);
-      foreach(var bundleFile in di.EnumerateFiles("*.bundle"))
+      foreach(var bundleFile in di.EnumerateFiles("*.-.bundle"))
       {
         keys.Add(RegisterBundleFile(bundleFile.FullName, anchor).Key);
       }

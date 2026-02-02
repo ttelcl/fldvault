@@ -359,8 +359,32 @@ let private runDeltaSend args =
       runDeltaSendInner context o
 
 let private runDeltaShow args =
-  cp "\frNYI\f0."
-  1
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOnly true {
+      Recipe = null
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
+      if ok then
+        cp $"Recipe '\fc{recipe.Name}\f0' has \fg{recipe.Seeds.Count}\f0 seeds and \fo{recipe.Exclusions.Count}\f0 exclusions:"
+        for seed in recipe.Seeds do
+          cp $" \fg+  \f0'\fg{seed}\f0'"
+        for exclusion in recipe.Exclusions do
+          cp $" \fo-  \fo'\fo{exclusion}\f0'"
+        0
+      else
+        cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
+        1
 
 let private runDeltaList args =
   // there are no additional arguments to parse

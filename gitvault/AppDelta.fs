@@ -33,6 +33,14 @@ type private RecipeOnlyOptions = {
   Recipe: string
 }
 
+type private RecipeOrClearChoice =
+  | Recipe of string
+  | Clear
+
+type private RecipeOrClearOptions = {
+  RecipeOrClear: RecipeOrClearChoice option
+}
+
 type private RepoContext = {
   Root: GitRepoFolder
   Settings: RepoSettings
@@ -214,14 +222,6 @@ let private runDeltaEdit args =
   | Some o ->
     o |> runDeltaEditInner
 
-let private runDeltaDrop args =
-  cp "\frNYI\f0."
-  1
-
-let private runDeltaDefault args =
-  cp "\frNYI\f0."
-  1
-
 let private runDeltaSendInner context (o:RecipeOnlyOptions) =
   let centralSettings = CentralSettings.Load()
   let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
@@ -386,6 +386,78 @@ let private runDeltaShow args =
         cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
         1
 
+let private runDeltaDrop args =
+  cp "\frNYI\f0."
+  1
+
+let private parseRecipeOrClear o args =
+  let rec parseMore (o:RecipeOrClearOptions) args =
+    match args with
+    | "-v" :: rest ->
+      verbose <- true
+      parseMore o rest
+    | "--help" :: _ 
+    | "-h" :: _ ->
+      None
+    | "-r" :: name :: rest ->
+      rest |> parseMore {o with RecipeOrClear = name |> RecipeOrClearChoice.Recipe |> Some}
+    | "-none" :: rest 
+    | "-clear" :: rest ->
+      rest |> parseMore {o with RecipeOrClear = RecipeOrClearChoice.Clear |> Some}
+    | [] ->
+      // Allow RecipeOrClear to be None (to only inquire the default)
+      o |> Some
+    | x :: _ ->
+      cp $"\foUnknown option \fy{x}\f0."
+      None
+  args |> parseMore o
+
+let private runDeltaDefault args =
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOrClear {
+      RecipeOrClear = None
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      match o.RecipeOrClear with
+      | Some(Recipe(recipeName)) ->
+        let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+        if ok then
+          recipes.ChangeDefault(recipe.Name)
+          recipes.SaveIfModified(context.Root) |> ignore
+          cp $"\fgSuccessfully changed default recipe to '\fy{recipe.Name}\fg'\f0."
+          0
+        else
+          cp $"\frCannot set '\fc{recipeName}\fr' as delta bundle recipe name: \fyit is not a known recipe name\f0."
+          if recipes.Recipes.Count = 0 then
+            cp "\foThere are currently no known recipes defined at all; you cannot set a default right now\f0."
+          else
+            cpx "Currently defined recipes:"
+            for recipe in recipes.Recipes.Values do
+              cpx $"  '\fg{recipe.Name}\f0'"
+            cp "\f0."
+          1
+      | Some(Clear) ->
+        recipes.ChangeDefault(null)
+        recipes.SaveIfModified(context.Root) |> ignore
+        cp "\fySuccessfully cleared the default recipe to none\f0."
+        0
+      | None ->
+        if recipes.DefaultRecipe |> String.IsNullOrEmpty then
+          cp "There is currently \fyno default recipe\f0 name set."
+        else
+          cp $"Current default recipe name: \fg{recipes.DefaultRecipe}\f0."
+        0
+
 let private runDeltaList args =
   // there are no additional arguments to parse
   match getContext false with
@@ -409,7 +481,7 @@ let private runDeltaList args =
       if recipes.HasDefaultRecipe then
         cp $"The default recipe is '\fc{recipes.DefaultRecipe}\f0'."
       else
-        cp "\foNo recipe is set as default."
+        cp "\foNo recipe is set as default\f0."
       0
 
 let run args =

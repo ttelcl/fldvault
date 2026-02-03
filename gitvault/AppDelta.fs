@@ -387,8 +387,36 @@ let private runDeltaShow args =
         1
 
 let private runDeltaDrop args =
-  cp "\frNYI\f0."
-  1
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOnly true {
+      Recipe = null
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
+      if ok then
+        // retrieve the canonical spelling
+        let recipeName = recipe.Name
+        let hadDefault = recipes.HasDefaultRecipe
+        recipeName |> recipes.Drop |> ignore
+        context.Root |> recipes.SaveIfModified |> ignore
+        cp $"\fyDeleted recipe \f0'\fr{recipeName}\f0'."
+        // Check the possible side effect and inform the user
+        if hadDefault && not(recipes.HasDefaultRecipe) then
+          cp $"\foAlso cleared the default recipe name\f0."
+        0
+      else
+        cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
+        1
 
 let private parseRecipeOrClear o args =
   let rec parseMore (o:RecipeOrClearOptions) args =
@@ -433,7 +461,7 @@ let private runDeltaDefault args =
         let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
         if ok then
           recipes.ChangeDefault(recipe.Name)
-          recipes.SaveIfModified(context.Root) |> ignore
+          context.Root |> recipes.SaveIfModified |> ignore
           cp $"\fgSuccessfully changed default recipe to '\fy{recipe.Name}\fg'\f0."
           0
         else
@@ -448,7 +476,7 @@ let private runDeltaDefault args =
           1
       | Some(Clear) ->
         recipes.ChangeDefault(null)
-        recipes.SaveIfModified(context.Root) |> ignore
+        context.Root |> recipes.SaveIfModified |> ignore
         cp "\fySuccessfully cleared the default recipe to none\f0."
         0
       | None ->

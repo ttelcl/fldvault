@@ -69,6 +69,13 @@ let private getContext requireRecipes =
           RecipesOption = recipes |> Option.ofObj
         } |> Some
 
+let private showRecipe (recipe: DeltaRecipe) =
+  cp $"Recipe '\fc{recipe.Name}\f0' has \fg{recipe.Seeds.Count}\f0 seeds and \fo{recipe.Exclusions.Count}\f0 exclusions:"
+  for seed in recipe.Seeds do
+    cp $" \fg+  \f0'\fg{seed}\f0'"
+  for exclusion in recipe.Exclusions do
+    cp $" \fo-  \f0'\fo{exclusion}\f0'"
+
 let private parseRecipeOnly requireRecipe o args =
   let rec parseMore (o:RecipeOnlyOptions) args =
     match args with
@@ -127,9 +134,10 @@ let private parseNewEdit o args =
       elif isNew && o.Seeds.IsEmpty then
         cp "\frExpecting at least one \fg-s\fr argument\f0."
         None
-      elif isEdit && (o.Seeds.IsEmpty && o.Exclusions.IsEmpty && o.Zaps.IsEmpty) then
-        cp "\frExpecting at least one \fg-s\fr, \fg-x\fr, or \fg-z\fr argument\f0."
-        None
+      // Allow "edit" with any edits (effectively an alias for "show")
+      //elif isEdit && (o.Seeds.IsEmpty && o.Exclusions.IsEmpty && o.Zaps.IsEmpty) then
+      //  cp "\frExpecting at least one \fg-s\fr, \fg-x\fr, or \fg-z\fr argument\f0."
+      //  None
       else
         {o with
            Zaps = o.Zaps |> List.rev
@@ -147,7 +155,6 @@ let private runDeltaNewInner o =
     1
   | Some(context) ->
     let root = context.Root
-    let settings = context.Settings
     let recipes =
       match context.RecipesOption with
       | Some recipes ->
@@ -178,7 +185,9 @@ let private runDeltaNewInner o =
       recipe |> recipes.Put
       let fileName = root.GitvaultRecipesFile
       cp $"Saving \fg{fileName}\f0."
-      recipes.SaveIfModified(root) |> ignore
+      root |> recipes.SaveIfModified |> ignore
+      cp ""
+      recipe |> showRecipe
       0
 
 let private runDeltaNew args =
@@ -197,14 +206,48 @@ let private runDeltaNew args =
   | Some o ->
     o |> runDeltaNewInner
 
-let private runDeltaEditInner args =
+let private runDeltaEditInner (o:NewEditOptions) =
   match getContext true with
   | None ->
     // error printed already
     1
   | Some(context) ->
-    cp "\frNYI\f0."
-    1
+    let root = context.Root
+    let recipes = context.RecipesOption.Value
+    let recipeName =
+      if o.Recipe |> String.IsNullOrEmpty then
+        recipes.DefaultRecipe
+      else
+        o.Recipe
+    if recipeName |> String.IsNullOrEmpty then
+      cp $"\frNo recipe (\fg-r\fr) provided and no default recipe known.\f0."
+      1
+    else
+      let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+      if ok |> not then
+        cp $"\frUnknown recipe \f0'{recipeName}\f0'"
+        1
+      else
+        for zap in o.Zaps do
+          zap |> recipe.Zap |> ignore
+        for seed in o.Seeds do
+          seed |> recipe.AddSeed |> ignore
+        for exclusion in o.Exclusions do
+          exclusion |> recipe.AddExclusion |> ignore
+        if recipe.Seeds.Count = 0 then
+          cp $"\frAfter applying edits, no seeds are left. \fyNot saving the resulting invalid recipe\f0."
+          1
+        else
+          let fileName = root.GitvaultRecipesFile
+          let saved = root |> recipes.SaveIfModified
+          if saved then
+            cp $"Saving \fg{fileName}\f0."
+          else
+            cp $"\foNo changes made\f0."
+            cp $"  -> not saving \fg{fileName}\f0."
+          cp ""
+          recipe |> showRecipe
+          0
 
 let private runDeltaEdit args =
   let oo = args |> parseNewEdit {
@@ -376,11 +419,7 @@ let private runDeltaShow args =
     | Some o ->
       let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
       if ok then
-        cp $"Recipe '\fc{recipe.Name}\f0' has \fg{recipe.Seeds.Count}\f0 seeds and \fo{recipe.Exclusions.Count}\f0 exclusions:"
-        for seed in recipe.Seeds do
-          cp $" \fg+  \f0'\fg{seed}\f0'"
-        for exclusion in recipe.Exclusions do
-          cp $" \fo-  \fo'\fo{exclusion}\f0'"
+        recipe |> showRecipe
         0
       else
         cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."

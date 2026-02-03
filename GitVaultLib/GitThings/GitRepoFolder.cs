@@ -132,6 +132,18 @@ public class GitRepoFolder
   }
 
   /// <summary>
+  /// The file name where the gitvault delta recipes for this git repository
+  /// are stored. This file may be missing if there are no recipes.
+  /// </summary>
+  public string GitvaultRecipesFile {
+    get {
+      return Path.Combine(
+        GitFolder,
+        "gitvault-delta-recipes.json");
+    }
+  }
+
+  /// <summary>
   /// Get the git roots for this repository. This is cached at first call.
   /// </summary>
   public GitRoots GetGitRoots()

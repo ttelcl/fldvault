@@ -207,6 +207,17 @@ public class AnchorRepoSettings
   }
 
   /// <summary>
+  /// Get the file name for the delta bundle file for this repository, host, anchor, and recipe.
+  /// </summary>
+  public string GetDeltaBundleFileName(string recipeName, CentralSettings centralSettings)
+  {
+    var bundleFolder = GetBundleFolder(centralSettings);
+    return Path.Combine(
+      bundleFolder,
+      $"{RepoName}.{HostName}.{recipeName}.dbundle");
+  }
+
+  /// <summary>
   /// Get the file name for the source folder file for this repository, host and anchor.
   /// If this file does not exists, or points to a different repository, that means that
   /// this repository must not push to the bundle (because it is not the 'owner')

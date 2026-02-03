@@ -24,6 +24,7 @@
     <Compile Include="AppBundlesFetch.fs" />
     <Compile Include="AppBundlesStatus.fs" />
     <Compile Include="AppBundlesConnect.fs" />
+    <Compile Include="AppDelta.fs" />
     <Compile Include="Program.fs" />
     <None Include="README.md" />
   </ItemGroup>

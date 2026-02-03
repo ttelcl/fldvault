@@ -33,6 +33,14 @@ type private RecipeOnlyOptions = {
   Recipe: string
 }
 
+type private RecipeOrClearChoice =
+  | Recipe of string
+  | Clear
+
+type private RecipeOrClearOptions = {
+  RecipeOrClear: RecipeOrClearChoice option
+}
+
 type private RepoContext = {
   Root: GitRepoFolder
   Settings: RepoSettings
@@ -60,6 +68,13 @@ let private getContext requireRecipes =
           Settings = repoSettings
           RecipesOption = recipes |> Option.ofObj
         } |> Some
+
+let private showRecipe (recipe: DeltaRecipe) =
+  cp $"Recipe '\fc{recipe.Name}\f0' has \fg{recipe.Seeds.Count}\f0 seeds and \fo{recipe.Exclusions.Count}\f0 exclusions:"
+  for seed in recipe.Seeds do
+    cp $" \fg+  \f0'\fg{seed}\f0'"
+  for exclusion in recipe.Exclusions do
+    cp $" \fo-  \f0'\fo{exclusion}\f0'"
 
 let private parseRecipeOnly requireRecipe o args =
   let rec parseMore (o:RecipeOnlyOptions) args =
@@ -119,9 +134,10 @@ let private parseNewEdit o args =
       elif isNew && o.Seeds.IsEmpty then
         cp "\frExpecting at least one \fg-s\fr argument\f0."
         None
-      elif isEdit && (o.Seeds.IsEmpty && o.Exclusions.IsEmpty && o.Zaps.IsEmpty) then
-        cp "\frExpecting at least one \fg-s\fr, \fg-x\fr, or \fg-z\fr argument\f0."
-        None
+      // Allow "edit" with any edits (effectively an alias for "show")
+      //elif isEdit && (o.Seeds.IsEmpty && o.Exclusions.IsEmpty && o.Zaps.IsEmpty) then
+      //  cp "\frExpecting at least one \fg-s\fr, \fg-x\fr, or \fg-z\fr argument\f0."
+      //  None
       else
         {o with
            Zaps = o.Zaps |> List.rev
@@ -139,7 +155,6 @@ let private runDeltaNewInner o =
     1
   | Some(context) ->
     let root = context.Root
-    let settings = context.Settings
     let recipes =
       match context.RecipesOption with
       | Some recipes ->
@@ -170,7 +185,9 @@ let private runDeltaNewInner o =
       recipe |> recipes.Put
       let fileName = root.GitvaultRecipesFile
       cp $"Saving \fg{fileName}\f0."
-      recipes.SaveIfModified(root) |> ignore
+      root |> recipes.SaveIfModified |> ignore
+      cp ""
+      recipe |> showRecipe
       0
 
 let private runDeltaNew args =
@@ -189,14 +206,48 @@ let private runDeltaNew args =
   | Some o ->
     o |> runDeltaNewInner
 
-let private runDeltaEditInner args =
+let private runDeltaEditInner (o:NewEditOptions) =
   match getContext true with
   | None ->
     // error printed already
     1
   | Some(context) ->
-    cp "\frNYI\f0."
-    1
+    let root = context.Root
+    let recipes = context.RecipesOption.Value
+    let recipeName =
+      if o.Recipe |> String.IsNullOrEmpty then
+        recipes.DefaultRecipe
+      else
+        o.Recipe
+    if recipeName |> String.IsNullOrEmpty then
+      cp $"\frNo recipe (\fg-r\fr) provided and no default recipe known.\f0."
+      1
+    else
+      let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+      if ok |> not then
+        cp $"\frUnknown recipe \f0'{recipeName}\f0'"
+        1
+      else
+        for zap in o.Zaps do
+          zap |> recipe.Zap |> ignore
+        for seed in o.Seeds do
+          seed |> recipe.AddSeed |> ignore
+        for exclusion in o.Exclusions do
+          exclusion |> recipe.AddExclusion |> ignore
+        if recipe.Seeds.Count = 0 then
+          cp $"\frAfter applying edits, no seeds are left. \fyNot saving the resulting invalid recipe\f0."
+          1
+        else
+          let fileName = root.GitvaultRecipesFile
+          let saved = root |> recipes.SaveIfModified
+          if saved then
+            cp $"Saving \fg{fileName}\f0."
+          else
+            cp $"\foNo changes made\f0."
+            cp $"  -> not saving \fg{fileName}\f0."
+          cp ""
+          recipe |> showRecipe
+          0
 
 let private runDeltaEdit args =
   let oo = args |> parseNewEdit {
@@ -213,14 +264,6 @@ let private runDeltaEdit args =
     1
   | Some o ->
     o |> runDeltaEditInner
-
-let private runDeltaDrop args =
-  cp "\frNYI\f0."
-  1
-
-let private runDeltaDefault args =
-  cp "\frNYI\f0."
-  1
 
 let private runDeltaSendInner context (o:RecipeOnlyOptions) =
   let centralSettings = CentralSettings.Load()
@@ -359,8 +402,128 @@ let private runDeltaSend args =
       runDeltaSendInner context o
 
 let private runDeltaShow args =
-  cp "\frNYI\f0."
-  1
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOnly true {
+      Recipe = null
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
+      if ok then
+        recipe |> showRecipe
+        0
+      else
+        cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
+        1
+
+let private runDeltaDrop args =
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOnly true {
+      Recipe = null
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
+      if ok then
+        // retrieve the canonical spelling
+        let recipeName = recipe.Name
+        let hadDefault = recipes.HasDefaultRecipe
+        recipeName |> recipes.Drop |> ignore
+        context.Root |> recipes.SaveIfModified |> ignore
+        cp $"\fyDeleted recipe \f0'\fr{recipeName}\f0'."
+        // Check the possible side effect and inform the user
+        if hadDefault && not(recipes.HasDefaultRecipe) then
+          cp $"\foAlso cleared the default recipe name\f0."
+        0
+      else
+        cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
+        1
+
+let private parseRecipeOrClear o args =
+  let rec parseMore (o:RecipeOrClearOptions) args =
+    match args with
+    | "-v" :: rest ->
+      verbose <- true
+      parseMore o rest
+    | "--help" :: _ 
+    | "-h" :: _ ->
+      None
+    | "-r" :: name :: rest ->
+      rest |> parseMore {o with RecipeOrClear = name |> RecipeOrClearChoice.Recipe |> Some}
+    | "-none" :: rest 
+    | "-clear" :: rest ->
+      rest |> parseMore {o with RecipeOrClear = RecipeOrClearChoice.Clear |> Some}
+    | [] ->
+      // Allow RecipeOrClear to be None (to only inquire the default)
+      o |> Some
+    | x :: _ ->
+      cp $"\foUnknown option \fy{x}\f0."
+      None
+  args |> parseMore o
+
+let private runDeltaDefault args =
+  match getContext true with
+  | None ->
+    // error printed already
+    1
+  | Some(context) ->
+    let recipes = context.RecipesOption.Value
+    let oo = args |> parseRecipeOrClear {
+      RecipeOrClear = None
+    }
+    match oo with
+    | None ->
+      cp ""
+      Usage.usage "delta"
+      1
+    | Some o ->
+      match o.RecipeOrClear with
+      | Some(Recipe(recipeName)) ->
+        let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+        if ok then
+          recipes.ChangeDefault(recipe.Name)
+          context.Root |> recipes.SaveIfModified |> ignore
+          cp $"\fgSuccessfully changed default recipe to '\fy{recipe.Name}\fg'\f0."
+          0
+        else
+          cp $"\frCannot set '\fc{recipeName}\fr' as delta bundle recipe name: \fyit is not a known recipe name\f0."
+          if recipes.Recipes.Count = 0 then
+            cp "\foThere are currently no known recipes defined at all; you cannot set a default right now\f0."
+          else
+            cpx "Currently defined recipes:"
+            for recipe in recipes.Recipes.Values do
+              cpx $"  '\fg{recipe.Name}\f0'"
+            cp "\f0."
+          1
+      | Some(Clear) ->
+        recipes.ChangeDefault(null)
+        context.Root |> recipes.SaveIfModified |> ignore
+        cp "\fySuccessfully cleared the default recipe to none\f0."
+        0
+      | None ->
+        if recipes.DefaultRecipe |> String.IsNullOrEmpty then
+          cp "There is currently \fyno default recipe\f0 name set."
+        else
+          cp $"Current default recipe name: \fg{recipes.DefaultRecipe}\f0."
+        0
 
 let private runDeltaList args =
   // there are no additional arguments to parse
@@ -385,7 +548,7 @@ let private runDeltaList args =
       if recipes.HasDefaultRecipe then
         cp $"The default recipe is '\fc{recipes.DefaultRecipe}\f0'."
       else
-        cp "\foNo recipe is set as default."
+        cp "\foNo recipe is set as default\f0."
       0
 
 let run args =

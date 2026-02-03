@@ -144,7 +144,7 @@ public class DeltaRecipes
     if(_recipes.Remove(recipeName))
     {
       Modified = true;
-      if(DefaultRecipe == recipeName)
+      if(recipeName.Equals(DefaultRecipe, StringComparison.OrdinalIgnoreCase))
       {
         DefaultRecipe = null;
       }
@@ -166,11 +166,25 @@ public class DeltaRecipes
     {
       var json = JsonConvert.SerializeObject(this, Formatting.Indented);
       var file = repoFolder.GitvaultRecipesFile;
-      File.WriteAllText(file, json);
+      var tmp = file + ".tmp";
+      File.WriteAllText(tmp, json);
       Modified = false;
       foreach(var recipe in _recipes.Values)
       {
         recipe.Modified = false;
+      }
+      if(File.Exists(file))
+      {
+        var bak = file + ".bak";
+        if(File.Exists(bak))
+        {
+          File.Delete(bak);
+        }
+        File.Replace(tmp, file, bak);
+      }
+      else
+      {
+        File.Move(tmp, file);
       }
     }
     return modified;

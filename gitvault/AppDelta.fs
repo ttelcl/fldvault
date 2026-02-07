@@ -340,6 +340,17 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
             cp $"\fgBundle created successfully\f0, size \fb{fi.Length}\f0."
             true
       if bundledOk then
+        let bundleHeader = fileName |> BundleHeader.FromFile
+        let metadata = JObject.FromObject(bundleHeader)
+        // also add repo roots to metadata
+        metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
+        let metaFileName = fileName + ".metadata.json"
+        // NOT ".meta.json" - that is reserved for the MVLT metadata which adds additional fields
+        let metaJson = JsonConvert.SerializeObject(metadata, Formatting.Indented)
+        do
+          use w = metaFileName |> startFile
+          metaJson |> w.WriteLine
+        metaFileName |> finishFile
         let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
         let keyError = repoAnchorSettings.CanGetKey(centralSettings)
         if keyError |> String.IsNullOrEmpty |> not then
@@ -354,11 +365,6 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
           let deltaVaultName =
             Path.Combine(vaultFolder.VaultFolder, deltaVaultNameShort)
           if keyId |> loadkey then
-            let metadata = new JObject()
-            let bundleTips = fileName |> GitTips.ForBundleFile
-            metadata.Add("tips", bundleTips.TipMap |> JToken.FromObject)
-            // there is no easy way to get the bundle roots, but we could add the repo roots
-            metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
             let encryptionTask =
               task {
                 let! writtenFile =

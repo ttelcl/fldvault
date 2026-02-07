@@ -19,23 +19,42 @@ namespace GitVaultLib.Delta;
 /// </summary>
 public class BundleHeader
 {
-  private readonly List<BundleSeed> _seeds;
-  private readonly List<BundlePrerequisite> _prerequisites;
+  private readonly Dictionary<string, string> _seedrefs;
+  private readonly HashSet<string> _prerequisites;
 
   /// <summary>
   /// Create a new BundleReader
   /// </summary>
   public BundleHeader(
-    int version,
-    IEnumerable<BundleSeed>? seeds = null,
-    IEnumerable<BundlePrerequisite>? prerequisites = null)
+    int bundleversion,
+    IReadOnlyDictionary<string, string> seedrefs,
+    IEnumerable<string> prerequisites)
   {
-    _seeds = [.. (seeds ?? [])];
-    _prerequisites = [.. (prerequisites ?? [])];
-    Version = version;
-    Seeds = _seeds.AsReadOnly();
-    Prerequisites = _prerequisites.AsReadOnly();
+    Version = bundleversion;
+    _seedrefs = seedrefs.ToDictionary(StringComparer.OrdinalIgnoreCase);
+    _prerequisites = prerequisites.ToHashSet(StringComparer.OrdinalIgnoreCase);
   }
+
+  /// <summary>
+  /// The bundle version (2 or 3)
+  /// </summary>
+  [JsonProperty("bundleversion")]
+  public int Version { get; }
+
+  /// <summary>
+  /// A mapping from the seed's ref to their git id.
+  /// That may feel the "wrong way around", but keeps in mind that the
+  /// refs are unique, while their target commit ids may be shared across
+  /// multiple refs.
+  /// </summary>
+  [JsonProperty("seedrefs")]
+  public IReadOnlyDictionary<string, string> SeedRefs => _seedrefs;
+
+  /// <summary>
+  /// The bundle requisites (if any)
+  /// </summary>
+  [JsonProperty("prerequisites")]
+  public IReadOnlySet<string> Prerequisites => _prerequisites;
 
   /// <summary>
   /// Load a <see cref="BundleHeader"/> froma bundle file
@@ -59,7 +78,8 @@ public class BundleHeader
         _ => throw new InvalidDataException(
           $"This file does not look like a git bundle: '{fileName}'"),
       };
-    var bundleHeader = new BundleHeader(version);
+    var seedrefs = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var prereqs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     while((line = rdr.ReadLine()) != null && !String.IsNullOrEmpty(line))
     {
       if(line.StartsWith("@"))
@@ -76,8 +96,7 @@ public class BundleHeader
             "Invalid prerequisite header line");
         }
         var comment = parts[1].Trim();
-        var prerequisite = new BundlePrerequisite(id, comment);
-        bundleHeader._prerequisites.Add(prerequisite);
+        prereqs.Add(id);
       }
       else
       {
@@ -89,30 +108,16 @@ public class BundleHeader
             "Invalid seed header line");
         }
         var gitref = parts[1].Trim();
-        var seed = new BundleSeed(id, gitref);
-        bundleHeader._seeds.Add(seed);
+        // The gitref is unique; the id not necessarily!
+        seedrefs.Add(gitref, id);
       }
     }
+    var bundleHeader = new BundleHeader(
+      version,
+      seedrefs,
+      prereqs);
     return bundleHeader;
   }
-
-  /// <summary>
-  /// The bundle version (2 or 3)
-  /// </summary>
-  [JsonProperty("version")]
-  public int Version { get; }
-
-  /// <summary>
-  /// The bundle seeds (tips)
-  /// </summary>
-  [JsonProperty("seeds")]
-  public IReadOnlyList<BundleSeed> Seeds { get; }
-
-  /// <summary>
-  /// The bundle requisites (if any)
-  /// </summary>
-  [JsonProperty("requisites")]
-  public IReadOnlyList<BundlePrerequisite> Prerequisites { get; }
 
   /// <summary>
   /// Return the raw header lines of the bundle file

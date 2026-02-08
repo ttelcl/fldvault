@@ -102,9 +102,10 @@ let private runPush o =
         let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
         let keyInfo = bundleRecord.GetZkeyOrFail()
         let vaultFileName = bundleRecord.GetVaultFileNameOrFail()
+        let bundleFileName = bundleRecord.BundleFileName
         let keyId = keyInfo.KeyGuid
         let vaultIsOutdated =
-          FileUtils.IsFileOutdated(vaultFileName, bundleRecord.BundleFileName)
+          FileUtils.IsFileOutdated(vaultFileName, bundleFileName)
         if vaultIsOutdated |> not then
           cp $"\fgVault file is up-to-date\f0 ({vaultFileName})"
         else
@@ -135,7 +136,8 @@ let private runPush o =
             else
               true
           if keyLoaded then // else: a message was already printed
-            let metadata = new JObject()
+            let bundleHeader = bundleFileName |> BundleHeader.FromFile
+            let metadata = JObject.FromObject(bundleHeader)
             metadata.Add("tips", repotips.TipMap |> JToken.FromObject)
             metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
             //let dbg = JsonConvert.SerializeObject(metadata, Formatting.Indented)
@@ -144,11 +146,12 @@ let private runPush o =
               task {
                 let! writtenFile =
                   MvltWriter.CompressAndEncrypt(
-                    bundleRecord.BundleFileName,
+                    bundleFileName,
                     vaultFileName,
                     keychain,
                     keyInfo.ToPassphraseKeyInfoFile(),
-                    ?metadata = Some(metadata))
+                    ?metadata = Some(metadata),
+                    ?writeMetafile = Some(true))
                 return writtenFile
               }
             let writtenFile =

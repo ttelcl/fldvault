@@ -109,6 +109,10 @@ let usage focus =
     cp "  \fg-nofetch \fx\f0\f0                Do not fetch the remote(s). This is default for \fogitvault connect\f0."
     cp "  \fg-fetch \fx\f0\f0                  Also fetch the remote(s). This is default for \fogitvault receive\f0."
     cp ""
+  if showSection "bundle" then
+    cp "\fogitvault \fybundle \f0[\fg-f \fcbundlefile\f0|\frTBD\f0]"
+    cp "  Describe seeds and requirements of a bundle file"
+    cp "  (aliases: \fogitvault \fybundle info\f0,  \fogitvault \fybundleinfo\f0)"
   cp "\fg-v               \f0Verbose mode"
 
 

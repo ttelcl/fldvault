@@ -344,13 +344,13 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
         let metadata = JObject.FromObject(bundleHeader)
         // also add repo roots to metadata
         metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
-        let metaFileName = fileName + ".metadata.json"
-        // NOT ".meta.json" - that is reserved for the MVLT metadata which adds additional fields
-        let metaJson = JsonConvert.SerializeObject(metadata, Formatting.Indented)
-        do
-          use w = metaFileName |> startFile
-          metaJson |> w.WriteLine
-        metaFileName |> finishFile
+        //let metaFileName = fileName + ".metadata.json"
+        //// NOT ".meta.json" - that is reserved for the MVLT metadata which adds additional fields
+        //let metaJson = JsonConvert.SerializeObject(metadata, Formatting.Indented)
+        //do
+        //  use w = metaFileName |> startFile
+        //  metaJson |> w.WriteLine
+        //metaFileName |> finishFile
         let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
         let keyError = repoAnchorSettings.CanGetKey(centralSettings)
         if keyError |> String.IsNullOrEmpty |> not then
@@ -367,13 +367,14 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
           if keyId |> loadkey then
             let encryptionTask =
               task {
-                let! writtenFile =
+                let! (writtenFile:string) =
                   MvltWriter.CompressAndEncrypt(
                     fileName,
                     deltaVaultName,
                     keychain,
                     keyInfo.ToPassphraseKeyInfoFile(),
-                    ?metadata = Some(metadata))
+                    ?metadata = Some(metadata),
+                    ?writeMetafile = Some(true))
                 return writtenFile
               }
             let writtenFile =

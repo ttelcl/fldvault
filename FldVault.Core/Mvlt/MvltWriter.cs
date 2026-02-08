@@ -232,6 +232,10 @@ public class MvltWriter: IDisposable
   /// if null, but a file with a named <paramref name="sourceFile"/>.meta.json
   /// exists, metadata is read from that file.
   /// </param>
+  /// <param name="writeMetafile">
+  /// If true and metadata is not null, save the metadata as a file alongside
+  /// the original (possibly overwriting an existing metadata file!)
+  /// </param>
   /// <param name="ct">
   /// Cancellation token to cancel this asynchronous operation.
   /// </param>
@@ -243,15 +247,23 @@ public class MvltWriter: IDisposable
     PassphraseKeyInfoFile keyDescriptor,
     DateTimeOffset? timeStamp = null,
     JObject? metadata = null,
+    bool writeMetafile = false,
     CancellationToken ct = default)
   {
     sinkName ??= DeriveMvltFileName(sourceFile, keyDescriptor.KeyId);
     timeStamp ??= File.GetLastWriteTimeUtc(sourceFile);
     var metaFileName = sourceFile + ".meta.json";
-    if(metadata == null && File.Exists(metaFileName))
-    { 
-      metadata = JsonConvert.DeserializeObject<JObject>(
-        File.ReadAllText(metaFileName));
+    if(metadata == null)
+    {
+      if(File.Exists(metaFileName))
+      {
+        metadata = JsonConvert.DeserializeObject<JObject>(
+          File.ReadAllText(metaFileName));
+      }
+      else
+      {
+        metadata = new JObject();
+      }
     }
     using var source = File.OpenRead(sourceFile);
     await CompressAndEncrypt(
@@ -262,6 +274,24 @@ public class MvltWriter: IDisposable
       timeStamp,
       metadata,
       ct);
+    if(writeMetafile)
+    {
+      var tmp = metaFileName + ".tmp";
+      var metaJson = JsonConvert.SerializeObject(metadata, Formatting.Indented);
+      using(var metaFile = File.CreateText(tmp))
+      {
+        metaFile.WriteLine(metaJson);
+      }
+      if(File.Exists(metaFileName))
+      {
+        var bak = metaFileName + ".bak";
+        File.Replace(tmp, metaFileName, bak);
+      }
+      else
+      {
+        File.Move(tmp, metaFileName);
+      }
+    }
     return sinkName;
   }
 

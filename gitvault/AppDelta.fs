@@ -341,16 +341,16 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
             true
       if bundledOk then
         let bundleHeader = fileName |> BundleHeader.FromFile
+        do
+          for kvp in bundleHeader.SeedRefs do
+            let shortId = kvp.Value.Substring(0, 8)
+            cp $" \fg+ {shortId}  \f0{kvp.Key}\f0."
+          for xid in bundleHeader.Prerequisites do
+            let shortId = xid.Substring(0, 8)
+            cp $" \fo- {shortId}  \f0."
         let metadata = JObject.FromObject(bundleHeader)
         // also add repo roots to metadata
         metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
-        //let metaFileName = fileName + ".metadata.json"
-        //// NOT ".meta.json" - that is reserved for the MVLT metadata which adds additional fields
-        //let metaJson = JsonConvert.SerializeObject(metadata, Formatting.Indented)
-        //do
-        //  use w = metaFileName |> startFile
-        //  metaJson |> w.WriteLine
-        //metaFileName |> finishFile
         let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
         let keyError = repoAnchorSettings.CanGetKey(centralSettings)
         if keyError |> String.IsNullOrEmpty |> not then
@@ -359,7 +359,7 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
           let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
           let keyInfo = bundleRecord.GetZkeyOrFail()
           let keyId = keyInfo.KeyGuid
-          // bundleRecord is about the normal bundle. For delta bundles we need to construct the vault name manually
+          // bundleRecord is about the normal full bundle. For delta bundles we need to construct the vault name manually
           let deltaVaultNameShort =
             $"{shortName}.{keyInfo.KeyTag}.mvlt"
           let deltaVaultName =

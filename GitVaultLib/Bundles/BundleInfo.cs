@@ -9,10 +9,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-using Newtonsoft.Json;
+using GitVaultLib.Delta;
 
 using LibGit2Sharp;
-using GitVaultLib.Delta;
+
+using Newtonsoft.Json;
+
+using static FldVault.KeyServer.KeyServerSeedService;
 
 namespace GitVaultLib.Bundles;
 
@@ -48,6 +51,12 @@ public class BundleInfo
   /// </summary>
   [JsonProperty("prerequisites")]
   public IReadOnlyDictionary<string, BundlePrerequisite> Prerequisites => _prerequisites;
+
+  /// <summary>
+  /// All seeds and prerequisites
+  /// </summary>
+  [JsonIgnore]
+  public IEnumerable<IBundleCommit> Commits => _seeds.Values.Concat<IBundleCommit>(Prerequisites.Values);
 
   /// <summary>
   /// Build a new <see cref="BundleInfo"/> given the source repository
@@ -106,7 +115,55 @@ public class BundleInfo
   /// <exception cref="NotImplementedException"></exception>
   public static BundleInfo Build(Repository repo, BundleHeader bundleHeader)
   {
-    throw new NotImplementedException();
+    var referenceMap =
+      repo.Refs.ToDictionary(r => r.CanonicalName, r => r.ResolveToDirectReference().TargetIdentifier);
+    var refsById =
+      referenceMap.GroupBy(kvp => kvp.Value, kvp => kvp.Key)
+      .ToDictionary(g => g.Key, g => g.ToList());
+    var seeds = new Dictionary<string, BundleSeed>();
+    foreach(var kvp in bundleHeader.SeedRefs)
+    {
+      var seedRef = kvp.Key;
+      var seedId = kvp.Value;
+      if(!seeds.TryGetValue(seedId, out var seed))
+      {
+        var commit = repo.Lookup<Commit>(seedId);
+        if(commit == null)
+        {
+          throw new InvalidOperationException(
+            $"Missing seed commit in repository: {seedId}");
+        }
+        seed = new BundleSeed(seedId, commit.Author.When, commit.Committer.When, [seedRef]);
+        seeds.Add(seedId, seed);
+      }
+      else
+      {
+        seed.AddRef(seedRef);
+      }
+    }
+    var prerequisites = new Dictionary<string, BundlePrerequisite>();
+    foreach(var prerequisiteId in bundleHeader.Prerequisites)
+    {
+      if(!prerequisites.TryGetValue(prerequisiteId, out var prerequisite))
+      {
+        var commit = repo.Lookup<Commit>(prerequisiteId);
+        if(commit == null)
+        {
+          throw new InvalidOperationException(
+            $"Missing prerequisite commit in repository: {prerequisiteId}");
+        }
+        var refs = refsById.TryGetValue(prerequisiteId, out var r) ? r : [];
+        prerequisite = new BundlePrerequisite(prerequisiteId, commit.Author.When, commit.Committer.When, refs);
+        prerequisites.Add(prerequisiteId, prerequisite);
+      }
+      else
+      {
+        throw new InvalidOperationException(
+          $"Duplicate prerequisite commit in header: {prerequisiteId}");
+      }
+    }
+    var bundleInfo = new BundleInfo(seeds, prerequisites);
+    return bundleInfo;
   }
 
 }

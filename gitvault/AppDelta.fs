@@ -1,22 +1,22 @@
 ﻿module AppDelta
 
 open System
+open System.Globalization
 open System.IO
 
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 
-open FileUtilities
+open LibGit2Sharp
 
 open FldVault.KeyServer
 open FldVault.Core.Crypto
 open FldVault.Core.Mvlt
-open FldVault.Core.Vaults
 
+open GitVaultLib.Bundles
 open GitVaultLib.Configuration
 open GitVaultLib.Delta
 open GitVaultLib.GitThings
-open GitVaultLib.VaultThings
 
 open ColorPrint
 open CommonTools
@@ -265,6 +265,16 @@ let private runDeltaEdit args =
   | Some o ->
     o |> runDeltaEditInner
 
+let private refText (reference:string) =
+  if reference.StartsWith("refs/heads/") then
+    "\fg" + reference.Substring("refs/heads/".Length)
+  elif reference.StartsWith("refs/tags/") then
+    "\fb" + reference.Substring("refs/tags/".Length)
+  elif reference.StartsWith("refs/remotes/") then
+    "\fc" + reference.Substring("refs/remotes/".Length)
+  else
+    "\f0" + reference
+
 let private runDeltaSendInner context (o:RecipeOnlyOptions) =
   let centralSettings = CentralSettings.Load()
   let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
@@ -313,6 +323,7 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
     cp $" seeds and \fo{recipe.Exclusions.Count}\f0 exclusions."
     let repoBundleSource = context.Root.GetBundleSource()
     let reporoots = context.Root.Folder |> GitRoots.ForRepository
+    use repo2 = new Repository(context.Root.Folder);
     // Unlike "gitvault send" we make no attempt to avoid unnecessary work here.
     for repoAnchorSettings in context.Settings.ByAnchor.Values do
       cp $"Processing <\fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0|\fy{repoAnchorSettings.RepoName}\f0>."
@@ -341,13 +352,13 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
             true
       if bundledOk then
         let bundleHeader = fileName |> BundleHeader.FromFile
-        do
-          for kvp in bundleHeader.SeedRefs do
-            let shortId = kvp.Value.Substring(0, 8)
-            cp $" \fg+ {shortId}  \f0{kvp.Key}\f0."
-          for xid in bundleHeader.Prerequisites do
-            let shortId = xid.Substring(0, 8)
-            cp $" \fo- {shortId}  \f0."
+        //do
+        //  for kvp in bundleHeader.SeedRefs do
+        //    let shortId = kvp.Value.Substring(0, 8)
+        //    cp $" \fg+ {shortId}  \f0{kvp.Key}\f0."
+        //  for xid in bundleHeader.Prerequisites do
+        //    let shortId = xid.Substring(0, 8)
+        //    cp $" \fo- {shortId}  \f0."
         let metadata = JObject.FromObject(bundleHeader)
         // also add repo roots to metadata
         metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
@@ -384,6 +395,38 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
             let writtenFileInfo = new FileInfo(writtenFile)
             cp $"Delta Vault file \fc{writtenFileShort}\f0 created \fgsuccessfully\f0."
             cp $"  (\fb{writtenFileInfo.Length}\fg bytes, \fkin {writtenFileFolder}\f0)"
+        do
+          let bundleInfo = BundleInfo.Build(repo2, bundleHeader)
+          let commits =
+            bundleInfo.Commits
+            |> Seq.sortByDescending (fun c -> c.CommitDate)
+            |> Seq.toArray
+          for commit in commits do
+            let shortId = commit.Commit.Substring(0, 8)
+            let commitDate = commit.CommitDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
+            let authorDate = commit.AuthorDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
+            match commit with
+            | :? BundleSeed as seed ->
+              cpx $" \fg+ {shortId} \fc{commitDate}\f0"
+              if authorDate <> commitDate then
+                cpx $" (\fk{authorDate}\f0)"
+              cpx ":"
+              for r in seed.Refs |> Seq.sort do
+                let rtxt = r |> refText
+                cpx $" {rtxt}"
+              cp "\f0."
+            | :? BundlePrerequisite as prerequisite ->
+              cpx $" \fo- {shortId} \fy{commitDate}\f0"
+              if authorDate <> commitDate then
+                cpx $" (\fk{authorDate}\f0)"
+              cpx ":"
+              for r in prerequisite.Labels |> Seq.sort do
+                let rtxt = r |> refText
+                cpx $" {rtxt}"
+              cp "\f0."
+            | _ ->
+              failwith "Unexpected commit info type"
+        ()
       else
         status <- 1
         cp $"\foSkiping further processing of this anchor\f0."

@@ -154,10 +154,7 @@ public class VaultCryptor: IDisposable
 
   private AesGcm Cryptor {
     get {
-      if(_aesgcm == null)
-      {
-        throw new ObjectDisposedException(nameof(AesGcm));
-      }
+      ObjectDisposedException.ThrowIf(_aesgcm == null, typeof(AesGcm));
       return _aesgcm;
     }
   }

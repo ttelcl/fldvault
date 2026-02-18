@@ -259,7 +259,7 @@ public class MessageFrameOut: IDisposable
   }
 
   /// <summary>
-  /// Send the frame content asynchronously to a socket and clear the frame afterward
+  /// Send the frame content synchronously to a socket and clear the frame afterward
   /// </summary>
   public void EmitSync(Socket socket)
   {
@@ -294,10 +294,7 @@ public class MessageFrameOut: IDisposable
 
   private void EnsureNotDisposed()
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(GetType().Name);
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
   }
 
   /// <summary>

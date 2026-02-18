@@ -372,10 +372,7 @@ public class VaultFileWriter: IDisposable
 
   private void CheckDisposed()
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(nameof(VaultFileWriter));
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
   }
 
   private BlockElement AppendFileHeaderBlock(

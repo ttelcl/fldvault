@@ -184,11 +184,10 @@ public static class KeyServerMessages
   /// </summary>
   public static PassphraseKeyInfoFile ReadKeyInfoResponse(this MessageFrameIn frame)
   {
-    Span<byte> keyInfoBytes = stackalloc byte[96];
     frame
       .Rewind()
       .ValidateI32(KeyInfoResponseCode, "Internal error: Incorrect message code")
-      .TakeSlice(96, out keyInfoBytes)
+      .TakeSlice(96, out var keyInfoBytes)
       .EnsureFullyRead();
     return PassphraseKeyInfoFile.ReadFrom(keyInfoBytes);
   }

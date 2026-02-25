@@ -306,6 +306,7 @@ public class MessageFrameOut: IDisposable
     {
       Clear();
       _disposed = true;
+      GC.SuppressFinalize(this);
     }
   }
 }

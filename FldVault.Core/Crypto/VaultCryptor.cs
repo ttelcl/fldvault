@@ -168,6 +168,7 @@ public class VaultCryptor: IDisposable
     {
       _aesgcm.Dispose();
       _aesgcm = null;
+      GC.SuppressFinalize(this);
     }
   }
 }

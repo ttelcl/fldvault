@@ -72,6 +72,7 @@ namespace FldVault.Core.Crypto
     {
       _disposed = true;
       _buffer.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 }

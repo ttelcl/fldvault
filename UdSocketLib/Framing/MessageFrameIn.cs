@@ -567,6 +567,7 @@ public class MessageFrameIn: IDisposable
     {
       Clear();
       _disposed = true;
+      GC.SuppressFinalize(this);
     }
   }
 }

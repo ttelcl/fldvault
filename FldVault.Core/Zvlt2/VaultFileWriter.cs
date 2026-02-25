@@ -367,6 +367,7 @@ public class VaultFileWriter: IDisposable
       _disposed = true;
       _buffer?.Dispose();
       _stream?.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 

@@ -274,6 +274,7 @@ public class VaultCloneEngine: IDisposable
       _targetStream.Dispose();
       _targetStream = null;
     }
+    GC.SuppressFinalize(this);
   }
 
   private void EnsureNotDisposed()

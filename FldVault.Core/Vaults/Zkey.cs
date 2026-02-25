@@ -340,6 +340,7 @@ public class ZkeyEx: Zkey, IDisposable
     {
       _passphrase.Dispose();
       _passphrase = null;
+      GC.SuppressFinalize(this);
     }
   }
 

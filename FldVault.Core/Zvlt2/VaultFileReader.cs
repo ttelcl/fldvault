@@ -194,6 +194,7 @@ public class VaultFileReader: IDisposable
       _disposed = true;
       _buffer?.Dispose();
       _stream?.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 }

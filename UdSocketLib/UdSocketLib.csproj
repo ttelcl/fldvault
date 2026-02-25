@@ -5,7 +5,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <VersionPrefix>1.10.0</VersionPrefix>
+    <VersionPrefix>1.11.0</VersionPrefix>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>TteLcl.$(AssemblyName)</PackageId>
     <Authors>ttelcl</Authors>

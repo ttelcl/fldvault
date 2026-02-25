@@ -342,6 +342,7 @@ public class KeyChain: IDisposable
           {
             key.Dispose();
           }
+          GC.SuppressFinalize(this);
         }
       }
     }

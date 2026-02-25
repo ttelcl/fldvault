@@ -19,7 +19,7 @@ namespace FldVault.Core.Crypto
   public class NonceGenerator
   {
     private long _lastTicks;
-    private byte[] _randomBytes;
+    private readonly byte[] _randomBytes;
 
     /// <summary>
     /// Create a new NonceGenerator

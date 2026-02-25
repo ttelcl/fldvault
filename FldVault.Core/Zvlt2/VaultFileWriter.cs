@@ -367,15 +367,13 @@ public class VaultFileWriter: IDisposable
       _disposed = true;
       _buffer?.Dispose();
       _stream?.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 
   private void CheckDisposed()
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(nameof(VaultFileWriter));
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
   }
 
   private BlockElement AppendFileHeaderBlock(

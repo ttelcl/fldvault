@@ -53,56 +53,6 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
-    /// Create a PassphraseKey from a "password" given as byte span and
-    /// a predefined salt (for reconstructing a previously used key).
-    /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
-    /// <param name="passbytes">
-    /// The bytes used as "password"
-    /// </param>
-    /// <param name="salt">
-    /// The salt bytes
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromBytes(
-      CryptoBuffer<byte> passbytes,
-      ReadOnlySpan<byte> salt,
-      int keyLength = DefaultKeyLength)
-    {
-      using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
-      {
-        Rfc2898DeriveBytes.Pbkdf2(passbytes.Span(), salt, keyBuffer.Span(), __iterationCount, __algorithm);
-        return new PassphraseKey(keyBuffer.Span(), salt);
-      }
-    }
-
-    /// <summary>
-    /// Create a PassphraseKey from a "password" given as byte span and
-    /// a newly created salt (for first use of a new key).
-    /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
-    /// <param name="passbytes">
-    /// The bytes used as "password"
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromBytes(
-      CryptoBuffer<byte> passbytes,
-      int keyLength = DefaultKeyLength)
-    {
-      var salt = new byte[Saltlength];
-      RandomNumberGenerator.Fill(salt);
-      return FromBytes(passbytes, salt, keyLength);
-    }
-
-    /// <summary>
     /// Create a PassphraseKey from the given bytes and salt in the info object
     /// and verify it matches the key id in the info object
     /// </summary>
@@ -137,56 +87,6 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
-    /// Create a PassphraseKey from a "password" given as character span and
-    /// a predefined salt (for reconstructing a previously used key).
-    /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
-    /// <param name="passchars">
-    /// The characters used as "password"
-    /// </param>
-    /// <param name="salt">
-    /// The salt bytes
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromCharacters(
-      CryptoBuffer<char> passchars,
-      ReadOnlySpan<byte> salt,
-      int keyLength = DefaultKeyLength)
-    {
-      using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
-      {
-        Rfc2898DeriveBytes.Pbkdf2(passchars.Span(), salt, keyBuffer.Span(), __iterationCount, __algorithm);
-        return new PassphraseKey(keyBuffer.Span(), salt);
-      }
-    }
-
-    /// <summary>
-    /// Create a PassphraseKey from a "password" given as character span and
-    /// a newly created salt (for first use of a new key).
-    /// </summary>
-    /// <param name="passchars">
-    /// The characters used as "password"
-    /// </param>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key (default 32)
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromCharacters(
-      CryptoBuffer<char> passchars,
-      int keyLength = DefaultKeyLength)
-    {
-      var salt = new byte[Saltlength];
-      RandomNumberGenerator.Fill(salt);
-      return FromCharacters(passchars, salt, keyLength);
-    }
-
-    /// <summary>
     /// Create a PassphraseKey from the given characters and salt in the info object
     /// and verify it matches the key id in the info object
     /// </summary>
@@ -217,56 +117,6 @@ namespace FldVault.Core.Crypto
       else
       {
         return pk;
-      }
-    }
-
-    /// <summary>
-    /// Create a PassphraseKey from a "passphrase" given as SecureString and
-    /// a predefined salt (for reconstructing a previously used key).
-    /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
-    /// <param name="passphrase">
-    /// The passphrase / password
-    /// </param>
-    /// <param name="salt">
-    /// The salt bytes
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromSecureString(
-      SecureString passphrase,
-      ReadOnlySpan<byte> salt,
-      int keyLength = DefaultKeyLength)
-    {
-      using(var characters = UnpackSecureString(passphrase))
-      {
-        return FromCharacters(characters, salt, keyLength);
-      }
-    }
-
-    /// <summary>
-    /// Create a PassphraseKey from a "passphrase" given as SecureString and
-    /// a newly created salt (for first use of a new key).
-    /// </summary>
-    /// <param name="keyLength">
-    /// The number of bytes to derive as resulting key
-    /// </param>
-    /// <param name="passphrase">
-    /// The passphrase / password
-    /// </param>
-    /// <returns>
-    /// A new PassphraseKey instance
-    /// </returns>
-    public static PassphraseKey FromSecureString(
-      SecureString passphrase,
-      int keyLength = DefaultKeyLength)
-    {
-      using(var characters = UnpackSecureString(passphrase))
-      {
-        return FromCharacters(characters, keyLength);
       }
     }
 
@@ -341,6 +191,156 @@ namespace FldVault.Core.Crypto
         }
         return FromCharacters(cbc1);
       }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "passphrase" given as SecureString and
+    /// a predefined salt (for reconstructing a previously used key).
+    /// </summary>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key
+    /// </param>
+    /// <param name="passphrase">
+    /// The passphrase / password
+    /// </param>
+    /// <param name="salt">
+    /// The salt bytes
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromSecureString(
+      SecureString passphrase,
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
+    {
+      using(var characters = UnpackSecureString(passphrase))
+      {
+        return FromCharacters(characters, salt, keyLength);
+      }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "passphrase" given as SecureString and
+    /// a newly created salt (for first use of a new key).
+    /// </summary>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key
+    /// </param>
+    /// <param name="passphrase">
+    /// The passphrase / password
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromSecureString(
+      SecureString passphrase,
+      int keyLength = DefaultKeyLength)
+    {
+      using(var characters = UnpackSecureString(passphrase))
+      {
+        return FromCharacters(characters, keyLength);
+      }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "password" given as character span and
+    /// a predefined salt (for reconstructing a previously used key).
+    /// </summary>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key
+    /// </param>
+    /// <param name="passchars">
+    /// The characters used as "password"
+    /// </param>
+    /// <param name="salt">
+    /// The salt bytes
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromCharacters(
+      CryptoBuffer<char> passchars,
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
+    {
+      using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
+      {
+        Rfc2898DeriveBytes.Pbkdf2(passchars.Span(), salt, keyBuffer.Span(), __iterationCount, __algorithm);
+        return new PassphraseKey(keyBuffer.Span(), salt);
+      }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "password" given as character span and
+    /// a newly created salt (for first use of a new key).
+    /// </summary>
+    /// <param name="passchars">
+    /// The characters used as "password"
+    /// </param>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key (default 32)
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromCharacters(
+      CryptoBuffer<char> passchars,
+      int keyLength = DefaultKeyLength)
+    {
+      var salt = new byte[Saltlength];
+      RandomNumberGenerator.Fill(salt);
+      return FromCharacters(passchars, salt, keyLength);
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "password" given as byte span and
+    /// a predefined salt (for reconstructing a previously used key).
+    /// </summary>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key
+    /// </param>
+    /// <param name="passbytes">
+    /// The bytes used as "password"
+    /// </param>
+    /// <param name="salt">
+    /// The salt bytes
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromBytes(
+      CryptoBuffer<byte> passbytes,
+      ReadOnlySpan<byte> salt,
+      int keyLength = DefaultKeyLength)
+    {
+      using(var keyBuffer = new CryptoBuffer<byte>(keyLength))
+      {
+        Rfc2898DeriveBytes.Pbkdf2(passbytes.Span(), salt, keyBuffer.Span(), __iterationCount, __algorithm);
+        return new PassphraseKey(keyBuffer.Span(), salt);
+      }
+    }
+
+    /// <summary>
+    /// Create a PassphraseKey from a "password" given as byte span and
+    /// a newly created salt (for first use of a new key).
+    /// </summary>
+    /// <param name="keyLength">
+    /// The number of bytes to derive as resulting key
+    /// </param>
+    /// <param name="passbytes">
+    /// The bytes used as "password"
+    /// </param>
+    /// <returns>
+    /// A new PassphraseKey instance
+    /// </returns>
+    public static PassphraseKey FromBytes(
+      CryptoBuffer<byte> passbytes,
+      int keyLength = DefaultKeyLength)
+    {
+      var salt = new byte[Saltlength];
+      RandomNumberGenerator.Fill(salt);
+      return FromBytes(passbytes, salt, keyLength);
     }
 
     /// <summary>

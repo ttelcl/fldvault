@@ -92,6 +92,7 @@ public class KeyServerLogic: IDisposable
   {
     _frameIn.Dispose();
     _frameOut.Dispose();
+    GC.SuppressFinalize(this);
   }
 
   /// <summary>

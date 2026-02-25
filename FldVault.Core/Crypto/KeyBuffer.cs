@@ -48,10 +48,7 @@ namespace FldVault.Core.Crypto
     /// </summary>
     public HashResult GetSha256()
     {
-      if(_disposed)
-      {
-        throw new ObjectDisposedException(GetType().FullName);
-      }
+      ObjectDisposedException.ThrowIf(_disposed, this);
       if(_hashResult == null)
       {
         _hashResult = HashResult.FromSha256(_buffer);
@@ -75,6 +72,7 @@ namespace FldVault.Core.Crypto
     {
       _disposed = true;
       _buffer.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 }

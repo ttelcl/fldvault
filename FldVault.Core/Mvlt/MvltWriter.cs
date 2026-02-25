@@ -601,6 +601,7 @@ public class MvltWriter: IDisposable
       _blockBuffer.Dispose();
       _uncompressedBuffer.Dispose();
       _compressedBuffer.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 }

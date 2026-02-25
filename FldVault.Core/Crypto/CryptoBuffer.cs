@@ -53,18 +53,6 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   }
 
   /// <summary>
-  /// Expose the buffer as a Span{T}
-  /// </summary>
-  public Span<T> Span()
-  {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(GetType().Name);
-    }
-    return _buffer; 
-  }
-
-  /// <summary>
   /// Get the underlying buffer for use in subclasses
   /// </summary>
   protected T[] RawBuffer { get => _buffer; }
@@ -72,17 +60,23 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   /// <summary>
   /// The number of elements in the buffer
   /// </summary>
-  public int Length { get =>  _buffer.Length; }
+  public int Length { get => _buffer.Length; }
+
+  /// <summary>
+  /// Expose the buffer as a Span{T}
+  /// </summary>
+  public Span<T> Span()
+  {
+    ObjectDisposedException.ThrowIf(_disposed, this);
+    return _buffer; 
+  }
 
   /// <summary>
   /// Expose a slice of the buffer as a Span{T}
   /// </summary>
   public Span<T> Span(int start, int length)
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(GetType().Name);
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
     return new Span<T>(_buffer, start, length);
   }
 
@@ -91,10 +85,7 @@ public class CryptoBuffer<T>: IDisposable where T : struct
   /// </summary>
   public Memory<T> Memory(int start, int length)
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(GetType().Name);
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
     return _buffer.AsMemory(start, length);
   }
 

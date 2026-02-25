@@ -555,10 +555,7 @@ public class MessageFrameIn: IDisposable
 
   private void EnsureNotDisposed()
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(GetType().Name);
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
   }
 
   /// <summary>
@@ -570,6 +567,7 @@ public class MessageFrameIn: IDisposable
     {
       Clear();
       _disposed = true;
+      GC.SuppressFinalize(this);
     }
   }
 }

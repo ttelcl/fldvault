@@ -423,6 +423,7 @@ public class MvltReader: IDisposable
       _decryptedBuffer.Dispose();
       _sourceBuffer.Dispose();
       Phase = MvltPhase.Disposed;
+      GC.SuppressFinalize(this);
     }
   }
 }

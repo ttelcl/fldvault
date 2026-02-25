@@ -171,10 +171,7 @@ public class VaultFileReader: IDisposable
 
   private void CheckDisposed()
   {
-    if(_disposed)
-    {
-      throw new ObjectDisposedException(nameof(VaultFileReader));
-    }
+    ObjectDisposedException.ThrowIf(_disposed, this);
   }
 
   private VaultCryptor CheckCryptor()
@@ -197,6 +194,7 @@ public class VaultFileReader: IDisposable
       _disposed = true;
       _buffer?.Dispose();
       _stream?.Dispose();
+      GC.SuppressFinalize(this);
     }
   }
 }

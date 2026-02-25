@@ -29,7 +29,7 @@ public class NullKey: KeyBuffer
   /// <summary>
   /// The guid of the null key, "ad7a6866-62f8-47bd-ac8f-c18b8e9f8e20".
   /// </summary>
-  public static Guid NullKeyId = new Guid("ad7a6866-62f8-47bd-ac8f-c18b8e9f8e20");
+  public static Guid NullKeyId { get; } = new Guid("ad7a6866-62f8-47bd-ac8f-c18b8e9f8e20");
 
   /// <summary>
   /// Check if the key ID is that of the null key

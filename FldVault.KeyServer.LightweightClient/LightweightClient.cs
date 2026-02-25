@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 using UdSocketLib;
 using UdSocketLib.Communication;
+using UdSocketLib.Framing;
+using UdSocketLib.Framing.Layer1;
 
 namespace FldVault.KeyServer.LightweightClient;
 
@@ -39,6 +42,65 @@ public sealed class LightweightClient
   /// The path to the socket (pseudo-)file.
   /// </summary>
   public string SocketPath => SocketService.SocketPath;
+
+  /// <summary>
+  /// Send a dummy message to the server. If this attempt throws an exception
+  /// (because there actually is no server - the socket is stale), this returns
+  /// false. Upon success this returns true.
+  /// </summary>
+  /// <returns></returns>
+  public bool TryPingSync()
+  {
+    try
+    {
+      PingSync();
+    }
+    catch(InvalidOperationException ex)
+    {
+      Trace.TraceError(
+        $"Ping failed: {ex.GetType().Name}: {ex.Message}");
+      return false;
+    }
+    catch(IOException ex)
+    {
+      Trace.TraceError(
+        $"Ping failed: {ex.GetType().Name}: {ex.Message}");
+      return false;
+    }
+    return true;
+  }
+
+  /// <summary>
+  /// Sends a no-op message to the server, to check if it is actually alive.
+  /// If it isn't, an exception is thrown.
+  /// </summary>
+  public void PingSync()
+  {
+    if(!ServerAvailable)
+    {
+      throw new InvalidOperationException(
+        "No key server is running");
+    }
+    using var frameOut = new MessageFrameOut();
+    frameOut.Clear().AppendI32(MessageCodes.KeepAlive);
+    using var client = SocketService.ConnectClientSync();
+    client.SendFrameSync(frameOut);
+    using var frameIn = new MessageFrameIn();
+    var receiveOk = client.TryFillFrameSync(frameIn);
+    if(!receiveOk)
+    {
+      // This is unlikely to happen. It is more likely that ConnectClientSync() already threw an exception
+      throw new InvalidOperationException(
+        "No response from key server");
+    }
+    var messageCode = frameIn.MessageCode();
+    if(messageCode != MessageCodes.KeepAlive)
+    {
+      throw new InvalidOperationException(
+        "Unexpected response from key server");
+    }
+    // Nothing else to do now but return.
+  }
 
   /// <summary>
   /// The default short name for the key server Unix Domain socket

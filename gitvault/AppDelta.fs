@@ -33,6 +33,14 @@ type private RecipeOnlyOptions = {
   Recipe: string
 }
 
+type private RecipeOrAllChoice =
+  | Recipe of string
+  | All
+
+type private RecipeOrAllOptions = {
+  RecipeOrAll: RecipeOrAllChoice option
+}
+
 type private RecipeOrClearChoice =
   | Recipe of string
   | Clear
@@ -41,11 +49,40 @@ type private RecipeOrClearOptions = {
   RecipeOrClear: RecipeOrClearChoice option
 }
 
+type private SendContext = {
+  Root: GitRepoFolder
+  Settings: RepoSettings
+  RecipesOption: DeltaRecipes option
+  GitvaultSettings: CentralSettings
+  BundleCache: BundleRecordCache
+  Kss: KeyServerService
+}
+
 type private RepoContext = {
   Root: GitRepoFolder
   Settings: RepoSettings
   RecipesOption: DeltaRecipes option
 }
+
+let private tryGetRecipe (recipes: DeltaRecipes) recipeName =
+  let ok, recipeName =
+    if recipeName |> String.IsNullOrEmpty then
+      if recipes.HasDefaultRecipe then
+        true, recipes.DefaultRecipe
+      else
+        false, null
+    else
+      true, recipeName
+  if ok then
+    let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+    if ok then
+      recipe |> Some
+    else
+      cp $"\foUnknown recipe \f0'\fy{recipeName}\f0'"
+      None
+  else
+    cp "\foNo recipe specified and no default set\f0."
+    None
 
 let private getContext requireRecipes =
   let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
@@ -87,12 +124,40 @@ let private parseRecipeOnly requireRecipe o args =
       None
     | "-r" :: name :: rest ->
       rest |> parseMore {o with Recipe = name}
+    | "-R" :: rest ->
+      if requireRecipe then
+        cp "\foThis command requires an explicit recipe \fo(\fg-r\fo), not \fg-R\f0."
+        None
+      else
+        rest |> parseMore {o with Recipe = null}
     | [] ->
       if requireRecipe && String.IsNullOrEmpty(o.Recipe) then
         cp "\foMissing '\fg-r\fo' option\f0."
         None
       else
         o |> Some
+    | x :: _ ->
+      cp $"\foUnknown option \fy{x}\f0."
+      None
+  args |> parseMore o
+
+let private parseRecipeOrAll o args =
+  let rec parseMore (o:RecipeOrAllOptions) args =
+    match args with
+    | "-v" :: rest ->
+      verbose <- true
+      parseMore o rest
+    | "--help" :: _ 
+    | "-h" :: _ ->
+      None
+    | "-r" :: name :: rest ->
+      rest |> parseMore {o with RecipeOrAll = name |> RecipeOrAllChoice.Recipe |> Some}
+    | "-R" :: rest ->
+      rest |> parseMore {o with RecipeOrAll = None}
+    | "-all" :: rest ->
+      rest |> parseMore {o with RecipeOrAll = RecipeOrAllChoice.All |> Some}
+    | [] ->
+      o |> Some
     | x :: _ ->
       cp $"\foUnknown option \fy{x}\f0."
       None
@@ -275,22 +340,38 @@ let private refText (reference:string) =
   else
     "\f0" + reference
 
-let private runDeltaSendInner context (o:RecipeOnlyOptions) =
+let private runDeltaSendInner context (o:RecipeOrAllOptions) =
   let centralSettings = CentralSettings.Load()
   let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
   let recipes = context.RecipesOption.Value
-  let recipeName =
-    if String.IsNullOrEmpty(o.Recipe) then
-      recipes.DefaultRecipe
-    else
-      o.Recipe
-  if recipeName |> String.IsNullOrEmpty then
-    failwith "Internal error - expecting 'recipe name' to be defined"
-  let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
-  if ok |> not then
-    cp $"\foUnknown recipe \f0'{recipeName}\f0'"
+  let recipeListOption =
+    match o.RecipeOrAll with
+    | None ->
+      if recipes.HasDefaultRecipe |> not then
+        cp "\foNo recipe specified and no default set\f0."
+        None
+      else
+        let ok, recipe = recipes.DefaultRecipe |> recipes.Recipes.TryGetValue
+        if ok then
+          [ recipe ] |> Some
+        else
+          cp $"\foUnknown recipe \f0'\fy{recipes.DefaultRecipe}\f0'"
+          None
+    | Some(RecipeOrAllChoice.Recipe(recipeName)) ->
+      let ok, recipe = recipeName |> recipes.Recipes.TryGetValue
+      if ok then
+        [ recipe ] |> Some
+      else
+        cp $"\foUnknown recipe \f0'\fy{recipeName}\f0'"
+        None
+    | Some(RecipeOrAllChoice.All) ->
+      recipes.Recipes.Values |> Seq.toList |> Some
+  match recipeListOption with
+  | None ->
+    // error message already printed
     1
-  else
+  | Some recipeList ->
+    let mutable status = 0
     let kss = new KeyServerService()
     use keychain = new KeyChain()
     let loadkey keyId =
@@ -318,118 +399,111 @@ let private runDeltaSendInner context (o:RecipeOnlyOptions) =
           cp $"\foKey server is not available, cannot load key \fb{keyId}\f0."
           cp $"\fySkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
           false
-    let mutable status = 0
-    cpx $"Found delta bundle recipe '\fg{recipe.Name}\f0' with \fc{recipe.Seeds.Count}\f0"
-    cp $" seeds and \fo{recipe.Exclusions.Count}\f0 exclusions."
-    let repoBundleSource = context.Root.GetBundleSource()
-    let reporoots = context.Root.Folder |> GitRoots.ForRepository
-    use repo2 = new Repository(context.Root.Folder);
-    // Unlike "gitvault send" we make no attempt to avoid unnecessary work here.
-    for repoAnchorSettings in context.Settings.ByAnchor.Values do
-      cp $"Processing <\fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0|\fy{repoAnchorSettings.RepoName}\f0>."
-      let repoAnchorBundleSource = repoAnchorSettings.GetBundleSource(centralSettings)
-      let fileName = repoAnchorSettings.GetDeltaBundleFileName(recipeName, centralSettings)
-      let shortName = fileName |> Path.GetFileName
-      let folderName = fileName |> Path.GetDirectoryName
-      cp $"Creating Delta Bundle: \fc{shortName}\f0 (in \fk{folderName}\f0)."
-      let bundledOk =
-        if repoAnchorBundleSource = null then
-          cp $"\frNo bundle source found for this anchor+repo+host.\fo This repo is not the owner\f0 (is there a name conflict with an external bundle?) Skipping."
-          false
-        elif repoBundleSource.SameSource(repoAnchorBundleSource) |> not then
-          cp $"\frThis repo is not the owner of 'its' bundles.\fo It is owned by \fc{repoAnchorBundleSource.SourceFolder}\f0. Skipping."
-          false
-        else
-          let result = GitRunner.CreateBundle(fileName, null, recipe)
-          if result.StatusCode <> 0 then
-            cp $"\frError\fo: Bundling failed with status code \fr{result.StatusCode}\f0."
-            for line in result.ErrorLines do
-              cp $"\fo  {line}\f0"
+    for recipe in recipeList do
+      cpx $"Found delta bundle recipe '\fg{recipe.Name}\f0' with \fc{recipe.Seeds.Count}\f0"
+      cp $" seeds and \fo{recipe.Exclusions.Count}\f0 prerequisites."
+      let repoBundleSource = context.Root.GetBundleSource()
+      let reporoots = context.Root.Folder |> GitRoots.ForRepository
+      use repo2 = new Repository(context.Root.Folder);
+      // Unlike "gitvault send" we make no attempt to avoid unnecessary work here.
+      for repoAnchorSettings in context.Settings.ByAnchor.Values do
+        cp $"Processing <\fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0|\fy{repoAnchorSettings.RepoName}\f0>."
+        let repoAnchorBundleSource = repoAnchorSettings.GetBundleSource(centralSettings)
+        let fileName = repoAnchorSettings.GetDeltaBundleFileName(recipe.Name, centralSettings)
+        let shortName = fileName |> Path.GetFileName
+        let folderName = fileName |> Path.GetDirectoryName
+        cp $"Creating Delta Bundle: \fc{shortName}\f0 (in \fk{folderName}\f0)."
+        let bundledOk =
+          if repoAnchorBundleSource = null then
+            cp $"\frNo bundle source found for this anchor+repo+host.\fo This repo is not the owner\f0 (is there a name conflict with an external bundle?) Skipping."
+            false
+          elif repoBundleSource.SameSource(repoAnchorBundleSource) |> not then
+            cp $"\frThis repo is not the owner of 'its' bundles.\fo It is owned by \fc{repoAnchorBundleSource.SourceFolder}\f0. Skipping."
             false
           else
-            let fi = new FileInfo(fileName)
-            cp $"\fgBundle created successfully\f0, size \fb{fi.Length}\f0."
-            true
-      if bundledOk then
-        let bundleHeader = fileName |> BundleHeader.FromFile
-        //do
-        //  for kvp in bundleHeader.SeedRefs do
-        //    let shortId = kvp.Value.Substring(0, 8)
-        //    cp $" \fg+ {shortId}  \f0{kvp.Key}\f0."
-        //  for xid in bundleHeader.Prerequisites do
-        //    let shortId = xid.Substring(0, 8)
-        //    cp $" \fo- {shortId}  \f0."
-        let metadata = JObject.FromObject(bundleHeader)
-        // also add repo roots to metadata
-        metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
-        let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
-        let keyError = repoAnchorSettings.CanGetKey(centralSettings)
-        if keyError |> String.IsNullOrEmpty |> not then
-          cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping encryption stage\f0."
+            let result = GitRunner.CreateBundle(fileName, null, recipe)
+            if result.StatusCode <> 0 then
+              cp $"\frError\fo: Bundling failed with status code \fr{result.StatusCode}\f0."
+              for line in result.ErrorLines do
+                cp $"\fo  {line}\f0"
+              false
+            else
+              let fi = new FileInfo(fileName)
+              cp $"\fgBundle created successfully\f0, size \fb{fi.Length}\f0."
+              true
+        if bundledOk then
+          let bundleHeader = fileName |> BundleHeader.FromFile
+          let metadata = JObject.FromObject(bundleHeader)
+          // also add repo roots to metadata
+          metadata.Add("roots", reporoots.Roots |> JArray.FromObject)
+          let vaultFolder = repoAnchorSettings.GetRepoVaultFolder(centralSettings)
+          let keyError = repoAnchorSettings.CanGetKey(centralSettings)
+          if keyError |> String.IsNullOrEmpty |> not then
+            cp $"\foKey unavailable\f0 ({vaultFolder.VaultFolder}) {keyError}\f0 \frSkipping encryption stage\f0."
+          else
+            let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
+            let keyInfo = bundleRecord.GetZkeyOrFail()
+            let keyId = keyInfo.KeyGuid
+            // bundleRecord is about the normal full bundle. For delta bundles we need to construct the vault name manually
+            let deltaVaultNameShort =
+              $"{shortName}.{keyInfo.KeyTag}.mvlt"
+            let deltaVaultName =
+              Path.Combine(vaultFolder.VaultFolder, deltaVaultNameShort)
+            if keyId |> loadkey then
+              let encryptionTask =
+                task {
+                  let! (writtenFile:string) =
+                    MvltWriter.CompressAndEncrypt(
+                      fileName,
+                      deltaVaultName,
+                      keychain,
+                      keyInfo.ToPassphraseKeyInfoFile(),
+                      ?metadata = Some(metadata),
+                      ?writeMetafile = Some(true))
+                  return writtenFile
+                }
+              let writtenFile =
+                encryptionTask |> Async.AwaitTask |> Async.RunSynchronously
+              let writtenFileShort = writtenFile |> Path.GetFileName
+              let writtenFileFolder = writtenFile |> Path.GetDirectoryName
+              let writtenFileInfo = new FileInfo(writtenFile)
+              cp $"Delta Vault file \fc{writtenFileShort}\f0 created \fgsuccessfully\f0."
+              cp $"  (\fb{writtenFileInfo.Length}\fg bytes, \fkin {writtenFileFolder}\f0)"
+          do
+            let bundleInfo = BundleInfo.Build(repo2, bundleHeader)
+            let commits =
+              bundleInfo.Commits
+              |> Seq.sortByDescending (fun c -> c.CommitDate)
+              |> Seq.toArray
+            for commit in commits do
+              let shortId = commit.Commit.Substring(0, 8)
+              let commitDate = commit.CommitDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
+              let authorDate = commit.AuthorDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
+              match commit with
+              | :? BundleSeed as seed ->
+                cpx $" \fg+ {shortId} \fc{commitDate}\f0"
+                if authorDate <> commitDate then
+                  cpx $" (\fk{authorDate}\f0)"
+                cpx ":"
+                for r in seed.Refs |> Seq.sort do
+                  let rtxt = r |> refText
+                  cpx $" {rtxt}"
+                cp "\f0."
+              | :? BundlePrerequisite as prerequisite ->
+                cpx $" \fo- {shortId} \fy{commitDate}\f0"
+                if authorDate <> commitDate then
+                  cpx $" (\fk{authorDate}\f0)"
+                cpx ":"
+                for r in prerequisite.Labels |> Seq.sort do
+                  let rtxt = r |> refText
+                  cpx $" {rtxt}"
+                cp "\f0."
+              | _ ->
+                failwith "Unexpected commit info type"
+          ()
         else
-          let bundleRecord = repoAnchorSettings.GetBundleRecord(bundleRecordCache)
-          let keyInfo = bundleRecord.GetZkeyOrFail()
-          let keyId = keyInfo.KeyGuid
-          // bundleRecord is about the normal full bundle. For delta bundles we need to construct the vault name manually
-          let deltaVaultNameShort =
-            $"{shortName}.{keyInfo.KeyTag}.mvlt"
-          let deltaVaultName =
-            Path.Combine(vaultFolder.VaultFolder, deltaVaultNameShort)
-          if keyId |> loadkey then
-            let encryptionTask =
-              task {
-                let! (writtenFile:string) =
-                  MvltWriter.CompressAndEncrypt(
-                    fileName,
-                    deltaVaultName,
-                    keychain,
-                    keyInfo.ToPassphraseKeyInfoFile(),
-                    ?metadata = Some(metadata),
-                    ?writeMetafile = Some(true))
-                return writtenFile
-              }
-            let writtenFile =
-              encryptionTask |> Async.AwaitTask |> Async.RunSynchronously
-            let writtenFileShort = writtenFile |> Path.GetFileName
-            let writtenFileFolder = writtenFile |> Path.GetDirectoryName
-            let writtenFileInfo = new FileInfo(writtenFile)
-            cp $"Delta Vault file \fc{writtenFileShort}\f0 created \fgsuccessfully\f0."
-            cp $"  (\fb{writtenFileInfo.Length}\fg bytes, \fkin {writtenFileFolder}\f0)"
-        do
-          let bundleInfo = BundleInfo.Build(repo2, bundleHeader)
-          let commits =
-            bundleInfo.Commits
-            |> Seq.sortByDescending (fun c -> c.CommitDate)
-            |> Seq.toArray
-          for commit in commits do
-            let shortId = commit.Commit.Substring(0, 8)
-            let commitDate = commit.CommitDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
-            let authorDate = commit.AuthorDate.ToString("yyyy-MM-dd HH:mm K", CultureInfo.InvariantCulture)
-            match commit with
-            | :? BundleSeed as seed ->
-              cpx $" \fg+ {shortId} \fc{commitDate}\f0"
-              if authorDate <> commitDate then
-                cpx $" (\fk{authorDate}\f0)"
-              cpx ":"
-              for r in seed.Refs |> Seq.sort do
-                let rtxt = r |> refText
-                cpx $" {rtxt}"
-              cp "\f0."
-            | :? BundlePrerequisite as prerequisite ->
-              cpx $" \fo- {shortId} \fy{commitDate}\f0"
-              if authorDate <> commitDate then
-                cpx $" (\fk{authorDate}\f0)"
-              cpx ":"
-              for r in prerequisite.Labels |> Seq.sort do
-                let rtxt = r |> refText
-                cpx $" {rtxt}"
-              cp "\f0."
-            | _ ->
-              failwith "Unexpected commit info type"
-        ()
-      else
-        status <- 1
-        cp $"\foSkiping further processing of this anchor\f0."
+          status <- 1
+          cp $"\foSkiping further processing of this anchor\f0."
     status
 
 let private runDeltaSend args =
@@ -440,8 +514,8 @@ let private runDeltaSend args =
   | Some(context) ->
     let recipes = context.RecipesOption.Value
     let requireRecipe = recipes.HasDefaultRecipe |> not
-    let oo = args |> parseRecipeOnly requireRecipe {
-      Recipe = null
+    let oo = args |> parseRecipeOrAll {
+      RecipeOrAll = None
     }
     match oo with
     | None ->
@@ -458,7 +532,7 @@ let private runDeltaShow args =
     1
   | Some(context) ->
     let recipes = context.RecipesOption.Value
-    let oo = args |> parseRecipeOnly true {
+    let oo = args |> parseRecipeOnly false {
       Recipe = null
     }
     match oo with
@@ -467,12 +541,13 @@ let private runDeltaShow args =
       Usage.usage "delta"
       1
     | Some o ->
-      let ok, recipe = o.Recipe |> recipes.Recipes.TryGetValue
-      if ok then
+      let recipeOption = o.Recipe |> tryGetRecipe recipes
+      match recipeOption with
+      | Some recipe ->
         recipe |> showRecipe
         0
-      else
-        cp $"\foUnknown recipe '\fc{o.Recipe}\fo'\f0."
+      | None ->
+        // error printed already
         1
 
 let private runDeltaDrop args =

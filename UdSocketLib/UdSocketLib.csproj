@@ -5,7 +5,29 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
-    <VersionPrefix>1.9.0</VersionPrefix>
+    <VersionPrefix>1.11.0</VersionPrefix>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>TteLcl.$(AssemblyName)</PackageId>
+    <Authors>ttelcl</Authors>
+    <Company>ttelcl</Company>
+    <Description>An opiniated framework for IPC using Unix Domain Sockets. The implementation works on both Windows and Linux.</Description>
+    <Copyright>(c) ttelcl</Copyright>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ttelcl/fldvault</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>

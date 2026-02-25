@@ -27,7 +27,7 @@ public class KeyServerUpi: IKeyServerUpi
   private readonly KeyServerService _keyServerService;
   private UdSocketListener? _listener;
   private KeyServerLogic? _server;
-  private object _lock = new Object();
+  private readonly object _lock = new Object();
 
   /// <summary>
   /// Create a new KeyServerUpi

@@ -12,4 +12,5 @@ FldVault Key Server.
   for instance to support alternative key sources beyond the default
   passphrase based keys.
 * It only depends on `UdSocketLib`, not on any other FldVault libraries. 
-  Instead, this reimplements a small subset.
+  Instead, this reimplements a small subset of `FldVault.Core` and
+  `FldVault.KeyServer`.

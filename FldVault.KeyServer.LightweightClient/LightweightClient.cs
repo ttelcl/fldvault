@@ -20,6 +20,12 @@ public sealed class LightweightClient
   /// <summary>
   /// Create a new <see cref="LightweightClient"/>
   /// </summary>
+  /// <param name="socketName">
+  /// Either the short name for the socket (without any path separators),
+  /// or the full path to the socket, or null to use the default.
+  /// If null the name used is <see cref="DefaultSocketName"/>.
+  /// If the folder part is missing (null case included) it defaults to <see cref="DefaultSocketFolder"/>.
+  /// </param>
   public LightweightClient(string? socketName = null)
   {
     var socketPath = ResolveSocketPath(socketName);
@@ -97,18 +103,59 @@ public sealed class LightweightClient
     if(messageCode != MessageCodes.KeepAlive)
     {
       throw new InvalidOperationException(
-        "Unexpected response from key server");
+        "Unexpected ping response from key server");
     }
     // Nothing else to do now but return.
   }
 
   /// <summary>
+  /// Synchronously upload a key to the key server
+  /// </summary>
+  /// <param name="rawKey">
+  /// The 32 bytes raw key to upload
+  /// </param>
+  /// <exception cref="ArgumentOutOfRangeException"></exception>
+  /// <exception cref="InvalidOperationException"></exception>
+  public void UploadKeySync(ReadOnlySpan<byte> rawKey)
+  {
+    if(rawKey.Length != 32)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(rawKey),
+        "Invalid key: expecting exactly 32 bytes");
+    }
+    using var frameOut = new MessageFrameOut();
+    frameOut
+      .Clear()
+      .AppendI32(KeyServerMessageCodes.KeyUploadCode)
+      .AppendBlob(rawKey);
+    using var client = SocketService.ConnectClientSync();
+    client.SendFrameSync(frameOut);
+    using var frameIn = new MessageFrameIn();
+    var receiveOk = client.TryFillFrameSync(frameIn);
+    if(!receiveOk)
+    {
+      // This is unlikely to happen. It is more likely that ConnectClientSync() already threw an exception
+      throw new InvalidOperationException(
+        "Key server shut down");
+    }
+    var messageCode = frameIn.MessageCode();
+    if(messageCode != KeyServerMessageCodes.KeyUploadedCode)
+    {
+      throw new InvalidOperationException(
+        "Unexpected key upload response from key server");
+    }
+  }
+
+  /// <summary>
   /// The default short name for the key server Unix Domain socket
+  /// (<c>zvlt-keyserver.sock</c>)
   /// </summary>
   public const string DefaultSocketName = "zvlt-keyserver.sock";
 
   /// <summary>
   /// The folder where the key server socket is created by default
+  /// (<c>%LocalApplicationData%/.zvlt/sockets</c>)
   /// </summary>
   public static string DefaultSocketFolder { get; } =
     Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), ".zvlt", "sockets");

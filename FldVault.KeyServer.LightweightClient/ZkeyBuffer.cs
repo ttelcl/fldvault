@@ -15,20 +15,27 @@ namespace FldVault.KeyServer.LightweightClient;
 /// <summary>
 /// Buffers a ZKEY style raw key. Disposing it clears the buffer bytes.
 /// </summary>
-public class ZkeyBuffer: IDisposable
+public sealed class ZkeyBuffer: IDisposable
 {
   private readonly byte[] _key;
+  private readonly Guid _id;
   private bool _disposed;
-  private bool _idIsValid;
-  private Guid _id;
 
   /// <summary>
-  /// Create a new ZkeyBuffer
+  /// Create a new <see cref="ZkeyBuffer"/> containing the given raw key.
   /// </summary>
-  public ZkeyBuffer()
+  /// <param name="key">
+  /// The raw key, 32 bytes long. This array is stored as-is, it is not copied
+  /// (which is fine for a _private_ constructor, but callers need to be aware of it).
+  /// </param>
+  private ZkeyBuffer(byte[] key)
   {
-    _key = new byte[LightweightClientHelpers.KeyLength];
-    _idIsValid = false;
+    if(key.Length != LightweightClientHelpers.KeyLength)
+    {
+      throw new ArgumentOutOfRangeException(nameof(key));
+    }
+    _key = key;
+    _id = LightweightClientHelpers.KeyGuid(_key);
   }
 
   /// <summary>
@@ -37,10 +44,6 @@ public class ZkeyBuffer: IDisposable
   public Guid KeyId {
     get {
       ObjectDisposedException.ThrowIf(_disposed, this);
-      if(!_idIsValid)
-      {
-        RecalculateId();
-      }
       return _id;
     }
   }
@@ -61,15 +64,13 @@ public class ZkeyBuffer: IDisposable
   /// <param name="key">
   /// The 32 byte key to copy.
   /// </param>
-  public void LoadFrom(ReadOnlySpan<byte> key)
+  public static ZkeyBuffer FromRaw(ReadOnlySpan<byte> key)
   {
-    ObjectDisposedException.ThrowIf(_disposed, this);
     if(key.Length != LightweightClientHelpers.KeyLength)
     {
       throw new ArgumentOutOfRangeException(nameof(key));
     }
-    key.CopyTo(_key);
-    _idIsValid = false;
+    return new ZkeyBuffer(key.ToArray());
   }
 
   /// <summary>
@@ -81,14 +82,13 @@ public class ZkeyBuffer: IDisposable
   /// <param name="salt">
   /// The random salt bytes for this key (length <see cref="LightweightClientHelpers.SaltLength"/>)
   /// </param>
-  public void LoadFrom(
+  public static ZkeyBuffer FromPassphraseBytes(
     ReadOnlySpan<byte> passphraseBytes,
     ReadOnlySpan<byte> salt)
   {
-    ObjectDisposedException.ThrowIf(_disposed, this);
-    LightweightClientHelpers.PassphraseToKey(passphraseBytes, salt, _key);
-    _idIsValid = false;
-    RecalculateId();
+    var key = new byte[LightweightClientHelpers.KeyLength];
+    LightweightClientHelpers.PassphraseToKey(passphraseBytes, salt, key);
+    return new ZkeyBuffer(key);
   }
 
   /// <summary>
@@ -100,14 +100,13 @@ public class ZkeyBuffer: IDisposable
   /// <param name="salt">
   /// The random salt bytes for this key (length <see cref="LightweightClientHelpers.SaltLength"/>)
   /// </param>
-  public void LoadFrom(
+  public static ZkeyBuffer FromPassphraseCharacters(
     ReadOnlySpan<char> passphraseCharacters,
     ReadOnlySpan<byte> salt)
   {
-    ObjectDisposedException.ThrowIf(_disposed, this);
-    LightweightClientHelpers.PassphraseToKey(passphraseCharacters, salt, _key);
-    _idIsValid = false;
-    RecalculateId();
+    var key = new byte[LightweightClientHelpers.KeyLength];
+    LightweightClientHelpers.PassphraseToKey(passphraseCharacters, salt, key);
+    return new ZkeyBuffer(key);
   }
 
   /// <summary>
@@ -119,23 +118,13 @@ public class ZkeyBuffer: IDisposable
   /// <param name="salt">
   /// The random salt bytes for this key (length <see cref="LightweightClientHelpers.SaltLength"/>)
   /// </param>
-  public void LoadFrom(
+  public static ZkeyBuffer FromSecurePassphrase(
     SecureString passphrase,
     ReadOnlySpan<byte> salt)
   {
-    ObjectDisposedException.ThrowIf(_disposed, this);
-    LightweightClientHelpers.PassphraseToKey(passphrase, salt, _key);
-    _idIsValid = false;
-    RecalculateId();
-  }
-
-  private void RecalculateId()
-  {
-    if(!_idIsValid)
-    {
-      _id = LightweightClientHelpers.KeyGuid(_key);
-      _idIsValid = true;
-    }
+    var key = new byte[LightweightClientHelpers.KeyLength];
+    LightweightClientHelpers.PassphraseToKey(passphrase, salt, key);
+    return new ZkeyBuffer(key);
   }
 
   /// <summary>

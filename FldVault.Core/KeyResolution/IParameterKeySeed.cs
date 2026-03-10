@@ -41,7 +41,7 @@ public interface IParameterKeySeed
 /// An object that can instantiate a key, but unlike IKeySeed, requiring an
 /// additional input to do so.
 /// </summary>
-public interface IParameterKeySeed<TParam>: IParameterKeySeed
+public interface IParameterKeySeed<in TParam>: IParameterKeySeed
 {
 
   /// <summary>

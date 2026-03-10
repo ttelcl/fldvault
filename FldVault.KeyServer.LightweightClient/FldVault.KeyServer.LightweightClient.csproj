@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <VersionPrefix>2.0.0</VersionPrefix>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>TteLcl.$(AssemblyName)</PackageId>
+    <Authors>ttelcl</Authors>
+    <Company>ttelcl</Company>
+    <Description>A lightweight client api subset for communicating with a zkey server.</Description>
+    <Copyright>(c) ttelcl</Copyright>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/ttelcl/fldvault</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\UdSocketLib\UdSocketLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+</Project>

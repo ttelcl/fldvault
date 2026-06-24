@@ -282,7 +282,7 @@ public class KeyViewModel: ViewModelBase
       }
     }
   }
-  private bool _autohideEnabled = true;
+  private bool _autohideEnabled = false;
 
   /// <summary>
   /// Number of seconds from a auto-hide reset until automatic hiding.

@@ -30,19 +30,8 @@ public partial class MainWindow: MetroWindow
   {
     if(DataContext is MainViewModel mainViewModel)
     {
-      var cancel = mainViewModel.KeyStates.AnyKeys && (MessageBox.Show(
-        "Are you sure you want to terminate the key server?\nThis will discard all keys from memory.",
-        "Confirmation",
-        MessageBoxButton.OKCancel,
-        MessageBoxImage.Warning) != MessageBoxResult.OK);
-      if(cancel)
-      {
-        e.Cancel = true;
-      }
-      else
-      {
-        mainViewModel.OnClosing(e);
-      }
+      // This used to show a confirmation dialog, but that turned out to be just a bloody nuisance.
+      mainViewModel.OnClosing(e);
     }
     base.OnClosing(e);
   }

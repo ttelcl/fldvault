@@ -134,6 +134,7 @@ public class KeyServerUpi: IKeyServerUpi
         _server = null;
         _listener?.Dispose();
         _listener = null;
+        Trace.TraceInformation("Key server stopped gracefully.");
       }
       return result;
     }

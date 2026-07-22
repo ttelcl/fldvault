@@ -50,6 +50,10 @@ let rec run arglist =
   | "bundleinfo" :: rest
   | "bundle-info" :: rest ->
     rest |> AppBundleInfo.run
+  | "commitinfo" :: rest
+  | "commit-info" :: rest
+  | "commits" :: rest ->
+    rest |> AppCommitInfo.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

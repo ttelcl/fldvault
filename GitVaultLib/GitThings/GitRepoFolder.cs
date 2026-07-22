@@ -385,6 +385,11 @@ public class GitRepoFolder
       return null;
     }
     startFolder = Path.GetFullPath(startFolder);
+    if(File.Exists(startFolder))
+    {
+      // Its a file instead of a folder! Use the file's folder instead
+      startFolder = Path.GetDirectoryName(startFolder)!;
+    }
     if(!Directory.Exists(startFolder))
     {
       return null;

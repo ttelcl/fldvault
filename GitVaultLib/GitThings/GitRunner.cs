@@ -326,6 +326,18 @@ public static class GitRunner
       tmpFile,
     };
     args.AddRange(revListArgs);
+    foreach(var arg in args)
+    {
+      if(arg.Contains('*'))
+      {
+        var resultStub = new GitRunResult();
+        resultStub.StatusCode = -1;
+        resultStub.Arguments.AddRange(args);
+        resultStub.ErrorLines.Add(
+          $"ABORT. Argument contains '*' - are you trying to run a v2 recipe as v1? '{arg}'");
+        return resultStub;
+      }
+    }
     var result = RunToLines(args, null);
     if(result.StatusCode != 0)
     {

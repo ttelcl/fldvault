@@ -27,6 +27,7 @@ type private NewEditOptions = {
   Seeds: string list
   Exclusions: string list
   Recipe: string
+  V2: bool
 }
 
 type private RecipeOnlyOptions = {
@@ -177,21 +178,39 @@ let private parseNewEdit o args =
     | "-z" :: zap :: rest when isEdit ->
         rest |> parseMore {o with Zaps = zap :: o.Zaps}
     | "-s" :: seed :: rest ->
-      // Only do minimal validation here. Let Git handle the true validation.
-      if seed.StartsWith('-') && not(seed = "--all" || seed = "--branches" || seed = "--tags") then
-        cp $"\fo'\fc{seed}\f0' is not a valid argument to \fg-s\fo \f0."
+      // Only do minimal validation here. Let Git and/or the V2 glue handle the true validation.
+      if not(o.V2) && seed.StartsWith('-') && not(seed = "--branches" || seed = "--tags") then
+        cp $"\fo'\fc{seed}\f0' is not a valid argument to \fg-s\fo \f0(in \fg-v1\f0 mode)"
         None
       else
         rest |> parseMore {o with Seeds = seed :: o.Seeds}
     | "-x" :: exclusion :: rest ->
-      // Only do minimal validation here. Let Git handle the true validation.
-      if exclusion.StartsWith('-') then
-        cp $"\fo'\fc{exclusion}\f0' is not a valid argument to \fg-x\fo \f0."
+      // Only do minimal validation here. Let Git and/or the V2 glue handle the true validation.
+      if not(o.V2) && exclusion.StartsWith('-') then
+        cp $"\fo'\fc{exclusion}\f0' is not a valid argument to \fg-x\fo \f0(in \fg-v1\f0 mode)"
         None
       else
         rest |> parseMore {o with Exclusions = exclusion :: o.Exclusions}
     | "-r" :: name :: rest ->
       rest |> parseMore {o with Recipe = name}
+    | "-v1" :: rest ->
+      if isEdit then
+        cp "\fg-v1\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = false}
+      else
+        cp "\fg-v1\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
+    | "-v2" :: rest ->
+      if isEdit then
+        cp "\fg-v2\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = true}
+      else
+        cp "\fg-v2\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
     | [] ->
       if isNew && String.IsNullOrEmpty(o.Recipe) then
         cp "\frMissing \fg-r\fr argument\f0."
@@ -246,7 +265,12 @@ let private runDeltaNewInner o =
       1
     else
       cp $"There are {seeds.Length} seeds and {exclusions.Length} exclusions."
-      let recipe = new DeltaRecipe(recipeName, seeds, exclusions)
+      let recipe = new DeltaRecipe(recipeName, [], [], o.V2)
+      // Start empty, so seeds and exclusions are better validated
+      for seed in seeds do
+        seed |> recipe.AddSeed
+      for exclusion in exclusions do
+        exclusion |> recipe.AddExclusion
       recipe |> recipes.Put
       let fileName = root.GitvaultRecipesFile
       cp $"Saving \fg{fileName}\f0."
@@ -262,6 +286,7 @@ let private runDeltaNew args =
     Seeds = []
     Exclusions = []
     Recipe = null
+    V2 = false
   }
   match oo with
   | None ->
@@ -293,6 +318,7 @@ let private runDeltaEditInner (o:NewEditOptions) =
         cp $"\frUnknown recipe \f0'{recipeName}\f0'"
         1
       else
+        let o = {o with V2 = recipe.V2} // ignore value passed in option
         for zap in o.Zaps do
           zap |> recipe.Zap |> ignore
         for seed in o.Seeds do
@@ -321,6 +347,7 @@ let private runDeltaEdit args =
     Seeds = []
     Exclusions = []
     Recipe = null
+    V2 = false // IGNORED
   }
   match oo with
   | None ->
@@ -669,7 +696,8 @@ let private runDeltaList args =
             " (\fbdefault\f0)"
           else
             "  \fx       \fx "
-        cp $" {defaultText}  '\fg{recipe.Name}\f0'  (\fc+{recipe.Seeds.Count}\f0, \fo-{recipe.Exclusions.Count}\f0)."
+        let version = if recipe.V2 then "\fbv2" else "\fwv1"
+        cp $" {defaultText}  '\fg{recipe.Name}\f0'  ({version}\f0, \fc+{recipe.Seeds.Count}\f0, \fo-{recipe.Exclusions.Count}\f0)."
       if recipes.HasDefaultRecipe then
         cp $"The default recipe is '\fc{recipes.DefaultRecipe}\f0'."
       else

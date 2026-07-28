@@ -118,13 +118,6 @@ let usage focus =
     cp "  \fg-nofetch \fx\f0\f0                Do not fetch the remote(s). This is default for \fogitvault connect\f0."
     cp "  \fg-fetch \fx\f0\f0                  Also fetch the remote(s). This is default for \fogitvault receive\f0."
     cp ""
-  //// (commitinfo is deprecated - use "gitinfo commits" instead)
-  //if showSection "commitinfo" then
-  //  cp "\fogitvault \fycommitinfo [\fg-f \fcwitness\f0]"
-  //  cp "  dump commit graph data"
-  //if showDetail "commitinfo" then
-  //  cp "  \fg-f \fcwitness\fx\fx\f0            Analyze the repository that \fcwitness\f0 is part of"
-  //  cp ""
   if showSection "bundle" then
     cp "\fogitvault \fybundle \f0[\fg-f \fcbundlefile\f0|\frTBD\f0]"
     cp "  Describe seeds and requirements of a bundle file"

@@ -448,11 +448,37 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
             cp $"\frThis repo is not the owner of 'its' bundles.\fo It is owned by \fc{repoAnchorBundleSource.SourceFolder}\f0. Skipping."
             false
           else
-            let result = GitRunner.CreateBundle(fileName, null, recipe)
+            let result, errorsShown =
+              if recipe.V2 then
+                use evaluator = new DeltaV2Evaluation(context.Root.Folder)
+                let ok = recipe |> evaluator.Prepare
+                // Debug:
+                cp $"DBG: Seed commits (\fb{evaluator.SeedCommitMap.Count}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits)"
+                for kvp in evaluator.SeedCommitMap |> Seq.sortBy (fun kvp -> kvp.Key) do
+                  let commit = kvp.Value
+                  let id = commit.Sha.Substring(0, 8)
+                  let refname = kvp.Key
+                  cp $"  \fg{id}\f0 = \fy{refname}\f0."
+                if ok then
+                  if evaluator.Warnings.Count > 0 then
+                    cp $"Recipe preparation succeeded with \fb{evaluator.Warnings.Count}\f0 warnings:"
+                    for warning in evaluator.Warnings do
+                      cp $"\foWarning:\f0 {warning}"
+                  GitRunner.CreateBundle(fileName, context.Root.Folder, evaluator), false
+                else
+                  cp $"\foRecipe preparation failed with \fr{evaluator.Errors.Count}\fo errors and \fy{evaluator.Warnings.Count}\fo warnings\f0."
+                  for error in evaluator.Errors do
+                    cp $"\frError:\f0 {error}"
+                  for warning in evaluator.Warnings do
+                    cp $"\foWarning:\f0 {warning}"
+                  evaluator.ToErrorResult(), true
+              else
+                GitRunner.CreateBundle(fileName, null, recipe), false
             if result.StatusCode <> 0 then
               cp $"\frError\fo: Bundling failed with status code \fr{result.StatusCode}\f0."
-              for line in result.ErrorLines do
-                cp $"\fo  {line}\f0"
+              if errorsShown |> not then
+                for line in result.ErrorLines do
+                  cp $"\fo  {line}\f0"
               false
             else
               let fi = new FileInfo(fileName)

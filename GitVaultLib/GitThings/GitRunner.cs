@@ -382,10 +382,49 @@ public static class GitRunner
     string? witnessFolder,
     DeltaRecipe recipe)
   {
-    var revArgs =
-      recipe.Seeds
-      .Concat(
-        recipe.Exclusions.Select(x => "^" + x));
-    return CreateBundle(bundleFile, witnessFolder, revArgs);
+    if(recipe.V2)
+    {
+      var grf = GitRepoFolder.LocateRepoRootFrom(witnessFolder ?? Environment.CurrentDirectory);
+      if(grf == null)
+      {
+        throw new InvalidOperationException(
+          "Not a GIT repository");
+      }
+      using(var dv2eval = new DeltaV2Evaluation(grf.Folder))
+      {
+        dv2eval.Prepare(recipe);
+        return CreateBundle(bundleFile, witnessFolder, dv2eval);
+      }
+    }
+    else
+    {
+      var revArgs =
+        recipe.Seeds
+        .Concat(
+          recipe.Exclusions.Select(x => "^" + x));
+      return CreateBundle(bundleFile, witnessFolder, revArgs);
+    }
+  }
+
+  /// <summary>
+  /// Run a prepared version 2 delta recipe
+  /// </summary>
+  /// <param name="bundleFile"></param>
+  /// <param name="witnessFolder"></param>
+  /// <param name="preparedDelta"></param>
+  /// <returns></returns>
+  public static GitRunResult CreateBundle(
+    string bundleFile,
+    string? witnessFolder,
+    DeltaV2Evaluation preparedDelta)
+  {
+    if(!preparedDelta.CanRun)
+    {
+      var result = preparedDelta.ToErrorResult();
+      return result;
+    }
+
+    throw new NotImplementedException(
+      "V2 run functionality NYI");
   }
 }

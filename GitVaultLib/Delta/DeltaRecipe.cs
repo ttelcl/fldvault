@@ -141,11 +141,16 @@ public class DeltaRecipe
     {
       if(V2)
       {
-        if(!seed.StartsWith("refs/"))
+        if(seed.Length<2)
         {
           throw new ArgumentException(
-            $"'{seed}': Glob patterns must be fully qualified: they must start with 'refs/'");
+            $"'{seed}': A glob pattern cannot be just '*'");
         }
+        //if(!seed.StartsWith("refs/"))
+        //{
+        //  throw new ArgumentException(
+        //    $"'{seed}': Glob patterns must be fully qualified: they must start with 'refs/'");
+        //}
       }
       else
       {
@@ -182,11 +187,16 @@ public class DeltaRecipe
       }
       if(exclusion.Contains('*'))
       {
-        if(!exclusion.StartsWith("refs/"))
+        if(exclusion.Length<2)
         {
           throw new ArgumentException(
-            $"'{exclusion}': Glob patterns must be fully qualified: they must start with 'refs/'");
+            $"'{exclusion}': A glob pattern cannot be just '*'");
         }
+        //if(!exclusion.StartsWith("refs/"))
+        //{
+        //  throw new ArgumentException(
+        //    $"'{exclusion}': Glob patterns must be fully qualified: they must start with 'refs/'");
+        //}
       }
     }
     else

@@ -65,7 +65,7 @@ let usage focus =
     cp "  \fg-v2\f0 \fx           Use version 2 mode. \fg-s\f0 and \fg-x\f0 can use glob patterns."
     cp "  \fx   \fx    \fx        \fg-s\f0 and \fg-x\f0 can use specials \fo--branches\f0, \fo--tags\f0, \fo--remotes\f0 and \fo--remote=\fyNAME\f0"
     cp "  \fx   \fx    \fx        to include all local branches, all tags, all remote branches or branches on the specified remote."
-    cp "  \fx   \fx    \fx        Other seeds and exclusions can use '\fo*\f0' in glob patterns if they are fully qualified (start with \forefs/\f0)"
+    cp "  \fx   \fx    \fx        Other seeds and exclusions can use '\fo*\f0' in glob patterns."
     cp "  \fg-s \fcseed\f0        A git branch, tag or other ref to include. Commit IDs are not allowed."
     cp "  \fg-x \fcexclusion\f0   A branch, tag or other ref to exclude (assuming that ref to be known)."
     cp "  \fx   \fx         \fx   Unlike seeds, exclusions can also be a commit ID."

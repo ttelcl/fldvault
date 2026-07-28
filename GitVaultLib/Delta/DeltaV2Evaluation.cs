@@ -8,6 +8,8 @@ using GitVaultLib.GitThings;
 
 using LibGit2Sharp;
 
+using static FldVault.KeyServer.KeyServerSeedService;
+
 namespace GitVaultLib.Delta;
 
 /// <summary>
@@ -20,8 +22,9 @@ public sealed class DeltaV2Evaluation: IDisposable
   private readonly HashSet<string> _tipCommits;
   private readonly HashSet<string> _tipReferences;
   private readonly HashSet<string> _tailCommits;
-  private readonly Dictionary<string, Commit> _seedCommitMap;
+  private readonly Dictionary<string, Commit> _seedCommitsByRef;
   private readonly Dictionary<string, IReadOnlyList<string>> _commitSeedRefMap;
+  private readonly Dictionary<string, Commit> _excludeCommitsBySha;
 
   /// <summary>
   /// Creates a new <see cref="DeltaV2Evaluation"/> instance, without any recipe prepared.
@@ -35,8 +38,9 @@ public sealed class DeltaV2Evaluation: IDisposable
     _tipCommits = new HashSet<string>();
     _tipReferences = new HashSet<string>();
     _tailCommits = new HashSet<string>();
-    _seedCommitMap = new Dictionary<string, Commit>();
+    _seedCommitsByRef = new Dictionary<string, Commit>();
     _commitSeedRefMap = new Dictionary<string, IReadOnlyList<string>>();
+    _excludeCommitsBySha = new Dictionary<string, Commit>();
     Warnings = new List<string>();
     Errors = ["No recipe prepared"];
   }
@@ -54,7 +58,7 @@ public sealed class DeltaV2Evaluation: IDisposable
   /// <summary>
   /// A mapping of seed reference names to Commits.
   /// </summary>
-  public IReadOnlyDictionary<string, Commit> SeedCommitMap => _seedCommitMap;
+  public IReadOnlyDictionary<string, Commit> SeedCommitMap => _seedCommitsByRef;
 
   /// <summary>
   /// A mapping of commit IDs to the seed references pointing to them: more or less the inverse of
@@ -85,20 +89,13 @@ public sealed class DeltaV2Evaluation: IDisposable
     {
       if(seed.Contains('*'))
       {
-        //if(!seed.StartsWith("refs/"))
-        //{
-        //  // fatal error, don't use Errors but throw
-        //  throw new InvalidOperationException(
-        //    $"'{seed}': Invalid seed format. Seeds with glob patterns must start with 'refs/'");
-        //}
-        // Actually ... we can support abbreviated globs easily!
         var seedRefs = TryResolveShortRef(seed); // repo.Refs.FromGlob(seed).ToList();
         foreach(var r in seedRefs)
         {
           var commit = r.ResolveReferenceToCommit();
           if(commit != null)
           {
-            _seedCommitMap[r.CanonicalName] = commit;
+            _seedCommitsByRef[r.CanonicalName] = commit;
           }
         }
         if(seedRefs.Count == 0)
@@ -128,17 +125,38 @@ public sealed class DeltaV2Evaluation: IDisposable
           }
           else
           {
-            _seedCommitMap[reference.CanonicalName] = commit;
+            _seedCommitsByRef[reference.CanonicalName] = commit;
           }
         }
-
-
-
       }
     }
-    foreach(var group in _seedCommitMap.GroupBy(kvp => kvp.Value.Sha, kvp => kvp.Key))
+    foreach(var group in _seedCommitsByRef.GroupBy(kvp => kvp.Value.Sha, kvp => kvp.Key))
     {
       _commitSeedRefMap[group.Key] = group.ToList();
+    }
+    foreach(var exclusion in recipe.Exclusions)
+    {
+      if(exclusion.Contains('*'))
+      {
+        // definitely not a SHA
+        var exRefs = TryResolveShortRef(exclusion);
+        foreach(var r in exRefs)
+        {
+          var commit = r.ResolveReferenceToCommit();
+          if(commit != null)
+          {
+            _excludeCommitsBySha[commit.Sha] = commit;
+          }
+        }
+        if(exRefs.Count == 0)
+        {
+          Warnings.Add($"Exclusion '{exclusion}' does not match any references");
+        }
+      }
+      else
+      {
+        // NYI: resolve exclusion to commit via reference or as SHA
+      }
     }
 
     Errors.Add("[Implementation incomplete]");
@@ -219,8 +237,9 @@ public sealed class DeltaV2Evaluation: IDisposable
     _tipCommits.Clear();
     _tipReferences.Clear();
     _tailCommits.Clear();
-    _seedCommitMap.Clear();
+    _seedCommitsByRef.Clear();
     _commitSeedRefMap.Clear();
+    _excludeCommitsBySha.Clear();
   }
 
   /// <summary>

@@ -375,6 +375,9 @@ public static class GitRunner
   /// </param>
   /// <param name="recipe">
   /// The recipe specifying which commits to bundle and which to assume as known.
+  /// This method is intended for use with version 1 recipes but includes a
+  /// bypass to call <see cref="CreateBundle(string, string?, DeltaV2Evaluation)"/>
+  /// for v2 recipes.
   /// </param>
   /// <returns></returns>
   public static GitRunResult CreateBundle(
@@ -382,7 +385,7 @@ public static class GitRunner
     string? witnessFolder,
     DeltaRecipe recipe)
   {
-    if(recipe.V2)
+    if(recipe.V2) // compatibility hack
     {
       var grf = GitRepoFolder.LocateRepoRootFrom(witnessFolder ?? Environment.CurrentDirectory);
       if(grf == null)
@@ -424,7 +427,9 @@ public static class GitRunner
       return result;
     }
 
-    throw new NotImplementedException(
-      "V2 run functionality NYI");
+    var revArgs = new List<string>();
+    revArgs.AddRange(preparedDelta.IncludedSeedRefs());
+    revArgs.AddRange(preparedDelta.TailCommits.Keys.Select(sha => "^" + sha.Substring(0, 8)));
+    return CreateBundle(bundleFile, witnessFolder, revArgs);
   }
 }

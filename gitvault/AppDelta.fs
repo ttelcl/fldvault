@@ -453,24 +453,45 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
                 use evaluator = new DeltaV2Evaluation(context.Root.Folder)
                 let ok = recipe |> evaluator.Prepare
                 
-                // Debug:
-                cp $"\fmDBG\f0: Seed commits (\fb{evaluator.SeedCommitsByRef.Count}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits)"
-                for kvp in evaluator.SeedCommitsByRef |> Seq.sortBy (fun kvp -> kvp.Key) do
-                  let commit = kvp.Value
-                  let id = commit.Sha.Substring(0, 8)
-                  let refname = kvp.Key
-                  cp $"  \fg{id}\f0 = \fy{refname}\f0."
-                cp $"\fmDBG\f0: Exclusion commits (\fb{evaluator.ExclusionsCommitsById.Count}\f0 commits)"
+                let seedCount = evaluator.SeedCommitsByRef.Count
+                cp $"Including \fb{seedCount}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits."
+                cp $"Excluding commits reachable from \fb{evaluator.ExclusionsCommitsById.Count}\f0 exclusion commits."
+                cp "Calculating expected bundle commits:"
+                cp $"  Total bundle commit count = \fb{evaluator.BundleCommits.Count}\f0."
+                let visibleSeedCount = evaluator.IncludedSeeds.Values |> Seq.sumBy (fun l -> l.Count)
+                let visibleSeedCommitCount = evaluator.IncludedSeeds.Count
+                let droppedSeedCount = evaluator.DroppedSeeds.Values |> Seq.sumBy (fun l -> l.Count)
+                let droppedSeedCommitCount = evaluator.DroppedSeeds.Count
+                cp $"  Seeds to be bundled: \fc{visibleSeedCount}\f0 (of \fb{seedCount}\f0) references (\fc{visibleSeedCommitCount}\f0 commits)"
+                let names = evaluator.IncludedSeedRefs()
+                for name in names do
+                  cp $"    + \fg{name}\f0."
+                cpx $"  Dropped seeds: \fr{droppedSeedCount}\f0 (of \fb{seedCount}\f0) references (\fr{droppedSeedCommitCount}\f0 commits)"
+                if verbose then
+                  cp ""
+                  let names = evaluator.DroppedSeedRefs()
+                  for name in names do
+                    cp $"    \fk{name}\f0."
+                else
+                  cp " (\fkpass \fg-v\fk for details\f0)"
+                cp $"  Found \fb{evaluator.TailCommits.Count}\f0 prerequisite commits"
+                let tails =
+                  evaluator.TailCommits.Values
+                  |> Seq.sortByDescending (fun c -> (c.Committer.When, c.Author.When))
+                  |> Seq.toArray
+                for tail in tails do
+                  let stamp = tail.Committer.When.ToString("yyyy-MM-dd HH:mm:ss K")
+                  cp $"    - \fo{tail.Sha.Substring(0, 8)}\f0  {stamp}."
 
                 // Get on with it ...
                 if ok then
                   if evaluator.Warnings.Count > 0 then
-                    cp $"Recipe preparation succeeded with \fb{evaluator.Warnings.Count}\f0 warnings:"
+                    cp $"Recipe preparation \fgsucceeded\f0 with \fb{evaluator.Warnings.Count}\f0 warnings:"
                     for warning in evaluator.Warnings do
                       cp $"\foWarning:\f0 {warning}"
                   GitRunner.CreateBundle(fileName, context.Root.Folder, evaluator), false
                 else
-                  cp $"\foRecipe preparation failed with \fr{evaluator.Errors.Count}\fo errors and \fy{evaluator.Warnings.Count}\fo warnings\f0."
+                  cp $"Recipe preparation \frfailed\f0 with \fr{evaluator.Errors.Count}\f0 errors and \fy{evaluator.Warnings.Count}\f0 warnings\f0."
                   for error in evaluator.Errors do
                     cp $"\frError:\f0 {error}"
                   for warning in evaluator.Warnings do

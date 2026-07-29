@@ -19,12 +19,14 @@ public sealed class DeltaV2Evaluation: IDisposable
 {
   private bool _disposed;
   private readonly Repository _repo;
-  private readonly HashSet<string> _tipCommits;
-  private readonly HashSet<string> _tipReferences;
-  private readonly HashSet<string> _tailCommits;
   private readonly Dictionary<string, Commit> _seedCommitsByRef;
   private readonly Dictionary<string, IReadOnlyList<string>> _commitSeedRefMap;
   private readonly Dictionary<string, Commit> _exclusionCommitsBySha;
+  private readonly Dictionary<string, Reference> _refCache;
+  private readonly Dictionary<string, Commit> _bundleCommits;
+  private readonly Dictionary<string, IReadOnlyList<string>> _includedSeeds;
+  private readonly Dictionary<string, IReadOnlyList<string>> _droppedSeeds;
+  private readonly Dictionary<string, Commit> _tailCommits;
 
   /// <summary>
   /// Creates a new <see cref="DeltaV2Evaluation"/> instance, without any recipe prepared.
@@ -35,12 +37,14 @@ public sealed class DeltaV2Evaluation: IDisposable
   {
     _disposed = false;
     _repo = new Repository(repoRoot);
-    _tipCommits = new HashSet<string>();
-    _tipReferences = new HashSet<string>();
-    _tailCommits = new HashSet<string>();
     _seedCommitsByRef = new Dictionary<string, Commit>();
     _commitSeedRefMap = new Dictionary<string, IReadOnlyList<string>>();
     _exclusionCommitsBySha = new Dictionary<string, Commit>();
+    _refCache = new Dictionary<string, Reference>();
+    _bundleCommits = new Dictionary<string, Commit>();
+    _includedSeeds = new Dictionary<string, IReadOnlyList<string>>();
+    _droppedSeeds = new Dictionary<string, IReadOnlyList<string>>();
+    _tailCommits = new Dictionary<string, Commit>();
     Warnings = new List<string>();
     Errors = ["No recipe prepared"];
   }
@@ -90,6 +94,55 @@ public sealed class DeltaV2Evaluation: IDisposable
   public IReadOnlyDictionary<string, Commit> ExclusionsCommitsById => _exclusionCommitsBySha;
 
   /// <summary>
+  /// The set of commits to be bundled calculated by <see cref="CalculateBundleCommits"/>
+  /// (indexed by their full SHA)
+  /// </summary>
+  public IReadOnlyDictionary<string, Commit> BundleCommits => _bundleCommits;
+
+  /// <summary>
+  /// Seeds that were calculated to not be hidden by exclusions.
+  /// Expressed as a mapping of commit IDs to the canonical ref names pointing to them.
+  /// </summary>
+  public IReadOnlyDictionary<string, IReadOnlyList<string>> IncludedSeeds => _includedSeeds;
+
+  /// <summary>
+  /// Seeds that were calculated to be hidden by exclusions.
+  /// Expressed as a mapping of commit IDs to the canonical ref names pointing to them.
+  /// </summary>
+  public IReadOnlyDictionary<string, IReadOnlyList<string>> DroppedSeeds => _droppedSeeds;
+
+  /// <summary>
+  /// The collection of "tail commits" (indexed by their SHA): commits that are a parent of
+  /// one or more commits in <see cref="BundleCommits"/>, but are themselves not in there.
+  /// This is the actual list of exclusions to use when building the bundle. Note that this
+  /// collection may include more commits than strictly necessary.
+  /// </summary>
+  public IReadOnlyDictionary<string, Commit> TailCommits => _tailCommits;
+
+  /// <summary>
+  /// Returns a sorted list of all reference names in the values of <see cref="IncludedSeeds"/>.
+  /// </summary>
+  /// <returns></returns>
+  public List<string> IncludedSeedRefs()
+  {
+    var list = IncludedSeeds.Values.SelectMany(l => l).ToList();
+    list.Sort();
+    return list;
+  }
+
+  /// <summary>
+  /// Returns a sorted list of all reference names in the values of <see cref="DroppedSeeds"/>.
+  /// </summary>
+  /// <returns></returns>
+  public List<string> DroppedSeedRefs()
+  {
+    var list = DroppedSeeds.Values.SelectMany(l => l).ToList();
+    list.Sort();
+    return list;
+  }
+
+
+  /// <summary>
   /// Create a placeholder <see cref="GitRunResult"/> to convey the errors and warnings
   /// </summary>
   /// <returns></returns>
@@ -132,11 +185,69 @@ public sealed class DeltaV2Evaluation: IDisposable
     Reset();
     PrepareSeeds(recipe);
     PrepareExclusions(recipe);
-
-    Errors.Add("[Implementation incomplete]");
-
+    CalculateBundleCommits();
+    CalculateEffectiveSeeds();
+    CalculateTails();
     Recipe = recipe;
     return CanRun;
+  }
+
+  private void CalculateTails()
+  {
+    foreach(var bundleCommit in _bundleCommits.Values)
+    {
+      foreach(var parent in bundleCommit.Parents)
+      {
+        if(!BundleCommits.ContainsKey(parent.Sha))
+        {
+          _tailCommits[parent.Sha] = parent;
+        }
+      }
+    }
+  }
+  
+  /// <summary>
+  /// Partitions <see cref="SeedRefsByCommit"/> into a visible half (<see cref="IncludedSeeds"/>)
+  /// and hidden half (<see cref="DroppedSeeds"/>) based on the calculated bundle commits.
+  /// </summary>
+  private void CalculateEffectiveSeeds()
+  {
+    foreach(var kvp in SeedRefsByCommit)
+    {
+      var sha = kvp.Key;
+      if(_bundleCommits.TryGetValue(sha, out var commit))
+      {
+        _includedSeeds[sha] = kvp.Value;
+      }
+      else
+      {
+        _droppedSeeds[sha] = kvp.Value;
+      }
+    }
+  }
+
+  /// <summary>
+  /// Calculate the set of commits that are expected to appear in the resulting
+  /// git bundle from the prepared inclusions and exclusions.
+  /// </summary>
+  private void CalculateBundleCommits()
+  {
+    var inclusions = new List<Reference>();
+    var exclusions = new List<Commit>();
+    var filter = new CommitFilter() {
+      IncludeReachableFrom = inclusions,
+      ExcludeReachableFrom = exclusions
+    };
+    inclusions.AddRange(_seedCommitsByRef.Keys.Select(refname => _refCache[refname]));
+    exclusions.AddRange(_exclusionCommitsBySha.Values);
+    foreach(var commit in Repo.Commits.QueryBy(filter))
+    {
+      _bundleCommits[commit.Sha] = commit;
+    }
+    if(_bundleCommits.Count == 0)
+    {
+      Errors.Add("Empty bundle: all inclusions are hidden by exclusions. There is nothing to bundle.");
+    }
   }
 
   private void PrepareExclusions(DeltaRecipe recipe)
@@ -162,7 +273,6 @@ public sealed class DeltaV2Evaluation: IDisposable
       }
       else
       {
-        // NYI: resolve exclusion to commit via reference or as SHA
         var exRefs = TryResolveShortRef(exclusion);
         var commits = exRefs.Select(r => r.ResolveReferenceToCommit()).Where(c => c != null).ToList();
         if(commits.Count == 1)
@@ -207,6 +317,7 @@ public sealed class DeltaV2Evaluation: IDisposable
           var commit = r.ResolveReferenceToCommit();
           if(commit != null)
           {
+            _refCache[r.CanonicalName] = r;
             _seedCommitsByRef[r.CanonicalName] = commit;
           }
         }
@@ -238,6 +349,7 @@ public sealed class DeltaV2Evaluation: IDisposable
           }
           else
           {
+            _refCache[reference.CanonicalName] = reference;
             _seedCommitsByRef[reference.CanonicalName] = commit;
           }
         }
@@ -277,12 +389,14 @@ public sealed class DeltaV2Evaluation: IDisposable
     Recipe = null;
     Warnings.Clear();
     Errors.Clear();
-    _tipCommits.Clear();
-    _tipReferences.Clear();
-    _tailCommits.Clear();
     _seedCommitsByRef.Clear();
     _commitSeedRefMap.Clear();
     _exclusionCommitsBySha.Clear();
+    _refCache.Clear();
+    _bundleCommits.Clear();
+    _includedSeeds.Clear();
+    _droppedSeeds.Clear();
+    _tailCommits.Clear();
   }
 
   /// <summary>

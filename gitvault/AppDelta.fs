@@ -211,6 +211,15 @@ let private parseNewEdit o args =
       else
         cp "\fg-v2\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
         None
+    | "-standard" :: rest ->
+      if isEdit then
+        cp "\fg-standard\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = true; Seeds = ["refs/heads/*"]; Exclusions = ["refs/remotes/*"]}
+      else
+        cp "\fg-standard\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
     | [] ->
       if isNew && String.IsNullOrEmpty(o.Recipe) then
         cp "\frMissing \fg-r\fr argument\f0."

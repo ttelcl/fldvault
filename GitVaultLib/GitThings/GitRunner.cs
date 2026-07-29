@@ -326,6 +326,18 @@ public static class GitRunner
       tmpFile,
     };
     args.AddRange(revListArgs);
+    foreach(var arg in args)
+    {
+      if(arg.Contains('*'))
+      {
+        var resultStub = new GitRunResult();
+        resultStub.StatusCode = -1;
+        resultStub.Arguments.AddRange(args);
+        resultStub.ErrorLines.Add(
+          $"ABORT. Argument contains '*' - are you trying to run a v2 recipe as v1? '{arg}'");
+        return resultStub;
+      }
+    }
     var result = RunToLines(args, null);
     if(result.StatusCode != 0)
     {
@@ -363,6 +375,9 @@ public static class GitRunner
   /// </param>
   /// <param name="recipe">
   /// The recipe specifying which commits to bundle and which to assume as known.
+  /// This method is intended for use with version 1 recipes but includes a
+  /// bypass to call <see cref="CreateBundle(string, string?, DeltaV2Evaluation)"/>
+  /// for v2 recipes.
   /// </param>
   /// <returns></returns>
   public static GitRunResult CreateBundle(
@@ -370,10 +385,51 @@ public static class GitRunner
     string? witnessFolder,
     DeltaRecipe recipe)
   {
-    var revArgs =
-      recipe.Seeds
-      .Concat(
-        recipe.Exclusions.Select(x => "^" + x));
+    if(recipe.V2) // compatibility hack
+    {
+      var grf = GitRepoFolder.LocateRepoRootFrom(witnessFolder ?? Environment.CurrentDirectory);
+      if(grf == null)
+      {
+        throw new InvalidOperationException(
+          "Not a GIT repository");
+      }
+      using(var dv2eval = new DeltaV2Evaluation(grf.Folder))
+      {
+        dv2eval.Prepare(recipe);
+        return CreateBundle(bundleFile, witnessFolder, dv2eval);
+      }
+    }
+    else
+    {
+      var revArgs =
+        recipe.Seeds
+        .Concat(
+          recipe.Exclusions.Select(x => "^" + x));
+      return CreateBundle(bundleFile, witnessFolder, revArgs);
+    }
+  }
+
+  /// <summary>
+  /// Run a prepared version 2 delta recipe
+  /// </summary>
+  /// <param name="bundleFile"></param>
+  /// <param name="witnessFolder"></param>
+  /// <param name="preparedDelta"></param>
+  /// <returns></returns>
+  public static GitRunResult CreateBundle(
+    string bundleFile,
+    string? witnessFolder,
+    DeltaV2Evaluation preparedDelta)
+  {
+    if(!preparedDelta.CanRun)
+    {
+      var result = preparedDelta.ToErrorResult();
+      return result;
+    }
+
+    var revArgs = new List<string>();
+    revArgs.AddRange(preparedDelta.IncludedSeedRefs());
+    revArgs.AddRange(preparedDelta.TailCommits.Keys.Select(sha => "^" + sha.Substring(0, 8)));
     return CreateBundle(bundleFile, witnessFolder, revArgs);
   }
 }

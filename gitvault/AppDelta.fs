@@ -27,6 +27,7 @@ type private NewEditOptions = {
   Seeds: string list
   Exclusions: string list
   Recipe: string
+  V2: bool
 }
 
 type private RecipeOnlyOptions = {
@@ -177,21 +178,48 @@ let private parseNewEdit o args =
     | "-z" :: zap :: rest when isEdit ->
         rest |> parseMore {o with Zaps = zap :: o.Zaps}
     | "-s" :: seed :: rest ->
-      // Only do minimal validation here. Let Git handle the true validation.
-      if seed.StartsWith('-') && not(seed = "--all" || seed = "--branches" || seed = "--tags") then
-        cp $"\fo'\fc{seed}\f0' is not a valid argument to \fg-s\fo \f0."
+      // Only do minimal validation here. Let Git and/or the V2 glue handle the true validation.
+      if not(o.V2) && seed.StartsWith('-') && not(seed = "--branches" || seed = "--tags") then
+        cp $"\fo'\fc{seed}\f0' is not a valid argument to \fg-s\fo \f0(in \fg-v1\f0 mode)"
         None
       else
         rest |> parseMore {o with Seeds = seed :: o.Seeds}
     | "-x" :: exclusion :: rest ->
-      // Only do minimal validation here. Let Git handle the true validation.
-      if exclusion.StartsWith('-') then
-        cp $"\fo'\fc{exclusion}\f0' is not a valid argument to \fg-x\fo \f0."
+      // Only do minimal validation here. Let Git and/or the V2 glue handle the true validation.
+      if not(o.V2) && exclusion.StartsWith('-') then
+        cp $"\fo'\fc{exclusion}\f0' is not a valid argument to \fg-x\fo \f0(in \fg-v1\f0 mode)"
         None
       else
         rest |> parseMore {o with Exclusions = exclusion :: o.Exclusions}
     | "-r" :: name :: rest ->
       rest |> parseMore {o with Recipe = name}
+    | "-v1" :: rest ->
+      if isEdit then
+        cp "\fg-v1\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = false}
+      else
+        cp "\fg-v1\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
+    | "-v2" :: rest ->
+      if isEdit then
+        cp "\fg-v2\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = true}
+      else
+        cp "\fg-v2\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
+    | "-standard" :: rest ->
+      if isEdit then
+        cp "\fg-standard\fo is not supported for \fyedit\fo, only \fynew\f0."
+        None
+      elif o.Seeds |> List.isEmpty && o.Exclusions |> List.isEmpty then
+        rest |> parseMore {o with V2 = true; Seeds = ["refs/heads/*"]; Exclusions = ["refs/remotes/*"]}
+      else
+        cp "\fg-standard\fo must appear before any \fg-s\fo or \fg-x\fo options\f0."
+        None
     | [] ->
       if isNew && String.IsNullOrEmpty(o.Recipe) then
         cp "\frMissing \fg-r\fr argument\f0."
@@ -246,7 +274,12 @@ let private runDeltaNewInner o =
       1
     else
       cp $"There are {seeds.Length} seeds and {exclusions.Length} exclusions."
-      let recipe = new DeltaRecipe(recipeName, seeds, exclusions)
+      let recipe = new DeltaRecipe(recipeName, [], [], o.V2)
+      // Start empty, so seeds and exclusions are better validated
+      for seed in seeds do
+        seed |> recipe.AddSeed
+      for exclusion in exclusions do
+        exclusion |> recipe.AddExclusion
       recipe |> recipes.Put
       let fileName = root.GitvaultRecipesFile
       cp $"Saving \fg{fileName}\f0."
@@ -262,6 +295,7 @@ let private runDeltaNew args =
     Seeds = []
     Exclusions = []
     Recipe = null
+    V2 = false
   }
   match oo with
   | None ->
@@ -293,6 +327,7 @@ let private runDeltaEditInner (o:NewEditOptions) =
         cp $"\frUnknown recipe \f0'{recipeName}\f0'"
         1
       else
+        let o = {o with V2 = recipe.V2} // ignore value passed in option
         for zap in o.Zaps do
           zap |> recipe.Zap |> ignore
         for seed in o.Seeds do
@@ -321,6 +356,7 @@ let private runDeltaEdit args =
     Seeds = []
     Exclusions = []
     Recipe = null
+    V2 = false // IGNORED
   }
   match oo with
   | None ->
@@ -421,11 +457,62 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
             cp $"\frThis repo is not the owner of 'its' bundles.\fo It is owned by \fc{repoAnchorBundleSource.SourceFolder}\f0. Skipping."
             false
           else
-            let result = GitRunner.CreateBundle(fileName, null, recipe)
+            let result, errorsShown =
+              if recipe.V2 then
+                use evaluator = new DeltaV2Evaluation(context.Root.Folder)
+                let ok = recipe |> evaluator.Prepare
+                
+                let seedCount = evaluator.SeedCommitsByRef.Count
+                cp $"Including \fb{seedCount}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits."
+                cp $"Excluding commits reachable from \fb{evaluator.ExclusionsCommitsById.Count}\f0 exclusion commits."
+                cp "Calculating expected bundle commits:"
+                cp $"  Total bundle commit count = \fb{evaluator.BundleCommits.Count}\f0."
+                let visibleSeedCount = evaluator.IncludedSeeds.Values |> Seq.sumBy (fun l -> l.Count)
+                let visibleSeedCommitCount = evaluator.IncludedSeeds.Count
+                let droppedSeedCount = evaluator.DroppedSeeds.Values |> Seq.sumBy (fun l -> l.Count)
+                let droppedSeedCommitCount = evaluator.DroppedSeeds.Count
+                cp $"  Seeds to be bundled: \fc{visibleSeedCount}\f0 (of \fb{seedCount}\f0) references (\fc{visibleSeedCommitCount}\f0 commits)"
+                let names = evaluator.IncludedSeedRefs()
+                for name in names do
+                  cp $"    + \fg{name}\f0."
+                cpx $"  Dropped seeds: \fr{droppedSeedCount}\f0 (of \fb{seedCount}\f0) references (\fr{droppedSeedCommitCount}\f0 commits)"
+                if verbose then
+                  cp ""
+                  let names = evaluator.DroppedSeedRefs()
+                  for name in names do
+                    cp $"    \fk{name}\f0."
+                else
+                  cp " (\fkpass \fg-v\fk for details\f0)"
+                cp $"  Found \fb{evaluator.TailCommits.Count}\f0 prerequisite commits"
+                let tails =
+                  evaluator.TailCommits.Values
+                  |> Seq.sortByDescending (fun c -> (c.Committer.When, c.Author.When))
+                  |> Seq.toArray
+                for tail in tails do
+                  let stamp = tail.Committer.When.ToString("yyyy-MM-dd HH:mm:ss K")
+                  cp $"    - \fo{tail.Sha.Substring(0, 8)}\f0  {stamp}."
+
+                // Get on with it ...
+                if ok then
+                  if evaluator.Warnings.Count > 0 then
+                    cp $"Recipe preparation \fgsucceeded\f0 with \fb{evaluator.Warnings.Count}\f0 warnings:"
+                    for warning in evaluator.Warnings do
+                      cp $"\foWarning:\f0 {warning}"
+                  GitRunner.CreateBundle(fileName, context.Root.Folder, evaluator), false
+                else
+                  cp $"Recipe preparation \frfailed\f0 with \fr{evaluator.Errors.Count}\f0 errors and \fy{evaluator.Warnings.Count}\f0 warnings\f0."
+                  for error in evaluator.Errors do
+                    cp $"\frError:\f0 {error}"
+                  for warning in evaluator.Warnings do
+                    cp $"\foWarning:\f0 {warning}"
+                  evaluator.ToErrorResult(), true
+              else
+                GitRunner.CreateBundle(fileName, null, recipe), false
             if result.StatusCode <> 0 then
               cp $"\frError\fo: Bundling failed with status code \fr{result.StatusCode}\f0."
-              for line in result.ErrorLines do
-                cp $"\fo  {line}\f0"
+              if errorsShown |> not then
+                for line in result.ErrorLines do
+                  cp $"\fo  {line}\f0"
               false
             else
               let fi = new FileInfo(fileName)
@@ -503,7 +590,7 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
           ()
         else
           status <- 1
-          cp $"\foSkiping further processing of this anchor\f0."
+          cp $"\foSkipping further processing of this anchor\f0."
     status
 
 let private runDeltaSend args =
@@ -669,7 +756,8 @@ let private runDeltaList args =
             " (\fbdefault\f0)"
           else
             "  \fx       \fx "
-        cp $" {defaultText}  '\fg{recipe.Name}\f0'  (\fc+{recipe.Seeds.Count}\f0, \fo-{recipe.Exclusions.Count}\f0)."
+        let version = if recipe.V2 then "\fbv2" else "\fwv1"
+        cp $" {defaultText}  '\fg{recipe.Name}\f0'  ({version}\f0, \fc+{recipe.Seeds.Count}\f0, \fo-{recipe.Exclusions.Count}\f0)."
       if recipes.HasDefaultRecipe then
         cp $"The default recipe is '\fc{recipes.DefaultRecipe}\f0'."
       else

@@ -24,7 +24,7 @@ public sealed class DeltaV2Evaluation: IDisposable
   private readonly HashSet<string> _tailCommits;
   private readonly Dictionary<string, Commit> _seedCommitsByRef;
   private readonly Dictionary<string, IReadOnlyList<string>> _commitSeedRefMap;
-  private readonly Dictionary<string, Commit> _excludeCommitsBySha;
+  private readonly Dictionary<string, Commit> _exclusionCommitsBySha;
 
   /// <summary>
   /// Creates a new <see cref="DeltaV2Evaluation"/> instance, without any recipe prepared.
@@ -40,10 +40,28 @@ public sealed class DeltaV2Evaluation: IDisposable
     _tailCommits = new HashSet<string>();
     _seedCommitsByRef = new Dictionary<string, Commit>();
     _commitSeedRefMap = new Dictionary<string, IReadOnlyList<string>>();
-    _excludeCommitsBySha = new Dictionary<string, Commit>();
+    _exclusionCommitsBySha = new Dictionary<string, Commit>();
     Warnings = new List<string>();
     Errors = ["No recipe prepared"];
   }
+
+  /// <summary>
+  /// Warnings found during <see cref="Prepare"/>.
+  /// These do not prevent running the recipe, but the user probably should be aware
+  /// </summary>
+  public List<string> Warnings { get; }
+
+  /// <summary>
+  /// Errors found during <see cref="Prepare"/>.
+  /// These prevent running the recipe, but did not prevent <see cref="Prepare"/> from
+  /// completing
+  /// </summary>
+  public List<string> Errors { get; }
+
+  /// <summary>
+  /// True if a call to <see cref="Prepare"/> completed without errors
+  /// </summary>
+  public bool CanRun => Recipe != null && Errors.Count == 0;
 
   /// <summary>
   /// The underlying LibGit2Sharp <see cref="Repository"/> instance.
@@ -58,13 +76,41 @@ public sealed class DeltaV2Evaluation: IDisposable
   /// <summary>
   /// A mapping of seed reference names to Commits.
   /// </summary>
-  public IReadOnlyDictionary<string, Commit> SeedCommitMap => _seedCommitsByRef;
+  public IReadOnlyDictionary<string, Commit> SeedCommitsByRef => _seedCommitsByRef;
 
   /// <summary>
   /// A mapping of commit IDs to the seed references pointing to them: more or less the inverse of
-  /// <see cref="SeedCommitMap"/>.
+  /// <see cref="SeedCommitsByRef"/>.
   /// </summary>
   public IReadOnlyDictionary<string, IReadOnlyList<string>> SeedRefsByCommit => _commitSeedRefMap;
+
+  /// <summary>
+  /// A mapping of commit IDs to exclusion commits
+  /// </summary>
+  public IReadOnlyDictionary<string, Commit> ExclusionsCommitsById => _exclusionCommitsBySha;
+
+  /// <summary>
+  /// Create a placeholder <see cref="GitRunResult"/> to convey the errors and warnings
+  /// </summary>
+  /// <returns></returns>
+  public GitRunResult ToErrorResult()
+  {
+    var result = new GitRunResult();
+    result.StatusCode = -1;
+    if(Errors.Count > 0)
+    {
+      result.ErrorLines.Add("Fatal: Recipe preparation failed");
+      foreach(var error in Errors)
+      {
+        result.ErrorLines.Add("Error: " + error);
+      }
+    }
+    foreach(var warning in Warnings)
+    {
+      result.ErrorLines.Add("Warning: " + warning);
+    }
+    return result;
+  }
 
   /// <summary>
   /// Prepare a V2 recipe, calculating the actual inclusions and exclusions.
@@ -78,18 +124,84 @@ public sealed class DeltaV2Evaluation: IDisposable
   /// </returns>
   public bool Prepare(DeltaRecipe recipe)
   {
-    var repo = Repo;
     if(!recipe.V2)
     {
       throw new InvalidOperationException(
         $"Recipe '{recipe.Name}': expecting a version 2 recipe");
     }
     Reset();
+    PrepareSeeds(recipe);
+    PrepareExclusions(recipe);
+
+    Errors.Add("[Implementation incomplete]");
+
+    Recipe = recipe;
+    return CanRun;
+  }
+
+  private void PrepareExclusions(DeltaRecipe recipe)
+  {
+    foreach(var exclusion in recipe.Exclusions)
+    {
+      if(exclusion.Contains('*'))
+      {
+        // definitely not a SHA
+        var exRefs = TryResolveShortRef(exclusion);
+        foreach(var r in exRefs)
+        {
+          var commit = r.ResolveReferenceToCommit();
+          if(commit != null)
+          {
+            _exclusionCommitsBySha[commit.Sha] = commit;
+          }
+        }
+        if(exRefs.Count == 0)
+        {
+          Warnings.Add($"Exclusion '{exclusion}' does not match any references");
+        }
+      }
+      else
+      {
+        // NYI: resolve exclusion to commit via reference or as SHA
+        var exRefs = TryResolveShortRef(exclusion);
+        var commits = exRefs.Select(r => r.ResolveReferenceToCommit()).Where(c => c != null).ToList();
+        if(commits.Count == 1)
+        {
+          var commit = commits[0];
+          if(commit != null)
+          {
+            _exclusionCommitsBySha[commit.Sha] = commit;
+          }
+        }
+        else if(commits.Count > 1)
+        {
+          Errors.Add($"Exclusion name '{exclusion}' is ambiguous, matching {commits.Count} separate commits");
+        }
+        else
+        {
+          // commits.count == 0. Either a ref wasn't found, or it was a commit ID, not a ref
+          var commit = Repo.Lookup<Commit>(exclusion);
+          if(commit == null)
+          {
+            Warnings.Add($"Exclusion '{exclusion}' is not a known reference or commit");
+          }
+          else
+          {
+            _exclusionCommitsBySha[commit.Sha] = commit;
+          }
+        }
+      }
+    }
+  }
+
+  private void PrepareSeeds(DeltaRecipe recipe)
+  {
     foreach(var seed in recipe.Seeds)
     {
       if(seed.Contains('*'))
       {
-        var seedRefs = TryResolveShortRef(seed); // repo.Refs.FromGlob(seed).ToList();
+        // Expect one or more matches (zero matches should give a warning)
+        var seedRefs = TryResolveShortRef(seed);
         foreach(var r in seedRefs)
         {
           var commit = r.ResolveReferenceToCommit();
@@ -105,6 +217,7 @@ public sealed class DeltaV2Evaluation: IDisposable
       }
       else
       {
+        // Expect precisely one match. Zero gives a warning, more than one an error.
         var references = TryResolveShortRef(seed);
         if(references.Count == 0)
         {
@@ -134,35 +247,6 @@ public sealed class DeltaV2Evaluation: IDisposable
     {
       _commitSeedRefMap[group.Key] = group.ToList();
     }
-    foreach(var exclusion in recipe.Exclusions)
-    {
-      if(exclusion.Contains('*'))
-      {
-        // definitely not a SHA
-        var exRefs = TryResolveShortRef(exclusion);
-        foreach(var r in exRefs)
-        {
-          var commit = r.ResolveReferenceToCommit();
-          if(commit != null)
-          {
-            _excludeCommitsBySha[commit.Sha] = commit;
-          }
-        }
-        if(exRefs.Count == 0)
-        {
-          Warnings.Add($"Exclusion '{exclusion}' does not match any references");
-        }
-      }
-      else
-      {
-        // NYI: resolve exclusion to commit via reference or as SHA
-      }
-    }
-
-    Errors.Add("[Implementation incomplete]");
-
-    Recipe = recipe;
-    return CanRun;
   }
 
   /// <summary>
@@ -188,47 +272,6 @@ public sealed class DeltaV2Evaluation: IDisposable
     return results;
   }
 
-  /// <summary>
-  /// Warnings found during <see cref="Prepare"/>.
-  /// These do not prevent running the recipe, but the user probably should be aware
-  /// </summary>
-  public List<string> Warnings { get; }
-
-  /// <summary>
-  /// Errors found during <see cref="Prepare"/>.
-  /// These prevent running the recipe, but did not prevent <see cref="Prepare"/> from
-  /// completing
-  /// </summary>
-  public List<string> Errors { get; }
-
-  /// <summary>
-  /// True if a call to <see cref="Prepare"/> completed without errors
-  /// </summary>
-  public bool CanRun => Recipe != null && Errors.Count == 0;
-
-  /// <summary>
-  /// Create a placeholder <see cref="GitRunResult"/> to convey the errors and warnings
-  /// </summary>
-  /// <returns></returns>
-  public GitRunResult ToErrorResult()
-  {
-    var result = new GitRunResult();
-    result.StatusCode = -1;
-    if(Errors.Count > 0)
-    {
-      result.ErrorLines.Add("Fatal: Recipe preparation failed");
-      foreach(var error in Errors)
-      {
-        result.ErrorLines.Add("Error: " + error);
-      }
-    }
-    foreach(var warning in Warnings)
-    {
-      result.ErrorLines.Add("Warning: " + warning);
-    }
-    return result;
-  }
-
   private void Reset()
   {
     Recipe = null;
@@ -239,7 +282,7 @@ public sealed class DeltaV2Evaluation: IDisposable
     _tailCommits.Clear();
     _seedCommitsByRef.Clear();
     _commitSeedRefMap.Clear();
-    _excludeCommitsBySha.Clear();
+    _exclusionCommitsBySha.Clear();
   }
 
   /// <summary>

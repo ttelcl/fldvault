@@ -452,13 +452,17 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
               if recipe.V2 then
                 use evaluator = new DeltaV2Evaluation(context.Root.Folder)
                 let ok = recipe |> evaluator.Prepare
+                
                 // Debug:
-                cp $"DBG: Seed commits (\fb{evaluator.SeedCommitMap.Count}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits)"
-                for kvp in evaluator.SeedCommitMap |> Seq.sortBy (fun kvp -> kvp.Key) do
+                cp $"\fmDBG\f0: Seed commits (\fb{evaluator.SeedCommitsByRef.Count}\f0 references to \fc{evaluator.SeedRefsByCommit.Count}\f0 distinct commits)"
+                for kvp in evaluator.SeedCommitsByRef |> Seq.sortBy (fun kvp -> kvp.Key) do
                   let commit = kvp.Value
                   let id = commit.Sha.Substring(0, 8)
                   let refname = kvp.Key
                   cp $"  \fg{id}\f0 = \fy{refname}\f0."
+                cp $"\fmDBG\f0: Exclusion commits (\fb{evaluator.ExclusionsCommitsById.Count}\f0 commits)"
+
+                // Get on with it ...
                 if ok then
                   if evaluator.Warnings.Count > 0 then
                     cp $"Recipe preparation succeeded with \fb{evaluator.Warnings.Count}\f0 warnings:"
@@ -556,7 +560,7 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
           ()
         else
           status <- 1
-          cp $"\foSkiping further processing of this anchor\f0."
+          cp $"\foSkipping further processing of this anchor\f0."
     status
 
 let private runDeltaSend args =

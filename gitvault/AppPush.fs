@@ -73,6 +73,8 @@ let private runPush o =
       let bundledOk =
         if repotips.AreSame(bundleTips) then
           cp $"\fgNo changes\f0 in branches or tags for \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0. Skipping"
+          let fi = new FileInfo(bundleFile)
+          cp $"  (existing bundle file size is \fb{fi.Length}\f0)"
           true
         elif repoAnchorBundleSource = null then
           cp $"\frNo bundle source found for this anchor+repo+host.\fo This repo is not the owner\f0 (is there a name conflict with an external bundle?) Skipping."
@@ -82,8 +84,7 @@ let private runPush o =
           false
         else
           cp $"Bundle is out of date: \fc{repoAnchorSettings.VaultAnchor}\f0|\fg{repoAnchorSettings.HostName}\f0."
-          let bundleFile = repoAnchorSettings.GetBundleFileName(centralSettings) //bundleInfo.BundleFile
-          cp $"Bundling to \fc{bundleFile}\f0..."
+          cp $"Bundling to \fc{bundleFile}\f0 ..."
           let result = GitRunner.CreateBundle(bundleFile, null)
           if result.StatusCode <> 0 then
             cp $"\frError\fo: Bundling failed with status code \fc{result.StatusCode}\f0."
@@ -91,7 +92,8 @@ let private runPush o =
               cp $"\fo  {line}\f0"
             false
           else
-            cp $"\fgBundle created successfully\f0."
+            let fi = new FileInfo(bundleFile)
+            cp $"\fgBundle created successfully\f0, size \fb{fi.Length}\f0."
             true
       let keyError = repoAnchorSettings.CanGetKey(centralSettings)
       if keyError |> String.IsNullOrEmpty |> not then
@@ -117,11 +119,11 @@ let private runPush o =
                 match presence with
                 | KeyPresence.Unavailable ->
                   cp $"\foKey \fb{keyId}\fo not found in the key server\f0."
-                  cp $"\fySkipping encryption\f0. To fix, unlock the key in the key server GUI and try again."
+                  cp $"\frSkipping encryption\f0. To fix, unlock the key in the key server GUI and try again."
                   false
                 | KeyPresence.Cloaked ->
                   cp $"Key \fb{keyId}\f0 is present but currently \fohidden\f0 in the key server."
-                  cp $"\fySkipping encryption\f0. To fix, un-hide the key in the key server GUI and try again."
+                  cp $"\frSkipping encryption\f0. To fix, un-hide the key in the key server GUI and try again."
                   false
                 | KeyPresence.Present ->
                   cp $"Key \fb{keyId}\f0 \fgloaded successfully\f0 from the key server\f0."
@@ -131,7 +133,7 @@ let private runPush o =
                   false
               else
                 cp $"\foKey server is not available, cannot load key \fb{keyId}\f0."
-                cp $"\fySkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
+                cp $"\frSkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
                 false
             else
               true

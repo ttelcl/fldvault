@@ -419,11 +419,11 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
           match presence with
           | KeyPresence.Unavailable ->
             cp $"\foKey \fb{keyId}\fo not found in the key server\f0."
-            cp $"\fySkipping encryption\f0. To fix, unlock the key in the key server GUI and try again."
+            cp $"\frSkipping encryption\f0. To fix, unlock the key in the key server GUI and try again."
             false
           | KeyPresence.Cloaked ->
             cp $"Key \fb{keyId}\f0 is present but currently \fohidden\f0 in the key server."
-            cp $"\fySkipping encryption\f0. To fix, un-hide the key in the key server GUI and try again."
+            cp $"\frSkipping encryption\f0. To fix, un-hide the key in the key server GUI and try again."
             false
           | KeyPresence.Present ->
             cp $"Key \fb{keyId}\f0 \fgloaded successfully\f0 from the key server\f0."
@@ -433,7 +433,7 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
             false
         else
           cp $"\foKey server is not available, cannot load key \fb{keyId}\f0."
-          cp $"\fySkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
+          cp $"\frSkipping encryption\f0. To fix, start the \fgZvault Key Server GUI\f0, and try again."
           false
     for recipe in recipeList do
       cpx $"Found delta bundle recipe '\fg{recipe.Name}\f0' with \fc{recipe.Seeds.Count}\f0"
@@ -498,6 +498,7 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
                     cp $"Recipe preparation \fgsucceeded\f0 with \fb{evaluator.Warnings.Count}\f0 warnings:"
                     for warning in evaluator.Warnings do
                       cp $"\foWarning:\f0 {warning}"
+                  cp $"Bundling to \fc{fileName}\f0 ..."
                   GitRunner.CreateBundle(fileName, context.Root.Folder, evaluator), false
                 else
                   cp $"Recipe preparation \frfailed\f0 with \fr{evaluator.Errors.Count}\f0 errors and \fy{evaluator.Warnings.Count}\f0 warnings\f0."
@@ -507,6 +508,7 @@ let private runDeltaSendInner context (o:RecipeOrAllOptions) =
                     cp $"\foWarning:\f0 {warning}"
                   evaluator.ToErrorResult(), true
               else
+                cp $"Bundling to \fc{fileName}\f0 ..."
                 GitRunner.CreateBundle(fileName, null, recipe), false
             if result.StatusCode <> 0 then
               cp $"\frError\fo: Bundling failed with status code \fr{result.StatusCode}\f0."

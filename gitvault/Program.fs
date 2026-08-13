@@ -50,6 +50,10 @@ let rec run arglist =
   | "bundleinfo" :: rest
   | "bundle-info" :: rest ->
     rest |> AppBundleInfo.run
+  | "layer" :: rest
+  | "incr" :: rest
+  | "incremental" :: rest ->
+    rest |> AppLayer.run
   | x :: _ ->
     cp $"\frUnknown command:\f0 '\fy{x}\f0'"
     Usage.usage ""

@@ -21,7 +21,7 @@ namespace GitVaultLib.Configuration;
 /// </summary>
 public class BundleRecordCache
 {
-  private Dictionary<BundleKey, BundleRecord> _bundleRecords;
+  private readonly Dictionary<BundleKey, BundleRecord> _bundleRecords;
 
   /// <summary>
   /// Create a new BundleRecordCache

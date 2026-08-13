@@ -93,6 +93,15 @@ let usage focus =
     cp "  \fg-all\f0\fx           Run ALL recipes."
     cp "  \fg-R\f0\fx             Run the default recipe, if defined (default when omitting \fg-r\f0 and \fg-all\f0)"
     cp ""
+  if showSection "layer" then
+    cp "\fogitvault \fylayer \f0[\fg-f \fcwitnessfolder\f0] [\fg-tag \fctag\f0] {\fg-on \fclayertag\f0}"
+    cp "  Create an incremental layer bundle using the older layers identified by \g-on\f0 options as prerequisites."
+    cp "  A 'layer bundle' contains the actual bundle plus a list of the dependency bundles."
+    cp "  \frWork in progress\f0!"
+  if showDetail "layer" then
+    cp "  \fg-tag \fctag\f0       The tag to identify the bundle to create. Defaults to a tag generated from the current time."
+    cp "  \fg-on \fclayertag\f0   A layer to depend upon"
+    cp ""
   if showSection "bundles-fetch" then // name changed to "ingest"
     cp "\fogitvault \fyingest \f0[\fg-f \fcwitnessfolder\f0|\fg-a \fcanchorname\f0[\fo::\fcreponame\f0]|\fg-all\f0]"
     cp "  Decrypt all incoming vaults for the current repo to their bundles."

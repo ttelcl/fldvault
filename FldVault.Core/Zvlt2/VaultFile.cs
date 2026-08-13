@@ -34,8 +34,10 @@ public class VaultFile: IBlockElementContainer
   /// <summary>
   /// Create a new VaultFile object for an existing *.zvlt file
   /// </summary>
-  public VaultFile(
-    string fileName)
+  private VaultFile(
+    string fileName,
+    bool anyPurpose,
+    int purpose)
   {
     FileName = Path.GetFullPath(fileName);
     Blocks = new BlockInfoList();
@@ -47,10 +49,59 @@ public class VaultFile: IBlockElementContainer
     using(var stream = File.OpenRead(FileName))
     {
       Header = VaultHeader.ReadSync(stream);
+      if(!anyPurpose && purpose != Header.Purpose)
+      {
+        throw new InvalidOperationException(
+          "This vault file is not of the requested kind");
+      }
       stream.Position = 0;
       Blocks.Reload(stream);
       GetPassphraseInfo(stream); // caches it if found
     }
+  }
+
+  /// <summary>
+  /// Create a new VaultFile object for an existing *.zvlt file known to have
+  /// a specific purpose.
+  /// </summary>
+  /// <param name="fileName">
+  /// The file name
+  /// </param>
+  /// <param name="purpose">
+  /// The expected purpose of the vault. This must match the purpose in the file
+  /// header. Normally this is <see cref="ZvltPurpose.Default"/>.
+  /// </param>
+  public VaultFile(string fileName, int purpose)
+    : this(fileName, false, purpose)
+  {
+  }
+
+  /// <summary>
+  /// Create a new VaultFile object for an existing *.zvlt file known to have
+  /// purpose <see cref="ZvltPurpose.Default"/>.
+  /// </summary>
+  /// <param name="fileName">
+  /// The file name
+  /// </param>
+  public VaultFile(string fileName)
+    : this(fileName, false, ZvltPurpose.Default)
+  {
+  }
+
+  /// <summary>
+  /// Create a new VaultFile object for an existing *.zvlt file without requiring
+  /// knowledge of the file's purpose. This is intended for diagnostic tools only.
+  /// </summary>
+  /// <param name="fileName">
+  /// The file name
+  /// </param>
+  /// <param name="anyPurpose">
+  /// Set to true to allow loading files with any purpose. Passing false is equivalent
+  /// to <see cref="VaultFile(string)"/>.
+  /// </param>
+  public VaultFile(string fileName, bool anyPurpose)
+    : this(fileName, anyPurpose, ZvltPurpose.Default)
+  {
   }
 
   /// <summary>
@@ -68,15 +119,18 @@ public class VaultFile: IBlockElementContainer
   /// The creation time stamp in UTC, or null to use the current time.
   /// This argument primarily exists to support Unit Tests.
   /// </param>
+  /// <param name="purpose">
+  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, Guid keyId, DateTime? stamp = null)
+  public static VaultFile OpenOrCreate(string fileName, Guid keyId, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
     {
-      var vf = new VaultFile(fileName);
+      var vf = new VaultFile(fileName, purpose);
       if(vf.KeyId != keyId)
       {
         throw new InvalidOperationException(
@@ -88,7 +142,7 @@ public class VaultFile: IBlockElementContainer
     {
       using(var stream = File.Create(fileName))
       {
-        VaultHeader.WriteSync(stream, keyId, stamp);
+        VaultHeader.WriteSync(stream, keyId, stamp, purpose: purpose);
       }
       return new VaultFile(fileName);
     }
@@ -110,15 +164,18 @@ public class VaultFile: IBlockElementContainer
   /// The creation time stamp in UTC, or null to use the current time.
   /// This argument primarily exists to support Unit Tests.
   /// </param>
+  /// <param name="purpose">
+  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, IKeySeed keyInfo, DateTime? stamp = null)
+  public static VaultFile OpenOrCreate(string fileName, IKeySeed keyInfo, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
     {
-      var vf = new VaultFile(fileName);
+      var vf = new VaultFile(fileName, purpose);
       if(vf.KeyId != keyInfo.KeyId)
       {
         throw new InvalidOperationException(
@@ -130,7 +187,7 @@ public class VaultFile: IBlockElementContainer
     {
       using(var stream = File.Create(fileName))
       {
-        VaultHeader.WriteSync(stream, keyInfo.KeyId, stamp);
+        VaultHeader.WriteSync(stream, keyInfo.KeyId, stamp, purpose: purpose);
         keyInfo.WriteAsBlock(stream);
       }
       return new VaultFile(fileName);
@@ -166,7 +223,7 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.Create(fileName))
     {
-      VaultHeader.WriteSync(stream, source.KeyId, source.Header.TimeStamp);
+      VaultHeader.WriteSync(stream, source.KeyId, source.Header.TimeStamp, purpose: source.Header.Purpose);
       var pkif = source.GetPassphraseInfo();
       pkif?.WriteBlock(stream);
     }

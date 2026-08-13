@@ -28,13 +28,13 @@ public class VaultHeader
     int version,
     Guid keyId,
     DateTime timeStamp,
-    int unused1 = 0,
+    int purpose = 0,
     long unused2 = 0L)
   {
     BlockHeader = blockHeader;
     Version = version;
     KeyId = keyId;
-    Unused1 = unused1;
+    Purpose = purpose;
     Unused2 = unused2;
     TimeStamp = timeStamp;
     if(timeStamp.Kind != DateTimeKind.Utc)
@@ -62,7 +62,8 @@ public class VaultHeader
       throw new EndOfStreamException(
         "Unexpected end of stream while reading the header");
     }
-    return FromRaw(hdr, data);
+    var header = FromRaw(hdr, data);
+    return header;
   }
 
   /// <summary>
@@ -74,13 +75,13 @@ public class VaultHeader
     Guid keyId,
     DateTime? stamp = null,
     int version = VaultFormat.VaultFileVersion,
-    int unused1 = 0,
+    int purpose = ZvltPurpose.Default,
     long unused2 = 0L)
   {
     var stamp1 = stamp ?? DateTime.UtcNow;
     Span<byte> data = stackalloc byte[40];
     BinaryPrimitives.WriteInt32LittleEndian(data.Slice(0, 4), version);
-    BinaryPrimitives.WriteInt32LittleEndian(data.Slice(4, 4), unused1);
+    BinaryPrimitives.WriteInt32LittleEndian(data.Slice(4, 4), purpose);
     keyId.TryWriteBytes(data.Slice(8, 16));
     BinaryPrimitives.WriteInt64LittleEndian(data.Slice(24, 8), EpochTicks.FromUtc(stamp1));
     BinaryPrimitives.WriteInt64LittleEndian(data.Slice(32, 8), unused2);
@@ -100,9 +101,12 @@ public class VaultHeader
   public int Version { get; init; }
 
   /// <summary>
-  /// Extra field 1 in the header, currently unused
+  /// Previously unused, should be 0 for normal ZVLT files.
+  /// If not 0, the file has a specific purpose, which comes with
+  /// additional assumptions and rules about the content.
+  /// See <see cref="ZvltPurpose"/> for recognized values.
   /// </summary>
-  public int Unused1 { get; init; }
+  public int Purpose { get; init; }
 
   /// <summary>
   /// Extra field 2 in the header, currently unused
@@ -147,8 +151,8 @@ public class VaultHeader
       throw new InvalidOperationException(
         "Incompatible ZVLT version");
     }
-    var unused1 = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(4, 4));
-    if(unused1 != 0)
+    var purpose = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(4, 4));
+    if(purpose != 0)
     {
       throw new InvalidOperationException(
         "Expecting reserved field 1 in header to be 0");
@@ -161,7 +165,7 @@ public class VaultHeader
       throw new InvalidOperationException(
         "Expecting reserved field 2 in header to be 0");
     }
-    return new VaultHeader(hdr, version, keyId, stamp, unused1, unused2);
+    return new VaultHeader(hdr, version, keyId, stamp, purpose, unused2);
   }
 
 }

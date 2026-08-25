@@ -35,7 +35,11 @@ namespace ZvaultKeyServer.Main.Keys
       }
       else
       {
-        Trace.TraceError("Password control bootstrap failed");
+        var senderLabel = sender?.GetType()?.Name ?? "NULL";
+        var dcLabel = (sender as PasswordBox)?.DataContext?.GetType()?.Name ?? "NULL";
+        Trace.TraceError(
+          $"Password control bootstrap failed. Sender = {senderLabel}. DataContext = {dcLabel}");
+
       }
     }
 

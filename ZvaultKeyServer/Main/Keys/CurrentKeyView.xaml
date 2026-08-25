@@ -92,14 +92,20 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/> <!-- unused padding -->
+                </Grid.RowDefinitions>
                 <PasswordBox
+                    Grid.Column="0" Grid.Row="0"
                     DataContextChanged="PasswordBox_Bind"
                     KeyDown="PasswordBox_KeyDown"
                     mah:TextBoxHelper.ClearTextButton="True"
-                    mah:TextBoxHelper.Watermark="Enter passphrase"
+                    mah:TextBoxHelper.Watermark="Enter passphrase &#x23ce;"
+                    mah:TextBoxHelper.ButtonCommand="{Binding TryUnlockCommand}"
                     Background="{Binding PasswordBackground}"/>
                 <Button
-                    Grid.Column="1"
+                    Grid.Column="1" Grid.Row="0"
                     FontSize="14"
                     MinWidth="96"
                     Padding="2,1" Margin="2,0"

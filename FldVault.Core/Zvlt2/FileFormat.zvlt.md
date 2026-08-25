@@ -57,12 +57,12 @@ The file header of a ZVLT file is a block of kind 'Zvlt'
 | Kind | 'Zvlt' | 0x746C665A |
 | Size | 4 bytes | value is 48 |
 | Version | 1 int (2 shorts) | 0x00030000 |
-| Purpose | 1 int | 0x00000000 |
+| Purpose | 1 int | 0x00000000 (*) |
 | Key ID | Guid (16 bytes) | |
 | ZVLT Stamp | 8 bytes | Vault create timestamp (epoch-ticks) |
 | Reserved | 8 bytes | 0x0000000000000000L |
 
-The _purpose_ field was previously a reserved field that should be 0.
+(*) The _purpose_ field was previously a reserved field that should be 0.
 For "ordinary" ZVLT files it is still expected to be that value.
 A non-0 value marks that the file has a special purpose and clients
 should avoid interpreting the file unless they understand that purpose.
@@ -71,7 +71,7 @@ Currently defined purposes:
 
 | Value | Comment |
 | --- |
-| 0 | A normal ZVLT file |
+| 0x00000000 | A normal ZVLT file |
 | 0x5453414D | 'MAST' - a master key file |
 
 ### Encrypted content sub-blocks
@@ -106,7 +106,8 @@ info.
 
 ## Passphrase key info
 
-Used as an embedded version of an external *.pass.key-info file. The
+Used as an embedded version of an external *.pass.key-info file for
+the file's own key. The
 content is almost the same as the *.pass.key-info file content, except
 that the file signature is replaced by a block header.
 
@@ -121,8 +122,25 @@ stand-alone, without an external *.pass.key-info file.
 | Key ID | 16 bytes (Guid) | The key ID (should match the file key) |
 | Salt | 64 bytes | The salt for the RFC2898 key derivation |
 
-The first PASS block in a ZVLT file should match the file's own
-key.
+The first `PASS` block in a ZVLT file should match the file's own
+key. In fact: there should only be one `PASS` block.
+
+## External Passphrase key info
+
+Used as an embedded version of an external *.pass.key-info file for a
+key other than the ZVLT file's own key. Structurally the same as
+a `PASS` block, but using a `PASX` kind. 
+
+| Name | Format | Notes |
+| --- |
+| Kind | 'PASX' | 0x58534150 |
+| Block Size | 4 bytes | 96 |
+| Stamp | 8 bytes | Timestamp this key-info was originally generated |
+| Key ID | 16 bytes (Guid) | The key ID of the external key |
+| Salt | 64 bytes | The salt for the RFC2898 key derivation |
+
+This block is only expected to appear in master key files, potentially
+alongside a `KTRX` block for the same target key.
 
 ## File element
 
@@ -242,7 +260,8 @@ This is just the generic "implied group terminator"
 ## Key transformation block
 
 Used to store one key encrypted by another key.	Only supported
-in Master Key Files (ignored elsewhere).
+in Master Key Files (ignored elsewhere). May or may not be
+accompanied by a `PASX` block for the same key.
 
 | Name | Format | Notes |
 | --- |

@@ -48,7 +48,7 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.OpenRead(FileName))
     {
-      Header = VaultHeader.ReadSync(stream);
+      Header = VaultHeader.ReadSync(stream, anyPurpose, purpose);
       if(!anyPurpose && purpose != Header.Purpose)
       {
         throw new InvalidOperationException(
@@ -231,14 +231,26 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
-  /// Create an empty passphrase based vault file
+  /// Create an empty passphrase based vault file.
+  /// Optionally creates a file with a nonstandard purpose (e.g. a master key file)
   /// </summary>
-  /// <param name="fileName"></param>
-  /// <param name="pkif"></param>
+  /// <param name="fileName">
+  /// File name. By convention this should have the extension <c>*.zvlt</c>
+  /// if <paramref name="purpose"/> is omitted or is <see cref="ZvltPurpose.Default"/>,
+  /// or <c>*.mzvlt</c> if <paramref name="purpose"/> is
+  /// <see cref="ZvltPurpose.Master"/>.
+  /// </param>
+  /// <param name="pkif">
+  /// </param>
+  /// <param name="purpose">
+  /// The "purpose" of the file, by convention also affecting the file extension.
+  /// Defaults to <see cref="ZvltPurpose.Default"/>.
+  /// </param>
   /// <returns></returns>
   public static VaultFile CreateEmpty(
     string fileName,
-    PassphraseKeyInfoFile pkif)
+    PassphraseKeyInfoFile pkif,
+    int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -252,7 +264,7 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.Create(fileName))
     {
-      VaultHeader.WriteSync(stream, pkif.KeyId);
+      VaultHeader.WriteSync(stream, pkif.KeyId, purpose: ZvltPurpose.Default);
       pkif.WriteBlock(stream);
     }
     return new VaultFile(fileName);

@@ -315,7 +315,7 @@ public class KeyViewModel: ViewModelBase
   }
 
   /// <summary>
-  /// Equivalent to AutohideSeconds, but as minutes:seconds text
+  /// Equivalent to <see cref="AutohideSeconds"/>, but as minutes:seconds text
   /// </summary>
   public string TimeoutValue {
     get => _timeoutValue;
@@ -333,6 +333,26 @@ public class KeyViewModel: ViewModelBase
     }
   }
   private string _timeoutValue;
+
+  /// <summary>
+  /// Combines <see cref="TimeoutValue"/> and <see cref="AutohideEnabled"/> into a single string,
+  /// being either the time string, or the constant "Off"
+  /// </summary>
+  public string TimeoutChoice {
+    get => AutohideEnabled ? TimeoutValue : "Off";
+    set {
+      var parts = value.Split(':');
+      if(parts.Length == 2)
+      {
+        TimeoutValue = value;
+        AutohideEnabled = true;
+      }
+      else // presumably "Off", but anything not "time span like" works
+      {
+        AutohideEnabled = false;
+      }
+    }
+  }
 
   /// <summary>
   /// The number of seconds left until the key will auto-hide, if that

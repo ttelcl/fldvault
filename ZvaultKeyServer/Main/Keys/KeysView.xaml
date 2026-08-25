@@ -64,7 +64,7 @@
             DockPanel.Dock="Bottom"
             BorderThickness="1"
             Background="#106D8764"
-            MinHeight="50"
+            MinHeight="40"
             BorderBrush="{DynamicResource MahApps.Brushes.Accent2}">
             <Grid
                 Visibility="{Binding CurrentKeyVisible}">

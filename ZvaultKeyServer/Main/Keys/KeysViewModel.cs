@@ -73,6 +73,7 @@ public class KeysViewModel: ViewModelBase
       p => ClipBoardMayHaveZkey);
     DefaultTimeout = 180;
     _timeoutValues = [
+      "Off",
       "0:30",
       "1:00",
       "3:00",

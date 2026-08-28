@@ -63,25 +63,27 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   private bool _modified;
 
   /// <summary>
-  /// Get or set if this tab is the current one. Changing this
-  /// affects <see cref="MainViewModel.CurrentTab"/>.
+  /// Get if this tab is the current one. Changing this
+  /// is done by setting <see cref="MainViewModel.CurrentTab"/>.
   /// </summary>
   public bool IsActive {
     get => this == Owner.CurrentTab;
-    set {
-      if(this == Owner.CurrentTab && !value)
-      {
-        OnPropertyChanging();
-        Owner.CurrentTab = null;
-        OnPropertyChanged();
-      }
-      else if(this != Owner.CurrentTab && value)
-      {
-        OnPropertyChanging();
-        Owner.CurrentTab = this;
-        OnPropertyChanged();
-      }
-    }
+  }
+
+  /// <summary>
+  /// Callback from setting <see cref="MainViewModel.CurrentTab"/> to previous and new task tabs
+  /// </summary>
+  internal void BeforeIsActiveChange()
+  {
+    OnPropertyChanging(nameof(IsActive));
+  }
+
+  /// <summary>
+  /// Callback from setting <see cref="MainViewModel.CurrentTab"/> to previous and new task tabs
+  /// </summary>
+  internal void AfterIsActiveChange()
+  {
+    OnPropertyChanged(nameof(IsActive));
   }
 
   /// <summary>

@@ -45,9 +45,7 @@ public class MainViewModel: ObservableObject
   public string StatusMessage {
     get => _statusMessage;
     set {
-      if(SetProperty(ref _statusMessage, value))
-      {
-      }
+      SetProperty(ref _statusMessage, value);
     }
   }
   private string _statusMessage = "CellGrids demo application (work in progress)";
@@ -74,27 +72,15 @@ public class MainViewModel: ObservableObject
       {
         var old = _currentTab;
         OnPropertyChanging();
-        if(old != null)
-        {
-          // In this case the callback from setting old.IsActive fizzles because
-          // it no longer is the current tab
-          old.IsActive = false; // this will set _currentTab to null
-        }
-        if(value != null)
-        {
-          // In this case the callback from setting new.IsActive fizzles because
-          // it already is the current tab
-          value.IsActive = true;
-        }
+        old?.BeforeIsActiveChange();
+        value?.BeforeIsActiveChange();
+        _currentTab = value;
+        old?.AfterIsActiveChange();
+        value?.AfterIsActiveChange();
         OnPropertyChanged();
       }
-      throw new NotImplementedException("This logic is incorrect!!!");
     }
   }
   private TaskTabBaseViewModel? _currentTab;
 
-  internal void SetCurrentTabCallback(TaskTabBaseViewModel? currentTab) 
-  {
-    _currentTab = currentTab;
-  }
 }

@@ -67,9 +67,8 @@ public class MainViewModel: ObservableObject
     set {
       if(value != null && !TaskTabs.Contains(value))
       {
-        TaskTabs.Add(value);
-        Trace.TraceWarning(
-          $"Setting unknown tab '{value.Title}' as active tab. Adding it as new tab as side effect.");
+        // This is a normal way of adding a new tab
+        RegisterTab(value);
       }
       if(value != _currentTab)
       {
@@ -99,7 +98,6 @@ public class MainViewModel: ObservableObject
   /// Try to close the current tab, if there is one and it can be closed.
   /// </summary>
   /// <returns></returns>
-  /// <exception cref="NotImplementedException"></exception>
   public bool TryCloseCurrentTab()
   {
     if(CurrentTab == null)
@@ -113,11 +111,51 @@ public class MainViewModel: ObservableObject
     else
     {
       var tabToClose = CurrentTab;
-      // * pick another tab to make active instead
-      // * activate that other tab
-      // * actually close the tab to be closed (dispose content)
-      // * remove the closed tab from the list
-      throw new NotImplementedException();
+      return tabToClose.TryCloseGentle(); // also takes care of deactivation
+    }
+  }
+
+  /// <summary>
+  /// Deactivate the given <paramref name="tab"/> if it is the <see cref="CurrentTab"/>.
+  /// Else this is a NOP.
+  /// </summary>
+  /// <param name="tab"></param>
+  public void Deactivate(TaskTabBaseViewModel tab)
+  {
+    if(tab == CurrentTab)
+    {
+      // Not yet implemented, but throwing an exception is not safe now.
+      // Todo: pick and activate a different tab in a sensible way
+      
+      // Temporary plug: pick *first* other tab (if there is any)
+      var othertab = TaskTabs.Where(t => t != tab).FirstOrDefault();
+      CurrentTab = othertab;
+      Trace.TraceError(
+        $"Deactivating tabs is currently using a simplified implementation. Tab was '{tab.Title}'");
+    }
+  }
+
+  /// <summary>
+  /// Callback after a tab has been closed and disposed
+  /// </summary>
+  /// <param name="tab"></param>
+  internal void TabClosed(TaskTabBaseViewModel tab)
+  {
+    Deactivate(tab);
+    TaskTabs.Remove(tab);
+  }
+
+  /// <summary>
+  /// Add a tab, if it wasn't present already.
+  /// Alternatively, just set the new tab as current tab
+  /// (which calls this)
+  /// </summary>
+  /// <param name="tab"></param>
+  public void RegisterTab(TaskTabBaseViewModel tab)
+  {
+    if(!TaskTabs.Contains(tab))
+    {
+      TaskTabs.Add(tab);
     }
   }
 

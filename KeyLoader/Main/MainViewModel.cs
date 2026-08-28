@@ -31,6 +31,9 @@ public class MainViewModel: ObservableObject
       w?.Close();
     });
     TaskTabs = new ObservableCollection<TaskTabBaseViewModel>();
+    TryCloseCurrentTabCommand = new RelayCommand(
+      () => _ = TryCloseCurrentTab(),
+      CanCloseCurrentTab);
   }
 
   /// <summary>
@@ -83,4 +86,43 @@ public class MainViewModel: ObservableObject
   }
   private TaskTabBaseViewModel? _currentTab;
 
+  /// <summary>
+  /// Test if the current tab can be closed
+  /// </summary>
+  /// <returns></returns>
+  public bool CanCloseCurrentTab()
+  {
+    return CurrentTab != null && !CurrentTab.Modified;
+  }
+
+  /// <summary>
+  /// Try to close the current tab, if there is one and it can be closed.
+  /// </summary>
+  /// <returns></returns>
+  /// <exception cref="NotImplementedException"></exception>
+  public bool TryCloseCurrentTab()
+  {
+    if(CurrentTab == null)
+    {
+      return false;
+    }
+    else if(CurrentTab.Modified)
+    {
+      return false;
+    }
+    else
+    {
+      var tabToClose = CurrentTab;
+      // * pick another tab to make active instead
+      // * activate that other tab
+      // * actually close the tab to be closed (dispose content)
+      // * remove the closed tab from the list
+      throw new NotImplementedException();
+    }
+  }
+
+  /// <summary>
+  /// The command to try to close the current tab
+  /// </summary>
+  public ICommand TryCloseCurrentTabCommand { get; }
 }

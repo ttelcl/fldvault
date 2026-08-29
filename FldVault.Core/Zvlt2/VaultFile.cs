@@ -32,7 +32,7 @@ public class VaultFile: IBlockElementContainer
   private BlockElementContainer? _elementContainerCache;
 
   /// <summary>
-  /// Create a new VaultFile object for an existing *.zvlt file
+  /// Create a new VaultFile object for an existing *.zvlt file (or compatible)
   /// </summary>
   private VaultFile(
     string fileName,
@@ -78,7 +78,8 @@ public class VaultFile: IBlockElementContainer
 
   /// <summary>
   /// Create a new VaultFile object for an existing *.zvlt file known to have
-  /// purpose <see cref="ZvltPurpose.Default"/>.
+  /// purpose <see cref="ZvltPurpose.Default"/>. This overload exists primarily
+  /// for backward compatibility.
   /// </summary>
   /// <param name="fileName">
   /// The file name
@@ -120,12 +121,14 @@ public class VaultFile: IBlockElementContainer
   /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <param name="purpose">
-  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// The purpose of the file (default <see cref="ZvltPurpose.Default"/>).
+  /// For nonstandard cases consider using <see cref="PurposeForFileExtension(string)"/>.
   /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, Guid keyId, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
+  public static VaultFile OpenOrCreate(
+    string fileName, Guid keyId, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -165,12 +168,14 @@ public class VaultFile: IBlockElementContainer
   /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <param name="purpose">
-  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// The purpose of the file (default <see cref="ZvltPurpose.Default"/>)
+  /// For nonstandard cases consider using <see cref="PurposeForFileExtension(string)"/>.
   /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, IKeySeed keyInfo, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
+  public static VaultFile OpenOrCreate(
+    string fileName, IKeySeed keyInfo, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -271,12 +276,48 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
-  /// Open an existing vault file. This method exists for symmetry with the 
-  /// OpenOrCreate() factory methods but is just an alias for the constructor.
+  /// Open an existing vault file. If not explicitly specified as <paramref name="purpose"/>,
+  /// the file's purpose is derived from the file's extension.
   /// </summary>
-  public static VaultFile Open(string fileName)
+  /// <param name="fileName">
+  /// The file name
+  /// </param>
+  /// <param name="purpose">
+  /// The explicitly requested purpose, or null to derive from the file extension
+  /// </param>
+  public static VaultFile Open(string fileName, int? purpose = null)
   {
-    return new VaultFile(fileName);
+    var purpose2 = purpose ?? PurposeForFileExtension(fileName) ?? ZvltPurpose.Default;
+    return new VaultFile(fileName, false, purpose2);
+  }
+
+  /// <summary>
+  /// Open an existing vault file without locking in its purpose. This overload
+  /// allows reading the file's purpose from the vault header without prescribing it.
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the file
+  /// </param>
+  /// <returns></returns>
+  public static VaultFile OpenAnyVault(string fileName)
+  {
+    return new VaultFile(fileName, true);
+  }
+
+  /// <summary>
+  /// Return the vault purpose as derived from the file extension (*.zvlt or *.mzvlt),
+  /// or null if the extension is not recognized.
+  /// </summary>
+  /// <param name="fileName"></param>
+  /// <returns></returns>
+  public static int? PurposeForFileExtension(string fileName)
+  {
+    var extension = Path.GetExtension(fileName).ToLowerInvariant();
+    return extension switch {
+      ".zvlt" => ZvltPurpose.Default,
+      ".mzvlt" => ZvltPurpose.Master,
+      _ => null,
+    };
   }
 
   /// <summary>
@@ -471,6 +512,8 @@ public class VaultFile: IBlockElementContainer
     if(!_pkifSearched)
     {
       _pkifSearched = true;
+      // Require the first PASS block to match the file key (checked later)
+      // Silently accept but ignore other PASS blocks
       var passBlock = Blocks.Blocks.FirstOrDefault(bi => bi.Kind == Zvlt2BlockType.PassphraseLink);
       PassphraseKeyInfoFile pkif;
       if(passBlock != null)

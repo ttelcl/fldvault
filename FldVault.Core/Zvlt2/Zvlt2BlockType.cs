@@ -28,6 +28,12 @@ public static class Zvlt2BlockType
   public const int PassphraseLink = 0x53534150;
 
   /// <summary>
+  /// Embedded external *.pass.key-info file ('PASX').
+  /// For use in master key files only.
+  /// </summary>
+  public const int ExternalPassphraseLink = 0x58534150;
+
+  /// <summary>
   /// File name block ('FNAM')
   /// </summary>
   [Obsolete]

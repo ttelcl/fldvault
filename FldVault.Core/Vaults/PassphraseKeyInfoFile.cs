@@ -137,20 +137,22 @@ public class PassphraseKeyInfoFile
 
   /// <summary>
   /// Read a new instance from a "PASS" (<see cref="Zvlt2BlockType.PassphraseLink"/>)
-  /// block embedded in a block file
+  /// or "PASX" (<see cref="Zvlt2BlockType.ExternalPassphraseLink"/>) block embedded
+  /// in a block file
   /// </summary>
   /// <param name="stream">
   /// The block file stream (usually *.zvlt)
   /// </param>
   /// <param name="blockInfo">
-  /// The descriptor of the existing PASS block in the stream
+  /// The descriptor of the existing PASS or PASX block in the stream
   /// </param>
   /// <returns>
   /// A new <see cref="PassphraseKeyInfoFile"/> instance
   /// </returns>
   public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, BlockInfo blockInfo)
   {
-    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink)
+    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink
+      && blockInfo.Kind != Zvlt2BlockType.ExternalPassphraseLink)
     {
       throw new InvalidOperationException("Incorrect block kind");
     }
@@ -266,7 +268,12 @@ public class PassphraseKeyInfoFile
     }
     if(fileName.EndsWith(".zvlt"))
     {
-      var vaultFile = new VaultFile(fileName);
+      var vaultFile = new VaultFile(fileName, ZvltPurpose.Default);
+      return vaultFile.GetPassphraseInfo();
+    }
+    if(fileName.EndsWith(".mzvlt"))
+    {
+      var vaultFile = new VaultFile(fileName, ZvltPurpose.Master);
       return vaultFile.GetPassphraseInfo();
     }
     if(fileName.EndsWith(".mvlt"))

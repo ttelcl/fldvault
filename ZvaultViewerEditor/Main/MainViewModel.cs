@@ -236,6 +236,7 @@ public class MainViewModel: ViewModelBase, IApplicationModel
     }
     var openDialog = new OpenFileDialog {
       Filter =
+        // *.mzvlt (master key) files are deliberately excluded
         "All key bearing files (*.zvlt;*.mvlt;*.zkey;*.pass.key-info)|*.zvlt;*.mvlt;*.zkey;*.pass.key-info" +
         "|Vault files (*.zvlt)|*.zvlt" +
         "|MonoVault files (*.mvlt)|*.mvlt" +

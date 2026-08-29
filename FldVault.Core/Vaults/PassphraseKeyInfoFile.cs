@@ -149,7 +149,7 @@ public class PassphraseKeyInfoFile
   /// <returns>
   /// A new <see cref="PassphraseKeyInfoFile"/> instance
   /// </returns>
-  public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, BlockInfo blockInfo)
+  public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, IBlockInfo blockInfo)
   {
     if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink
       && blockInfo.Kind != Zvlt2BlockType.ExternalPassphraseLink)
@@ -160,8 +160,41 @@ public class PassphraseKeyInfoFile
     {
       throw new InvalidOperationException("Unexpected block size");
     }
-    Span<byte> content = stackalloc byte[blockInfo.ContentSize];
-    blockInfo.ReadSync(stream, content);
+    Span<byte> content = stackalloc byte[blockInfo.ContentLength()];
+    blockInfo.ReadContentSync(stream, content);
+    var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)));
+    var guid = new Guid(content.Slice(8, 16));
+    return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);
+  }
+
+  /// <summary>
+  /// Read a new instance from a "PASS" (<see cref="Zvlt2BlockType.PassphraseLink"/>)
+  /// or "PASX" (<see cref="Zvlt2BlockType.ExternalPassphraseLink"/>) block embedded
+  /// in a block file using a <see cref="VaultFileReader"/>.
+  /// </summary>
+  /// <param name="reader">
+  /// The vault file reader
+  /// </param>
+  /// <param name="blockInfo">
+  /// The descriptor of the existing PASS or PASX block in the stream
+  /// </param>
+  /// <returns>
+  /// A new <see cref="PassphraseKeyInfoFile"/> instance
+  /// </returns>
+  public static PassphraseKeyInfoFile ReadFromBlock(VaultFileReader reader, IBlockInfo blockInfo)
+  {
+    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink
+      && blockInfo.Kind != Zvlt2BlockType.ExternalPassphraseLink)
+    {
+      throw new InvalidOperationException("Incorrect block kind");
+    }
+    if(blockInfo.Size != 96)
+    {
+      throw new InvalidOperationException("Unexpected block size");
+    }
+    reader.SeekBlock(blockInfo);
+    Span<byte> content = stackalloc byte[blockInfo.ContentLength()];
+    reader.ReadSpan(content);
     var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)));
     var guid = new Guid(content.Slice(8, 16));
     return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);

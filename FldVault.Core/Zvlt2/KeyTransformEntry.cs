@@ -18,6 +18,7 @@ namespace FldVault.Core.Zvlt2;
 /// <summary>
 /// Describes and caches a KeyTransform block in a ZVLT file, providing
 /// an API to read its contents.
+/// Use <see cref="ReadFrom(VaultFileReader, IBlockInfo)"/> to create instances.
 /// </summary>
 public class KeyTransformEntry
 {

@@ -127,7 +127,7 @@ public class KeyChain: IDisposable
   /// True if the key was added, false if it was already present.
   /// </returns>
   /// <exception cref="ArgumentOutOfRangeException"></exception>
-  public KeyBuffer PutCopy(CryptoBuffer<byte> keyBytes)
+  public bool PutCopy(CryptoBuffer<byte> keyBytes)
   {
     if(keyBytes.Length != 32)
     {
@@ -142,8 +142,12 @@ public class KeyChain: IDisposable
       {
         var copy = new KeyBuffer(keyBytes.Span());
         _store.Add(copy.GetId(), copy);
+        return true;
       }
-      return _store[keyId];
+      else
+      {
+        return false;
+      }
     }
   }
 
@@ -196,7 +200,7 @@ public class KeyChain: IDisposable
   /// The return value from the function if the key was found, or null if not found
   /// </returns>
   /// <seealso cref="TryUseKey(Guid, Action{Guid, IBytesWrapper})"/>
-  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T: class
+  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T : class
   {
     KeyBuffer kb;
     lock(_lock)

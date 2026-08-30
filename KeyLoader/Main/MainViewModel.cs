@@ -11,6 +11,8 @@ using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using FldVault.KeyServer;
+
 using KeyLoader.Main.TaskTab;
 
 namespace KeyLoader.Main;
@@ -26,6 +28,7 @@ public class MainViewModel: ObservableObject
   /// </summary>
   public MainViewModel()
   {
+    KeyServer = new KeyServerService();
     ExitCommand = new RelayCommand(() => {
       var w = Application.Current.MainWindow;
       w?.Close();
@@ -52,6 +55,11 @@ public class MainViewModel: ObservableObject
     }
   }
   private string _statusMessage = "CellGrids demo application (work in progress)";
+
+  /// <summary>
+  /// The key server instance
+  /// </summary>
+  public KeyServerService KeyServer { get; }
 
   /// <summary>
   /// The list of open Task Tabs (implemented by subclasses of <see cref="TaskTabBaseViewModel"/>)

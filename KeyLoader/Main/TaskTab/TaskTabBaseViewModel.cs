@@ -169,7 +169,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
       _disposed=true;
       if(disposing)
       {
-        // TODO: dispose managed state (managed objects)
+        // Nothing to dispose here
       }
     }
   }

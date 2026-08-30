@@ -28,4 +28,8 @@
     <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Converters\" />
+  </ItemGroup>
+
 </Project>

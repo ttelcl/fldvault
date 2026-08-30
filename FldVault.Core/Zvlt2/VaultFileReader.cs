@@ -146,6 +146,75 @@ public class VaultFileReader: IDisposable
   }
 
   /// <summary>
+  /// Read a child keys ('CKEY') block from this unlocked reader into
+  /// <paramref name="childKeyChain"/>.
+  /// </summary>
+  /// <param name="block">
+  /// The descriptor of the 'CKEY' block
+  /// </param>
+  /// <param name="childKeyChain">
+  /// The key chain where the decrypted keys will be stored.
+  /// </param>
+  /// <returns>
+  /// A list of all keys found in the block.
+  /// </returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public IReadOnlySet<Guid> ReadChildKeys(
+    IBlockInfo block,
+    KeyChain childKeyChain)
+  {
+    if(block.Kind != Zvlt2BlockType.ChildKeyList)
+    {
+      throw new ArgumentException(
+        "Expecting a CKEY block as argument");
+    }
+    SeekBlock(block);
+    CheckCryptor();
+    var contentSize = block.Size - 8 /* block header */;
+    var keyByteSize = contentSize - 12 /* nonce */ - 16 /* auth tag */;
+    if(keyByteSize % 32 != 0)
+    {
+      throw new InvalidOperationException(
+        "Invalid CKEY block size");
+    }
+    var keyCount = keyByteSize / 32;
+    var keyIds = new HashSet<Guid>();
+    Span<byte> authTagOut = stackalloc byte[16];
+    using(var keyBytes = new CryptoBuffer<byte>(keyByteSize))
+    {
+      var keyByteSpan = keyBytes.Span();
+      DecryptFragment([], authTagOut, keyByteSpan, block);
+      for(var i = 0; i < keyCount; i++)
+      {
+        var keyId = childKeyChain.PutSlice(keyBytes, i*32);
+        keyIds.Add(keyId);
+      }
+    }
+    return keyIds;
+  }
+
+  /// <summary>
+  /// Read the child keys from ALL top level CKEY blocks
+  /// </summary>
+  /// <param name="childKeyChain">
+  /// The key chain to store the decrypted keys in
+  /// </param>
+  /// <returns>
+  /// The set of all child keys that were loaded.
+  /// </returns>
+  public IReadOnlySet<Guid> ReadChildKeys(KeyChain childKeyChain)
+  {
+    var childKeys = new HashSet<Guid>();
+    // Only expect the child blocks at top level of the block element tree
+    foreach(var block in Vault.BlocksOfKind(Zvlt2BlockType.ChildKeyList))
+    {
+      var ids = ReadChildKeys(block, childKeyChain);
+      childKeys.UnionWith(ids);
+    }
+    return childKeys;
+  }
+
+  /// <summary>
   /// Import the child key described by <paramref name="kte"/> into the
   /// <paramref name="keyChain"/> using this reader's cryptor.
   /// </summary>
@@ -159,6 +228,7 @@ public class VaultFileReader: IDisposable
   /// True if the key was imported, false if it was already present in the key chain.
   /// </returns>
   /// <exception cref="ArgumentException"></exception>
+  [Obsolete]
   public bool ImportChildKey(KeyChain keyChain, KeyTransformEntry kte)
   {
     if(kte.Vault.KeyId != Vault.KeyId)

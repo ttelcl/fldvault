@@ -1,4 +1,17 @@
-﻿# *.zvlt files, redesigned (v3)
+# *.zvlt files, redesigned (v3)
+
+## About this document
+
+This document describes the `*.zvlt` file format, a.k.a.
+"ZVault files". These files act as an archive format carrying
+content files and encrypting them. In addition to carrying the
+encrypted content they can carry various other encryption
+related information.
+
+A related document describes [`*.mzvlt`](FileFormat.mzvlt.md) files
+which are a specialized subtype of `*.zvlt` file, carrying 
+encryption keys for other files, and thus acting as "master key"
+files.
 
 ## Block files
 
@@ -72,7 +85,7 @@ Currently defined purposes:
 | Value | Comment |
 | --- |
 | 0x00000000 | A normal ZVLT file |
-| 0x5453414D | 'MAST' - a master key file |
+| 0x5453414D | 'MAST' - a [master key file](FileFormat.mzvlt.md) |
 
 ### Encrypted content sub-blocks
 
@@ -262,6 +275,9 @@ This is just the generic "implied group terminator"
 Used to store one key encrypted by another key.	Only supported
 in Master Key Files (ignored elsewhere). May or may not be
 accompanied by a `PASX` block for the same key.
+
+:warning: DEPRECATED. Use `CKEY` blocks in
+[master key files](FileFormat.mzvlt.md) instead.
 
 | Name | Format | Notes |
 | --- |

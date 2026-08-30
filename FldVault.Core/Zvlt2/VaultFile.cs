@@ -457,6 +457,27 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
+  /// Enumerate the top level <see cref="IBlockElement"/>s whose block has the
+  /// given <paramref name="kind"/>.
+  /// </summary>
+  /// <param name="kind"></param>
+  /// <returns></returns>
+  public IEnumerable<IBlockElement> ElementsOfKind(int kind)
+  {
+    return Children.Where(ibe => ibe.Block.Kind == kind);
+  }
+
+  /// <summary>
+  /// Enumerate the top level blocks that have the given <paramref name="kind"/>.
+  /// </summary>
+  /// <param name="kind"></param>
+  /// <returns></returns>
+  public IEnumerable<IBlockInfo> BlocksOfKind(int kind)
+  {
+    return Children.Where(ibe => ibe.Block.Kind == kind).Select(ibe => ibe.Block);
+  }
+
+  /// <summary>
   /// Check if the name is valid for use as the logical name
   /// of a file in a z-vault, throwing an exception if it isn't.
   /// </summary>

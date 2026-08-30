@@ -20,6 +20,6 @@ public static class ZvltPurpose
   /// The file is a master key file containing <see cref="Zvlt2BlockType.KeyTransform"/>
   /// blocks (and no files)
   /// </summary>
-  public const int Master = 0x5453414D;
+  public const int Master = 0x5453414D; // 
 
 }

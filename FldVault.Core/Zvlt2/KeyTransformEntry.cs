@@ -133,17 +133,6 @@ public class KeyTransformEntry
   }
 
   /// <summary>
-  /// Import the key described by this block into a key chain, using the
-  /// decryptor from the vault file to decrypt the key.
-  /// </summary>
-  public bool ImportKey(KeyChain keyChain, VaultFileReader reader)
-  {
-    // The reader does not expose the cryptor, so we have to use a method
-    // in the reader. It, in turn, calls the overload above.
-    return reader.ImportChildKey(keyChain, this);
-  }
-
-  /// <summary>
   /// Import the key described by this block into a key chain, using a newly
   /// created cryptor to decrypt the key. For efficiency, use the other overloads
   /// instead of this one.

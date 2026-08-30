@@ -122,6 +122,8 @@ public class KeyChain: IDisposable
   /// </summary>
   /// <param name="keyBytes">
   /// A <see cref="CryptoBuffer{T}"/> containing the 32 bytes of the key.
+  /// (if your buffer contains more than just the 32 key bytes, use 
+  /// <see cref="PutSlice(CryptoBuffer{byte}, int)"/> instead)
   /// </param>
   /// <returns>
   /// True if the key was added, false if it was already present.
@@ -148,6 +150,41 @@ public class KeyChain: IDisposable
       {
         return false;
       }
+    }
+  }
+
+  /// <summary>
+  /// Copy a key from a 32 byte slice in <paramref name="buffer"/> at the given
+  /// <paramref name="offset"/> into this key chain, returning the Key ID of
+  /// the imported key. If the key already is known, no change is made.
+  /// </summary>
+  /// <param name="buffer">
+  /// The buffer containing the 32 key bytes starting from <paramref name="offset"/>.
+  /// </param>
+  /// <param name="offset">
+  /// The offset in <paramref name="buffer"/> where the key bytes start.
+  /// </param>
+  /// <returns>
+  /// The Key ID of the imported key (or the existing key)
+  /// </returns>
+  public Guid PutSlice(CryptoBuffer<byte> buffer, int offset)
+  {
+    if(buffer.Length < offset + 32)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(offset),
+        "The offset must be less than the buffer size minus 32.");
+    }
+    lock(_lock)
+    {
+      var keyBytes = buffer.Span(offset, 32);
+      var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+      if(!_store.ContainsKey(keyId))
+      {
+        var copy = new KeyBuffer(keyBytes);
+        _store.Add(keyId, copy);
+      }
+      return keyId;
     }
   }
 

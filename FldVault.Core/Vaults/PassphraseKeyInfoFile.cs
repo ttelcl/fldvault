@@ -372,14 +372,18 @@ public class PassphraseKeyInfoFile
   /// <param name="blockStream">
   /// The open ZVLT v2 block stream.
   /// </param>
-  public BlockInfo WriteBlock(Stream blockStream)
+  /// <param name="blockType">
+  /// The block type to write the block as. Default <see cref="Zvlt2BlockType.PassphraseLink"/>
+  /// (but <see cref="Zvlt2BlockType.ExternalPassphraseLink"/> is valid too).
+  /// </param>
+  public BlockInfo WriteBlock(Stream blockStream, int blockType = Zvlt2BlockType.PassphraseLink)
   {
     blockStream.Position = blockStream.Length;
     Span<byte> block = stackalloc byte[96-8];
     BinaryPrimitives.WriteInt64LittleEndian(block.Slice(0, 8), EpochTicks.FromUtc(UtcKeyStamp));
     KeyId.TryWriteBytes(block.Slice(8, 16));
     Salt.CopyTo(block.Slice(24, 64));
-    var bi = BlockInfo.WriteSync(blockStream, Zvlt2BlockType.PassphraseLink, block);
+    var bi = BlockInfo.WriteSync(blockStream, blockType, block);
     return bi;
   }
 

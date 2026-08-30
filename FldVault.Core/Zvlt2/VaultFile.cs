@@ -528,6 +528,78 @@ public class VaultFile: IBlockElementContainer
       && sourceVault.Header.TimeStamp == Header.TimeStamp;
   }
 
+  /// <summary>
+  /// Write a new master key file. If the file already exists, a backup file is created
+  /// before creating the new file
+  /// </summary>
+  /// <param name="fileName">
+  /// The master vault file name. Must end with ".mzvlt"
+  /// </param>
+  /// <param name="masterPkif">
+  /// The <see cref="PassphraseKeyInfoFile"/> describing the master key
+  /// </param>
+  /// <param name="childKeyIds">
+  /// The key ids to include in the file
+  /// </param>
+  /// <param name="childKeyChain">
+  /// The key chain providing the keys specified by <paramref name="childKeyIds"/>.
+  /// </param>
+  /// <param name="masterKeyChain">
+  /// If not null, the key chain providing the master key as identified by
+  /// <paramref name="masterPkif"/>. If null, the master key must be in
+  /// <paramref name="childKeyChain"/>.
+  /// </param>
+  /// <param name="passphraseLinks">
+  /// If not null: passphrase info blocks to include in the master key file.
+  /// In common scenarios it may be better to not include any, since they
+  /// publicly declare the IDs of the keys that are present.
+  /// </param>
+  /// <exception cref="ArgumentException"></exception>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static void WriteMasterKeyFile(
+    string fileName,
+    PassphraseKeyInfoFile masterPkif,
+    IReadOnlyCollection<Guid> childKeyIds,
+    KeyChain childKeyChain,
+    KeyChain? masterKeyChain = null,
+    IEnumerable<PassphraseKeyInfoFile>? passphraseLinks = null)
+  {
+    if(!fileName.EndsWith(".mzvlt", StringComparison.InvariantCultureIgnoreCase))
+    {
+      throw new ArgumentException(
+        "Expecting file name to end with '.mzvlt'");
+    }
+    masterKeyChain ??= childKeyChain;
+    if(!masterKeyChain.ContainsKey(masterPkif.KeyId))
+    {
+      throw new InvalidOperationException(
+        $"Master key '{masterPkif.KeyId}' not found in the master key chain.");
+    }
+    var tmpName = fileName + ".tmp";
+    var vault = VaultFile.CreateEmpty(tmpName, masterPkif, ZvltPurpose.Master);
+    using(var cryptor = vault.CreateCryptor(masterKeyChain))
+    using(var writer = new VaultFileWriter(vault, cryptor))
+    {
+      if(passphraseLinks != null)
+      {
+        foreach(var link in passphraseLinks)
+        {
+          writer.AppendExternalPassphraseLink(link);
+        }
+      }
+      writer.AppendChildKeyList(childKeyIds, childKeyChain);
+    }
+    if(File.Exists(fileName))
+    {
+      var bakName = fileName + ".bak";
+      if(File.Exists(bakName))
+      {
+        File.Delete(bakName);
+      }
+      File.Replace(tmpName, fileName, bakName);
+    }
+  }
+
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)
   {
     if(!_pkifSearched)

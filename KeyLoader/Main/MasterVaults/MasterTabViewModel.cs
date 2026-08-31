@@ -33,35 +33,102 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// </param>
   /// <param name="fileName">
   /// The name of the file to open or create. This must be known before creating
-  /// this object. The file name must be valid, but does not yet need to exist.
+  /// this object. The file name must be valid, but the file does not yet need to exist.
+  /// </param>
+  /// <param name="masterKeyDescriptor">
+  /// The master key descriptor. Must be non-null if <paramref name="fileName"/> exists.
+  /// This is expected to be null when the file does not yet exist.
   /// </param>
   /// <param name="modified">
   /// True if the data should be considered 'modified' and in need of saving
   /// </param>
-  public MasterTabViewModel(
+  private MasterTabViewModel(
     MainViewModel owner,
-    string? fileName = null,
+    string fileName,
+    PassphraseKeyInfoFile? masterKeyDescriptor = null,
     bool modified = false)
     : base(owner, TitleFromFileName(fileName), modified)
   {
     _masterKeyChain = new KeyChain();
     _childKeyChain = new KeyChain();
+    MasterKey = masterKeyDescriptor;
+    FileName = fileName;
+    UpdateState();
+    ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
   }
 
   /// <summary>
-  /// Get or set the file name associated with this tab
+  /// Pseudo-constructor: open an existing master vault file
   /// </summary>
-  public string? FileName {
+  /// <param name="owner">
+  /// The owning <see cref="MainViewModel"/>
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the existing master vault file
+  /// </param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static MasterTabViewModel OpenExisting(
+    MainViewModel owner,
+    string fileName)
+  {
+    if(!File.Exists(fileName))
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to exist: {fileName}");
+    }
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif == null)
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to contain its own key descriptor: {fileName}");
+    }
+    return new MasterTabViewModel(owner, fileName, pkif, false);
+  }
+
+  /// <summary>
+  /// Create a new <see cref="MasterTabViewModel"/> to create a new
+  /// master vault file.
+  /// </summary>
+  /// <param name="owner">
+  /// The owning <see cref="MainViewModel"/>
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the master vault file to create. This file must NOT yet exist.
+  /// </param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static MasterTabViewModel CreateNew(
+    MainViewModel owner,
+    string fileName)
+  {
+    if(File.Exists(fileName))
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to not yet exist: {fileName}");
+    }
+    return new MasterTabViewModel(owner, fileName, null, false);
+  }
+
+  /// <summary>
+  /// Get the file name associated with this tab
+  /// </summary>
+  public string FileName {
     get => _fileName;
-    set {
+    private set {
       if(SetProperty(ref _fileName, value))
       {
         Title = TitleFromFileName(_fileName);
         UpdateFileExists();
+        if(!String.IsNullOrEmpty(_fileName) && File.Exists(_fileName) && MasterKey==null)
+        {
+          Trace.TraceError(
+            "If the destination file exists, MasterKey must be set before setting FileName");
+        }
       }
     }
   }
-  private string? _fileName;
+  private string _fileName = null!; // The constructor WILL set a non-null value, but the compiler cannot deduce that
 
   /// <summary>
   /// The master key info record (null if not yet known, which happens
@@ -233,7 +300,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     if(MasterKey == null)
     {
       Trace.TraceError(
-        "Not expecting Master Key Info to be missing once the file is known");
+        "Not expecting Master Key Info to be missing once the file is known to exist");
       return MasterTabState.Panic;
     }
     if(!MasterKeyLoaded)

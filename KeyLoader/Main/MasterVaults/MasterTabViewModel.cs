@@ -101,10 +101,32 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   }
   private bool _masterKeyLoaded;
 
-  private void UpdateMasterKeyLoaded()
-  {
-    MasterKeyLoaded = MasterKey != null && _masterKeyChain.ContainsKey(MasterKey.KeyId);
+  /// <summary>
+  /// True if a file is defined and that file exists.
+  /// Updated explicitly via <see cref="UpdateFileExists"/>, or
+  /// implicitly by changing <see cref="FileName"/>.
+  /// </summary>
+  public bool FileExists {
+    get => _fileExistsState;
+    private set {
+      if(SetProperty(ref _fileExistsState, value))
+      {
+        UpdateState();
+      }
+    }
   }
+  private bool _fileExistsState = false;
+
+  /// <summary>
+  /// The state of this tab, determining what to show in the UI
+  /// </summary>
+  public MasterTabState State {
+    get => _state;
+    private set {
+      SetProperty(ref _state, value);
+    }
+  }
+  private MasterTabState _state;
 
   /// <summary>
   /// Start the process of creating a new key for a new vault file by generating a new
@@ -121,6 +143,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       MasterKey = pkif;
     }
     UpdateState();
+    ExpectStates(MasterTabState.ConfirmingKey);
   }
 
   /// <summary>
@@ -154,49 +177,28 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     VaultFile.WriteMasterKeyFile(FileName, MasterKey, [], _childKeyChain, _masterKeyChain);
     UpdateFileExists();
     UpdateState();
+    ExpectStates(MasterTabState.Editing, MasterTabState.UsingMaster);
     return FileExists;
   }
 
-  /// <summary>
-  /// True if a file is defined and that file exists.
-  /// Updated explicitly via <see cref="UpdateFileExists"/>, or
-  /// implicitly by changing <see cref="FileName"/>.
-  /// </summary>
-  public bool FileExists {
-    get => _fileExistsState;
-    private set {
-      if(SetProperty(ref _fileExistsState, value))
-      {
-        UpdateState();
-      }
-    }
+  private void UpdateMasterKeyLoaded()
+  {
+    MasterKeyLoaded = MasterKey != null && _masterKeyChain.ContainsKey(MasterKey.KeyId);
   }
-  private bool _fileExistsState = false;
 
   /// <summary>
   /// Updates the state of <see cref="FileExists"/> to match
   /// the existence of the file named by <see cref="FileName"/>.
   /// </summary>
-  public void UpdateFileExists()
+  private void UpdateFileExists()
   {
     FileExists = !String.IsNullOrEmpty(FileName) && File.Exists(FileName);
   }
 
   /// <summary>
-  /// The state of this tab, determining what to show in the UI
-  /// </summary>
-  public MasterTabState State {
-    get => _state;
-    private set {
-      SetProperty(ref _state, value);
-    }
-  }
-  private MasterTabState _state;
-
-  /// <summary>
   /// Update the state to the automatically calculated value
   /// </summary>
-  public void UpdateState()
+  private void UpdateState()
   {
     State = CalculateState();
   }

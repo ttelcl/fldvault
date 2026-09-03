@@ -1,8 +1,4 @@
-﻿/*
- * (c) 2023  ttelcl / ttelcl
- */
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;

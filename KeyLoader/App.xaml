@@ -50,6 +50,8 @@
                 MismatchValue="{x:Static Visibility.Visible}"/>
             <converters:ValueMatchConverter
                 x:Key="ValueIs"/>
+            <converters:StringBrushConverter
+                x:Key="StringToBrush"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

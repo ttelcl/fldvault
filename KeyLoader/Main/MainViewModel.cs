@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -13,6 +14,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using FldVault.KeyServer;
 
+using KeyLoader.Main.ServerWidget;
 using KeyLoader.Main.TaskTab;
 
 namespace KeyLoader.Main;
@@ -22,14 +24,19 @@ namespace KeyLoader.Main;
 /// </summary>
 public class MainViewModel: ObservableObject
 {
+  private readonly CancellationTokenSource _modelAwakeTokenSource;
+
   /// <summary>
   /// Create a new <see cref="MainViewModel"/>. Called as part of the bootstrapping
   /// process in App.xaml.cs. This demo application uses the "ViewModel first" approach.
   /// </summary>
   public MainViewModel()
   {
-    KeyServer = new KeyServerService();
+    _modelAwakeTokenSource = new CancellationTokenSource();
+    AppAwakeToken = _modelAwakeTokenSource.Token;
+    ServerWidget = new ServerWidgetViewModel(this);
     ExitCommand = new RelayCommand(() => {
+      ApplicationClosing(); // One of two paths calling it. The other is in App.
       var w = Application.Current.MainWindow;
       w?.Close();
     });
@@ -46,6 +53,16 @@ public class MainViewModel: ObservableObject
   public ICommand ExitCommand { get; }
 
   /// <summary>
+  /// The <see cref="CancellationToken"/> that is canceled when the app is closed.
+  /// </summary>
+  public CancellationToken AppAwakeToken { get; }
+
+  /// <summary>
+  /// The server widget
+  /// </summary>
+  public ServerWidgetViewModel ServerWidget { get; }
+
+  /// <summary>
   /// Get or set the message shown in the status bar
   /// </summary>
   public string StatusMessage {
@@ -54,12 +71,24 @@ public class MainViewModel: ObservableObject
       SetProperty(ref _statusMessage, value);
     }
   }
-  private string _statusMessage = "CellGrids demo application (work in progress)";
+  private string _statusMessage = "Key Loader and Master Key management application";
+
+  /// <summary>
+  /// The title of the application window
+  /// </summary>
+  public string WindowTitle {
+    get => _windowTitle;
+    set {
+      SetProperty(ref _windowTitle, value);
+    }
+  }
+  private static string __defaultWindowTitle = "Key Loader";
+  private string _windowTitle = __defaultWindowTitle;
 
   /// <summary>
   /// The key server instance
   /// </summary>
-  public KeyServerService KeyServer { get; }
+  public KeyServerService KeyServer => ServerWidget.Server;
 
   /// <summary>
   /// The list of open Task Tabs (implemented by subclasses of <see cref="TaskTabBaseViewModel"/>)
@@ -88,6 +117,10 @@ public class MainViewModel: ObservableObject
         old?.AfterIsActiveChange();
         value?.AfterIsActiveChange();
         OnPropertyChanged();
+        WindowTitle =
+          String.IsNullOrEmpty(_currentTab?.Title)
+          ? __defaultWindowTitle
+          : $"{_currentTab.Title} - {__defaultWindowTitle}";
       }
     }
   }
@@ -134,7 +167,7 @@ public class MainViewModel: ObservableObject
     {
       // Not yet implemented, but throwing an exception is not safe now.
       // Todo: pick and activate a different tab in a sensible way
-      
+
       // Temporary plug: pick *first* other tab (if there is any)
       var othertab = TaskTabs.Where(t => t != tab).FirstOrDefault();
       CurrentTab = othertab;
@@ -171,4 +204,27 @@ public class MainViewModel: ObservableObject
   /// The command to try to close the current tab
   /// </summary>
   public ICommand TryCloseCurrentTabCommand { get; }
+
+  /// <summary>
+  /// Callback called when the application activates or deactivates
+  /// </summary>
+  /// <param name="showing"></param>
+  internal void ApplicationShowing(bool showing)
+  {
+    if(showing)
+    {
+      ServerWidget.UpdateServerActiveBasic();
+    }
+  }
+
+  /// <summary>
+  /// Callback when the application closes. Cancels <see cref="AppAwakeToken"/>.
+  /// </summary>
+  internal void ApplicationClosing()
+  {
+    if(!_modelAwakeTokenSource.IsCancellationRequested)
+    {
+      _modelAwakeTokenSource.Cancel();
+    }
+  }
 }

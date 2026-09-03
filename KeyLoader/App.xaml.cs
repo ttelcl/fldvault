@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Windows;
@@ -55,6 +56,19 @@ public partial class App: Application
   private void Application_Exit(object sender, ExitEventArgs e)
   {
     Trace.TraceInformation("Application_Exit: Cleanup");
+    MainModel?.ApplicationClosing(); // in case that wasn't called already
+  }
+
+  private void Application_Activated(object sender, EventArgs e)
+  {
+    Trace.TraceInformation("Application_Activated");
+    MainModel?.ApplicationShowing(true);
+  }
+
+  private void Application_Deactivated(object sender, EventArgs e)
+  {
+    Trace.TraceInformation("Application_Deactivated");
+    MainModel?.ApplicationShowing(false);
   }
 }
 

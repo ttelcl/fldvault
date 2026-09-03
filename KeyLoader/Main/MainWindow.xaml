@@ -8,7 +8,7 @@
     xmlns:local="clr-namespace:KeyLoader.Main"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
-    Title="MainWindow"
+    Title="{Binding WindowTitle}"
     TitleCharacterCasing="Normal"
     ResizeMode="CanResizeWithGrip"
     Height="300" Width="400"

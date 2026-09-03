@@ -6,6 +6,8 @@
     xmlns:local="clr-namespace:KeyLoader"
     xmlns:main="clr-namespace:KeyLoader.Main"
     xmlns:converters="clr-namespace:KeyLoader.Converters"
+    Activated="Application_Activated"
+    Deactivated="Application_Deactivated"
     Startup="App_Startup">
     <Application.Resources>
         <ResourceDictionary>
@@ -41,7 +43,11 @@
                 MatchValue="{x:Static Visibility.Collapsed}"
                 MismatchValue="{x:Static Visibility.Visible}"/>
             <converters:StringMatchVisibilityConverter
-                x:Key="VisibleIfString"/>
+                x:Key="VisibleIfMatch"/>
+            <converters:StringMatchVisibilityConverter
+                x:Key="VisibleIfMismatch"
+                MatchValue="{x:Static Visibility.Collapsed}"
+                MismatchValue="{x:Static Visibility.Visible}"/>
             <converters:ValueMatchConverter
                 x:Key="ValueIs"/>
         </ResourceDictionary>

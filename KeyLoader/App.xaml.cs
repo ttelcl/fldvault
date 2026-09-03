@@ -6,6 +6,7 @@ using System.Windows;
 
 using ControlzEx.Theming;
 
+using KeyLoader.Converters;
 using KeyLoader.Main;
 
 namespace KeyLoader;
@@ -30,6 +31,7 @@ public partial class App: Application
     var mainWindow = new MainWindow() {
       DataContext = MainModel,
     };
+    InitializePrefixColors();
     Trace.TraceInformation($"App.App_Startup showing main window");
     mainWindow.Show();
     Trace.TraceInformation($"App.App_Startup done");
@@ -69,6 +71,13 @@ public partial class App: Application
   {
     Trace.TraceInformation("Application_Deactivated");
     MainModel?.ApplicationShowing(false);
+  }
+
+  private void InitializePrefixColors()
+  {
+    var cache = BrushCache.Default;
+    cache.AddAlias("/TrueGreenFalseRed/True", "#00ff00");
+    cache.AddAlias("/TrueGreenFalseRed/False", "#ff0000");
   }
 }
 

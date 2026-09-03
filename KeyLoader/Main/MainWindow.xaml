@@ -41,6 +41,13 @@
                 BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
                 Background="{DynamicResource MahApps.Brushes.Accent4}">
                 <!-- TBD -->
+                <StackPanel Orientation="Horizontal" DataContext="{Binding ServerWidget}">
+                    <Border
+                        Height="35" Width="35"
+                        Background="{Binding ServerActive, Converter={StaticResource TrueGreenFalseRed}}">
+                        
+                    </Border>
+                </StackPanel>
             </Border>
         </Grid>
         <Grid>

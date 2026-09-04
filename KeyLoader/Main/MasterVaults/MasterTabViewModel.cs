@@ -84,6 +84,8 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       throw new InvalidOperationException(
         $"Expecting file to contain its own key descriptor: {fileName}");
     }
+    Trace.TraceInformation(
+      $"Preparing to open a master key file: {fileName}");
     return new MasterTabViewModel(owner, fileName, pkif, false);
   }
 
@@ -108,6 +110,8 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       throw new InvalidOperationException(
         $"Expecting file to not yet exist: {fileName}");
     }
+    Trace.TraceInformation(
+      $"Preparing to create a new master key file: {fileName}");
     return new MasterTabViewModel(owner, fileName, null, false);
   }
 

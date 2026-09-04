@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -15,8 +16,13 @@ using CommunityToolkit.Mvvm.Messaging;
 
 using FldVault.KeyServer;
 
+using KeyLoader.Main.MasterVaults;
 using KeyLoader.Main.ServerWidget;
 using KeyLoader.Main.TaskTab;
+
+using MahApps.Metro.Controls.Dialogs;
+
+using Microsoft.Win32;
 
 namespace KeyLoader.Main;
 
@@ -44,6 +50,8 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       w?.Close();
     });
     Messenger.Register<CurrentTabChangedMessage>(this);
+    OpenMasterFileCommand = new RelayCommand(OpenExistingMasterFile);
+    CreateMasterFileCommand = new RelayCommand(CreateNewMasterFile);
   }
 
   /// <summary>
@@ -51,6 +59,16 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   /// thus the application.
   /// </summary>
   public ICommand ExitCommand { get; }
+
+  /// <summary>
+  /// Command to open an existing master file
+  /// </summary>
+  public ICommand OpenMasterFileCommand { get; }
+
+  /// <summary>
+  /// Command to create a new master file
+  /// </summary>
+  public ICommand CreateMasterFileCommand { get; }
 
   /// <summary>
   /// The <see cref="CancellationToken"/> that is canceled when the app is closed.
@@ -138,5 +156,56 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       String.IsNullOrEmpty(message.NewTab?.Title)
       ? __defaultWindowTitle
       : $"{message.NewTab.Title} - {__defaultWindowTitle}";
+  }
+
+  private static readonly Guid __masterFileDialogGuid = Guid.Parse("0D101CAF-1047-400D-8345-2667897FBBC0");
+
+  /// <summary>
+  /// Asks the user for an existing file name to open and opens it
+  /// </summary>
+  public void OpenExistingMasterFile()
+  {
+    var dialog = new OpenFileDialog() {
+      Title = "Open existing master key file",
+      Filter = "Master key files (*.mzvlt)|*.mzvlt",
+      AddExtension = true,
+      CheckFileExists = true,
+      ClientGuid = __masterFileDialogGuid,
+    };
+    if(dialog.ShowDialog() == true)
+    {
+      var tab = MasterTabViewModel.OpenExisting(this, dialog.FileName);
+      TabHost.CurrentTab = tab;
+    }
+  }
+
+  /// <summary>
+  /// Asks the user for a new file name and starts the process of creating it
+  /// </summary>
+  public void CreateNewMasterFile()
+  {
+    var dialog = new SaveFileDialog() {
+      Title = "Select the name for a new master key file",
+      Filter = "Master key files (*.mzvlt)|*.mzvlt",
+      AddExtension = true,
+      ClientGuid = __masterFileDialogGuid,
+    };
+    if(dialog.ShowDialog() == true)
+    {
+      var fileName = dialog.FileName;
+      if(File.Exists(fileName))
+      {
+        MessageBox.Show(
+          "A file with that name already exists",
+          "Error",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+      }
+      else
+      {
+        var tab = MasterTabViewModel.CreateNew(this, fileName);
+        TabHost.CurrentTab = tab;
+      }
+    }
   }
 }

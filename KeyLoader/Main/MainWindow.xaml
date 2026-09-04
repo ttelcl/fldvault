@@ -18,6 +18,9 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
+                <MenuItem Header="_New master key file..." Command="{Binding CreateMasterFileCommand}"/>
+                <MenuItem Header="_Open master key file..." Command="{Binding OpenMasterFileCommand}"/>
+                <Separator/>
                 <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
             </MenuItem>
         </Menu>

@@ -11,6 +11,7 @@ using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
 using FldVault.KeyServer;
 
@@ -22,7 +23,7 @@ namespace KeyLoader.Main;
 /// <summary>
 /// The main application viewmodel
 /// </summary>
-public class MainViewModel: ObservableObject
+public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessage>
 {
   private readonly CancellationTokenSource _modelAwakeTokenSource;
 
@@ -32,15 +33,17 @@ public class MainViewModel: ObservableObject
   /// </summary>
   public MainViewModel()
   {
+    Messenger = WeakReferenceMessenger.Default;
     _modelAwakeTokenSource = new CancellationTokenSource();
     AppAwakeToken = _modelAwakeTokenSource.Token;
-    TabHost = new TabHostViewModel<MainViewModel>(this);
+    TabHost = new TabHostViewModel<MainViewModel>(Messenger, this);
     ServerWidget = new ServerWidgetViewModel(this);
     ExitCommand = new RelayCommand(() => {
       ApplicationClosing(); // One of two paths calling it. The other is in App.
       var w = Application.Current.MainWindow;
       w?.Close();
     });
+    Messenger.Register<CurrentTabChangedMessage>(this);
   }
 
   /// <summary>
@@ -88,6 +91,11 @@ public class MainViewModel: ObservableObject
   public KeyServerService KeyServer => ServerWidget.Server;
 
   /// <summary>
+  /// The <see cref="IMessenger"/> service to use for loosely coupled messaging
+  /// </summary>
+  public IMessenger Messenger { get; }
+
+  /// <summary>
   /// The tab host, storing and managing the child tabs
   /// </summary>
   public TabHostViewModel<MainViewModel> TabHost { get; }
@@ -118,5 +126,17 @@ public class MainViewModel: ObservableObject
     {
       _modelAwakeTokenSource.Cancel();
     }
+  }
+
+  /// <summary>
+  /// Implements <see cref="IRecipient{TMessage}"/> for <see cref="CurrentTabChangedMessage"/>.
+  /// </summary>
+  /// <param name="message"></param>
+  public void Receive(CurrentTabChangedMessage message)
+  {
+    WindowTitle =
+      String.IsNullOrEmpty(message.NewTab?.Title)
+      ? __defaultWindowTitle
+      : $"{message.NewTab.Title} - {__defaultWindowTitle}";
   }
 }

@@ -9,6 +9,7 @@ using System.Windows.Input;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 
 namespace KeyLoader.Main.TaskTab;
 
@@ -22,13 +23,21 @@ public class TabHostViewModel: ObservableObject
   /// <summary>
   /// Create a new <see cref="TabHostViewModel"/>.
   /// </summary>
-  public TabHostViewModel()
+  public TabHostViewModel(
+    IMessenger messenger)
   {
+    Messenger = messenger;
     TaskTabs = new ObservableCollection<TaskTabBaseViewModel>();
     TryCloseCurrentTabCommand = new RelayCommand(
       () => _ = TryCloseCurrentTab(),
       CanCloseCurrentTab);
   }
+
+  /// <summary>
+  /// The <see cref="IMessenger"/> used to inform recipients of changes in
+  /// <see cref="CurrentTab"/> via <see cref="CurrentTabChangedMessage"/>s.
+  /// </summary>
+  public IMessenger Messenger { get; }
 
   /// <summary>
   /// The list of open Task Tabs (implemented by subclasses of <see cref="TaskTabBaseViewModel"/>)
@@ -57,10 +66,8 @@ public class TabHostViewModel: ObservableObject
         old?.AfterIsActiveChange();
         value?.AfterIsActiveChange();
         OnPropertyChanged();
-        //WindowTitle =
-        //  String.IsNullOrEmpty(_currentTab?.Title)
-        //  ? __defaultWindowTitle
-        //  : $"{_currentTab.Title} - {__defaultWindowTitle}";
+        var message = new CurrentTabChangedMessage(this, _currentTab);
+        Messenger.Send(message);
       }
     }
   }
@@ -156,8 +163,10 @@ public class TabHostViewModel<TOwner>: TabHostViewModel where TOwner : class
   /// <summary>
   /// Create a new <see cref="TabHostViewModel{TOwner}"/> and set its owner
   /// </summary>
+  /// <param name="messenger"></param>
   /// <param name="owner"></param>
-  public TabHostViewModel(TOwner owner)
+  public TabHostViewModel(IMessenger messenger, TOwner owner)
+    : base(messenger)
   {
     Owner = owner;
   }

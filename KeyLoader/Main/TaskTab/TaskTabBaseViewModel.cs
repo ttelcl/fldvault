@@ -23,7 +23,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   /// Does not register or activate the new tab in the parent
   /// (because the child class constructor should run first)
   /// </summary>
-  /// <param name="owner"></param>
+  /// <param name="host"></param>
   /// <param name="title">
   /// The title of the tab
   /// </param>
@@ -31,11 +31,11 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   /// True if the tab initially is in the "modified" state.
   /// </param>
   public TaskTabBaseViewModel(
-    MainViewModel owner,
+    TabHostViewModel host,
     string title = "untitled",
     bool modified = false)
   {
-    Owner = owner;
+    Host = host;
     _title = title;
     _modified = modified;
     TryCloseInteractiveCommand = new RelayCommand(
@@ -46,7 +46,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   /// <summary>
   /// The owning <see cref="MainViewModel"/>
   /// </summary>
-  public MainViewModel Owner { get; }
+  public TabHostViewModel Host { get; }
 
   /// <summary>
   /// The tab title
@@ -76,7 +76,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   /// </summary>
   public void CloseHard()
   {
-    Owner.TabClosed(this);
+    Host.TabClosed(this);
     Dispose();
   }
 
@@ -136,14 +136,14 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
 
   /// <summary>
   /// Get if this tab is the current one. Changing this
-  /// is done by setting <see cref="MainViewModel.CurrentTab"/>.
+  /// is done by setting <see cref="TabHostViewModel.CurrentTab"/> on <see cref="Host"/>.
   /// </summary>
   public bool IsActive {
-    get => this == Owner.CurrentTab;
+    get => this == Host.CurrentTab;
   }
 
   /// <summary>
-  /// Callback from setting <see cref="MainViewModel.CurrentTab"/> to previous and new task tabs
+  /// Callback from setting <see cref="TabHostViewModel.CurrentTab"/> to previous and new task tabs
   /// </summary>
   internal void BeforeIsActiveChange()
   {
@@ -151,7 +151,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   }
 
   /// <summary>
-  /// Callback from setting <see cref="MainViewModel.CurrentTab"/> to previous and new task tabs
+  /// Callback from setting <see cref="TabHostViewModel.CurrentTab"/> to previous and new task tabs
   /// </summary>
   internal void AfterIsActiveChange()
   {

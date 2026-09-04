@@ -47,10 +47,11 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     string fileName,
     PassphraseKeyInfoFile? masterKeyDescriptor = null,
     bool modified = false)
-    : base(owner, TitleFromFileName(fileName), modified)
+    : base(owner.TabHost, TitleFromFileName(fileName), modified)
   {
     _masterKeyChain = new KeyChain();
     _childKeyChain = new KeyChain();
+    Owner = owner;
     MasterKey = masterKeyDescriptor;
     FileName = fileName;
     UpdateState();
@@ -109,6 +110,12 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     }
     return new MasterTabViewModel(owner, fileName, null, false);
   }
+
+  /// <summary>
+  /// The <see cref="MainViewModel"/> of the application (the owner of
+  /// <see cref="TaskTabBaseViewModel.Host"/>)
+  /// </summary>
+  public MainViewModel Owner { get; }
 
   /// <summary>
   /// Get the file name associated with this tab

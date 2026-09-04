@@ -34,16 +34,13 @@ public class MainViewModel: ObservableObject
   {
     _modelAwakeTokenSource = new CancellationTokenSource();
     AppAwakeToken = _modelAwakeTokenSource.Token;
+    TabHost = new TabHostViewModel<MainViewModel>(this);
     ServerWidget = new ServerWidgetViewModel(this);
     ExitCommand = new RelayCommand(() => {
       ApplicationClosing(); // One of two paths calling it. The other is in App.
       var w = Application.Current.MainWindow;
       w?.Close();
     });
-    TaskTabs = new ObservableCollection<TaskTabBaseViewModel>();
-    TryCloseCurrentTabCommand = new RelayCommand(
-      () => _ = TryCloseCurrentTab(),
-      CanCloseCurrentTab);
   }
 
   /// <summary>
@@ -91,119 +88,14 @@ public class MainViewModel: ObservableObject
   public KeyServerService KeyServer => ServerWidget.Server;
 
   /// <summary>
-  /// The list of open Task Tabs (implemented by subclasses of <see cref="TaskTabBaseViewModel"/>)
+  /// The tab host, storing and managing the child tabs
   /// </summary>
-  public ObservableCollection<TaskTabBaseViewModel> TaskTabs { get; }
+  public TabHostViewModel<MainViewModel> TabHost { get; }
 
   /// <summary>
-  /// The currently active Task Tab, if any.
-  /// The tab to add should already be present in <see cref="TaskTabs"/>.
+  /// <see cref="TabHost"/>, typed as its XAML-friendly superclass.
   /// </summary>
-  public TaskTabBaseViewModel? CurrentTab {
-    get => _currentTab;
-    set {
-      if(value != null && !TaskTabs.Contains(value))
-      {
-        // This is a normal way of adding a new tab
-        RegisterTab(value);
-      }
-      if(value != _currentTab)
-      {
-        var old = _currentTab;
-        OnPropertyChanging();
-        old?.BeforeIsActiveChange();
-        value?.BeforeIsActiveChange();
-        _currentTab = value;
-        old?.AfterIsActiveChange();
-        value?.AfterIsActiveChange();
-        OnPropertyChanged();
-        WindowTitle =
-          String.IsNullOrEmpty(_currentTab?.Title)
-          ? __defaultWindowTitle
-          : $"{_currentTab.Title} - {__defaultWindowTitle}";
-      }
-    }
-  }
-  private TaskTabBaseViewModel? _currentTab;
-
-  /// <summary>
-  /// Test if the current tab can be closed
-  /// </summary>
-  /// <returns></returns>
-  public bool CanCloseCurrentTab()
-  {
-    return CurrentTab != null && !CurrentTab.Modified;
-  }
-
-  /// <summary>
-  /// Try to close the current tab, if there is one and it can be closed.
-  /// </summary>
-  /// <returns></returns>
-  public bool TryCloseCurrentTab()
-  {
-    if(CurrentTab == null)
-    {
-      return false;
-    }
-    else if(CurrentTab.Modified)
-    {
-      return false;
-    }
-    else
-    {
-      var tabToClose = CurrentTab;
-      return tabToClose.TryCloseGentle(); // also takes care of deactivation
-    }
-  }
-
-  /// <summary>
-  /// Deactivate the given <paramref name="tab"/> if it is the <see cref="CurrentTab"/>.
-  /// Else this is a NOP.
-  /// </summary>
-  /// <param name="tab"></param>
-  public void Deactivate(TaskTabBaseViewModel tab)
-  {
-    if(tab == CurrentTab)
-    {
-      // Not yet implemented, but throwing an exception is not safe now.
-      // Todo: pick and activate a different tab in a sensible way
-
-      // Temporary plug: pick *first* other tab (if there is any)
-      var othertab = TaskTabs.Where(t => t != tab).FirstOrDefault();
-      CurrentTab = othertab;
-      Trace.TraceError(
-        $"Deactivating tabs is currently using a simplified implementation. Tab was '{tab.Title}'");
-    }
-  }
-
-  /// <summary>
-  /// Callback after a tab has been closed and disposed
-  /// </summary>
-  /// <param name="tab"></param>
-  internal void TabClosed(TaskTabBaseViewModel tab)
-  {
-    Deactivate(tab);
-    TaskTabs.Remove(tab);
-  }
-
-  /// <summary>
-  /// Add a tab, if it wasn't present already.
-  /// Alternatively, just set the new tab as current tab
-  /// (which calls this)
-  /// </summary>
-  /// <param name="tab"></param>
-  public void RegisterTab(TaskTabBaseViewModel tab)
-  {
-    if(!TaskTabs.Contains(tab))
-    {
-      TaskTabs.Add(tab);
-    }
-  }
-
-  /// <summary>
-  /// The command to try to close the current tab
-  /// </summary>
-  public ICommand TryCloseCurrentTabCommand { get; }
+  public TabHostViewModel TabHostBase => TabHost;
 
   /// <summary>
   /// Callback called when the application activates or deactivates

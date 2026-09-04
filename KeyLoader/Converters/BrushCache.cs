@@ -27,15 +27,24 @@ public class BrushCache
   }
 
   /// <summary>
-  /// Returns the brush for the color, either created newly or
-  /// from a cache. Supports the syntaxes supported by
-  /// <see cref="BrushConverter"/> for <see cref="SolidColorBrush"/>.
+  /// Returns the brush for the color, either created newly or from the cache.
+  /// If not known and the text contains a '/', ':', or '.', <see cref="DefaultColor"/>
+  /// is cached as the color for the text.
+  /// Supports the syntaxes supported by <see cref="BrushConverter"/> for <see cref="SolidColorBrush"/>.
   /// </summary>
   public Brush BrushForColor(string colorText)
   {
     if(!_colorCache.TryGetValue(colorText, out var color))
     {
-      color = (Brush)_colorConverter.ConvertFrom(colorText)!;
+      if(colorText.Contains('/') || colorText.Contains('.') || colorText.Contains(':'))
+      {
+        Trace.TraceWarning($"Color not found '{colorText}'. Binding that name to the default color.");
+        color = DefaultColor;
+      }
+      else
+      {
+        color = (Brush)_colorConverter.ConvertFrom(colorText)!;
+      }
       color.Freeze();
       _colorCache[colorText] = color;
     }
@@ -43,20 +52,25 @@ public class BrushCache
   }
 
   /// <summary>
-  /// If not known and the text contains a '/' or a '.',
-  /// <see cref="DefaultColor"/> is returned.
+  /// If not known and the text contains a '/', ':', or '.',
+  /// <see cref="DefaultColor"/> is returned, without modifiying the cache.
   /// Behaves the same as <see cref="BrushForColor(string)"/> otherwise.
   /// </summary>
   public Brush BrushOrDefault(string colorText)
   {
     if(!_colorCache.TryGetValue(colorText, out var color))
     {
-      if(colorText.Contains('/') || colorText.Contains('.'))
+      if(colorText.Contains('/') || colorText.Contains('.') || colorText.Contains(':'))
       {
-        Trace.TraceWarning($"Color not found '{colorText}' (falling back to default)");
-        return DefaultColor;
+        Trace.TraceWarning($"Color not found '{colorText}'. Using the default color without binding it.");
+        color = DefaultColor;
       }
-      return BrushForColor(colorText);
+      else
+      {
+        color = (Brush)_colorConverter.ConvertFrom(colorText)!;
+        color.Freeze();
+        _colorCache[colorText] = color;
+      }
     }
     return color;
   }
@@ -74,7 +88,7 @@ public class BrushCache
   /// <summary>
   /// Returns the brush for the color. This indexer is equivalent to
   /// <see cref="BrushForColor(string)"/>. You can add non-standard colors
-  /// using <see cref="AddAlias(string, Brush)"/> or <see cref="AddAlias(string, string)"/>
+  /// using <see cref="Set(string, Brush)"/> or <see cref="Set(string, string)"/>
   /// </summary>
   public Brush this[string colorText] {
     get => BrushForColor(colorText);
@@ -94,23 +108,34 @@ public class BrushCache
   /// Set the brush for <paramref name="alias"/> to <paramref name="brush"/>
   /// (potentially overwriting an existing instance). This is the only way to
   /// insert brushes that are not <see cref="SolidColorBrush"/>.
+  /// Returns this <see cref="BrushCache"/> itself, for fluent call chains.
   /// </summary>
-  /// <param name="alias"></param>
+  /// <param name="alias">
+  /// The name of the new entry to register (or overwrite).
+  /// To avoid conflicts with <see cref="SolidColorBrush"/> names, it is
+  /// recommended to include at least one '/', '.' or ':'.
+  /// </param>
   /// <param name="brush"></param>
-  public void AddAlias(string alias, Brush brush)
+  public BrushCache Set(string alias, Brush brush)
   {
     _colorCache[alias] = brush;
+    return this;
   }
 
   /// <summary>
   /// Set the brush for <paramref name="alias"/> to the brush that 
   /// <see cref="BrushForColor(string)"/> would return for <paramref name="colorText"/>
   /// (aliasing an existing brush or interpreting a new brush)
+  /// Returns this <see cref="BrushCache"/> itself, for fluent call chains.
   /// </summary>
-  /// <param name="alias"></param>
+  /// <param name="alias">
+  /// The name of the new entry to register (or overwrite).
+  /// To avoid conflicts with <see cref="SolidColorBrush"/> names, it is
+  /// recommended to include at least one '/', '.' or ':'.
+  /// </param>
   /// <param name="colorText"></param>
-  public void AddAlias(string alias, string colorText)
+  public BrushCache Set(string alias, string colorText)
   {
-    AddAlias(alias, BrushForColor(colorText));
+    return Set(alias, BrushForColor(colorText));
   }
 }

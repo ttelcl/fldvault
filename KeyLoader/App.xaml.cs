@@ -76,8 +76,11 @@ public partial class App: Application
   private void InitializePrefixColors()
   {
     var cache = BrushCache.Default;
-    cache.AddAlias("/TrueGreenFalseRed/True", "#00ff00");
-    cache.AddAlias("/TrueGreenFalseRed/False", "#ff0000");
+    cache
+      .Set("default/red", "#dd5555")
+      .Set("default/green", "#339933")
+      .Set("/TrueGreenFalseRed/True", "default/green")
+      .Set("/TrueGreenFalseRed/False", "default/red");
   }
 }
 

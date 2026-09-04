@@ -11,7 +11,7 @@
     Title="{Binding WindowTitle}"
     TitleCharacterCasing="Normal"
     ResizeMode="CanResizeWithGrip"
-    Height="300" Width="400"
+    Height="400" Width="640"
     MinHeight="150" MinWidth="200">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
@@ -40,14 +40,25 @@
                 BorderThickness="1"
                 BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
                 Background="{DynamicResource MahApps.Brushes.Accent4}">
-                <!-- TBD -->
-                <StackPanel Orientation="Horizontal" DataContext="{Binding ServerWidget}">
+                <DockPanel>
+                    <!-- Server status (placeholder) -->
                     <Border
-                        Height="35" Width="35"
-                        Background="{Binding ServerActive, Converter={StaticResource TrueGreenFalseRed}}">
-                        
+                        DockPanel.Dock="Right"
+                        BorderThickness="1"
+                        BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                        DataContext="{Binding ServerWidget}">
+                        <Border
+                            Width="38"
+                            Background="{Binding ServerActive, Converter={StaticResource TrueGreenFalseRed}}">
+
+                        </Border>
                     </Border>
-                </StackPanel>
+
+                    <!-- TBD -->
+
+                    <!-- filler -->
+                    <Grid/>
+                </DockPanel>
             </Border>
         </Grid>
         <Grid>

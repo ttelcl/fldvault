@@ -5,7 +5,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     xmlns:local="clr-namespace:KeyLoader.Main"
+    xmlns:serverwidget="clr-namespace:KeyLoader.Main.ServerWidget"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
     Title="{Binding WindowTitle}"
@@ -41,18 +43,10 @@
                 BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
                 Background="{DynamicResource MahApps.Brushes.Accent4}">
                 <DockPanel>
-                    <!-- Server status (placeholder) -->
-                    <Border
+                    <!-- Server status -->
+                    <serverwidget:ServerWidgetView
                         DockPanel.Dock="Right"
-                        BorderThickness="1"
-                        BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-                        DataContext="{Binding ServerWidget}">
-                        <Border
-                            Width="38"
-                            Background="{Binding ServerActive, Converter={StaticResource TrueGreenFalseRed}}">
-
-                        </Border>
-                    </Border>
+                        DataContext="{Binding ServerWidget}"/>
 
                     <!-- TBD -->
 

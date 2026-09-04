@@ -5,10 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 
 using FldVault.KeyServer;
+
+using KeyLoader.Converters;
 
 namespace KeyLoader.Main.ServerWidget;
 
@@ -56,11 +59,33 @@ public sealed class ServerWidgetViewModel : ObservableObject
     private set {
       if(SetProperty(ref _serverActive, value))
       {
+        OnPropertyChanged(nameof(ServerActiveIcon));
+        OnPropertyChanged(nameof(ServerActiveColor));
+        OnPropertyChanged(nameof(ServerActiveTooltip));
         OnServerActiveChanged();
       }
     }
   }
   private bool _serverActive;
+
+  /// <summary>
+  /// The Material Design icon name for the current <see cref="ServerActive"/> status
+  /// </summary>
+  public string ServerActiveIcon => ServerActive ? "Server" : "ServerOff";
+
+  /// <summary>
+  /// The color for the current <see cref="ServerActive"/> status
+  /// </summary>
+  public Brush ServerActiveColor 
+    => BrushCache.Default.BrushOrDefault(ServerActive ? "default/green" : "default/red");
+
+  /// <summary>
+  /// The tooltip for the key server status widget
+  /// </summary>
+  public string ServerActiveTooltip
+    => ServerActive 
+    ? "Key server is running" 
+    : "Key server is not running!";
 
   /// <summary>
   /// Simplified and synchronous server activity check. Works most of the time,

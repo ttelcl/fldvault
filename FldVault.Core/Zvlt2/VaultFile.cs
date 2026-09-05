@@ -269,10 +269,10 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.Create(fileName))
     {
-      VaultHeader.WriteSync(stream, pkif.KeyId, purpose: ZvltPurpose.Default);
+      VaultHeader.WriteSync(stream, pkif.KeyId, purpose: purpose);
       pkif.WriteBlock(stream);
     }
-    return new VaultFile(fileName);
+    return new VaultFile(fileName, purpose);
   }
 
   /// <summary>
@@ -587,7 +587,10 @@ public class VaultFile: IBlockElementContainer
           writer.AppendExternalPassphraseLink(link);
         }
       }
-      writer.AppendChildKeyList(childKeyIds, childKeyChain);
+      if(childKeyIds.Count > 0)
+      {
+        writer.AppendChildKeyList(childKeyIds, childKeyChain);
+      }
     }
     if(File.Exists(fileName))
     {
@@ -597,6 +600,10 @@ public class VaultFile: IBlockElementContainer
         File.Delete(bakName);
       }
       File.Replace(tmpName, fileName, bakName);
+    }
+    else
+    {
+      File.Move(tmpName, fileName);
     }
   }
 

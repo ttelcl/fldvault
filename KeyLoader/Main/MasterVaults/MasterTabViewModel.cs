@@ -54,8 +54,18 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     Owner = owner;
     MasterKey = masterKeyDescriptor;
     FileName = fileName;
+    CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey, false);
+    VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss), false);
     UpdateState();
     ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
+    if(State == MasterTabState.CreatingKey)
+    {
+      CreateVaultPassEntry.PasswordTask?.TryFocus();
+    }
+    else if(State == MasterTabState.AwaitingKey)
+    {
+      // TODO
+    }
   }
 
   /// <summary>
@@ -212,18 +222,40 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   private MasterTabState _state;
 
   /// <summary>
+  /// The password handling logic for creating a brand new vault
+  /// </summary>
+  public PasswordEntryViewModel CreateVaultPassEntry { get; }
+
+  /// <summary>
+  /// The password handling logic for verifying the new vault key
+  /// </summary>
+  public PasswordEntryViewModel VerifyVaultPassEntry { get; }
+
+  ///// <summary>
+  ///// The password handling logic for entering and checking the key
+  ///// of an existing vault
+  ///// </summary>
+  //public PasswordEntryViewModel EnterVaultPassEntry { get; }
+
+  /// <summary>
   /// Start the process of creating a new key for a new vault file by generating a new
   /// master key using the given <paramref name="passphrase"/>.
   /// </summary>
   /// <param name="passphrase"></param>
-  private void SetNewVaultKey(SecureString passphrase)
+  private void SetNewVaultKey(SecureString? passphrase)
   {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return;
+    }
     ExpectStates(MasterTabState.CreatingKey);
     using(var ppk = PassphraseKey.FromSecureString(passphrase))
     {
       _masterKeyChain.PutCopy(ppk);
       var pkif = new PassphraseKeyInfoFile(ppk);
       MasterKey = pkif;
+      Trace.TraceInformation($"Initialized key {MasterKey?.KeyId}");
     }
     UpdateState();
     ExpectStates(MasterTabState.ConfirmingKey);
@@ -234,18 +266,34 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// Upon failure: show a message and return false.
   /// Upon success: create the new (empty) vault file and return true
   /// </summary>
-  /// <param name="key"></param>
+  /// <param name="passphrase"></param>
   /// <returns></returns>
   /// <exception cref="InvalidOperationException"></exception>
-  private bool ConfirmNewVaultKey(SecureString key)
+  private bool ConfirmNewVaultKey(SecureString? passphrase)
   {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return false;
+    }
     ExpectStates(MasterTabState.ConfirmingKey);
     if(MasterKey == null || !_masterKeyChain.ContainsKey(MasterKey.KeyId) || String.IsNullOrEmpty(FileName))
     {
       throw new InvalidOperationException(
         "Cannot confirm a master key that hasn't been loaded yet");
     }
-    using(var ppk = PassphraseKey.TryPassphrase(key, MasterKey))
+    // Rename the output file to include the first 8 characters of the key
+    var segments = Path.GetFileName(FileName).Split('.');
+    if(segments[^1].Equals("mzvlt", StringComparison.InvariantCultureIgnoreCase))
+    {
+      var infix = MasterKey.KeyId.ToString()[..8];
+      if(!segments[^2].Equals(infix, StringComparison.InvariantCultureIgnoreCase))
+      {
+        var extension = $".{infix}.mzvlt";
+        FileName = Path.ChangeExtension(FileName, extension);
+      }
+    }
+    using(var ppk = PassphraseKey.TryPassphrase(passphrase, MasterKey))
     {
       if(ppk == null)
       {
@@ -267,6 +315,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   private void UpdateMasterKeyLoaded()
   {
     MasterKeyLoaded = MasterKey != null && _masterKeyChain.ContainsKey(MasterKey.KeyId);
+    OnPropertyChanged(nameof(KeyId));
   }
 
   /// <summary>
@@ -283,7 +332,12 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// </summary>
   private void UpdateState()
   {
+    var oldState = State;
     State = CalculateState();
+    if(oldState == MasterTabState.CreatingKey && State == MasterTabState.ConfirmingKey)
+    {
+      VerifyVaultPassEntry.PasswordTask?.TryFocus();
+    }
   }
 
   private void ExpectStates(params MasterTabState[] expectedStates)
@@ -291,9 +345,10 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     if(!expectedStates.Any(expected => State == expected))
     {
       var list = String.Join(", ", expectedStates);
+      var oldstate = State;
       State = MasterTabState.Panic;
       throw new InvalidOperationException(
-        $"Unexpected state. Got '{State}' while expecting one of: {expectedStates}");
+        $"Unexpected state. Got '{oldstate}' while expecting one of: {list}");
     }
   }
 

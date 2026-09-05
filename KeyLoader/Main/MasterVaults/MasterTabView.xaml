@@ -31,11 +31,17 @@
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=CreatingKey}">
-            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Creating Key</TextBlock>
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Creating Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding CreateVaultPassEntry}"/>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=ConfirmingKey}">
-            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Confirming Created Key</TextBlock>
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Confirming Created Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding VerifyVaultPassEntry}"/>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=AwaitingKey}">

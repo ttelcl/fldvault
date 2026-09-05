@@ -11,9 +11,52 @@
     mc:Ignorable="d" 
     d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock Text="MasterTabViewModel" FontSize="42"/>
-            <TextBlock Text="{Binding Title}"/>
-        </StackPanel>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Background="{DynamicResource MahApps.Brushes.AccentBase}">
+            <!-- development time status panel -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock FontFamily="Consolas" FontSize="11" VerticalAlignment="Bottom"
+                       Margin="5,3,5,5" Grid.Column="0" Text="{Binding KeyId}"/>
+            <TextBlock VerticalAlignment="Bottom" TextAlignment="Center"
+                       Margin="10,3,10,5" Grid.Column="1" Text="{Binding FileName}"/>
+            <TextBlock VerticalAlignment="Bottom"
+                       Margin="5,3,5,5" Grid.Column="2" Text="{Binding State}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=CreatingKey}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Creating Key</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=ConfirmingKey}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Confirming Created Key</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=AwaitingKey}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Awaiting File Key</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=UsingMaster}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Viewing</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Editing}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Editing</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Panic}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center" Foreground="Red">State: Internal Error</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Closed}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Closed</TextBlock>
+        </Grid>
+
     </Grid>
 </UserControl>

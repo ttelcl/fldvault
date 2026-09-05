@@ -164,6 +164,11 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   private PassphraseKeyInfoFile? _masterKey;
 
   /// <summary>
+  /// Get the key ID, if available, or a placeholder otherwise
+  /// </summary>
+  public string KeyId => MasterKey?.KeyId.ToString() ?? Guid.Empty.ToString().Replace('0', '?');
+
+  /// <summary>
   /// True if the master key has been set and loaded. Once set to true this
   /// is expected to stay true.
   /// </summary>

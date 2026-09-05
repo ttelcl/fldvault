@@ -24,7 +24,7 @@
                 MaxWidth="100"
                 MinWidth="50"
                 Padding="10,3"
-                Foreground="{DynamicResource MahApps.Brushes.Control.Background}"
+                Foreground="{DynamicResource MahApps.Brushes.Text}"
                 TextAlignment="Center"
                 Text="{Binding Title}"
                 TextTrimming="CharacterEllipsis"/>
@@ -38,7 +38,7 @@
                 MaxWidth="100"
                 MinWidth="50"
                 Padding="10,3"
-                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Foreground="{DynamicResource MahApps.Brushes.Gray5}"
                 TextAlignment="Center"
                 Text="{Binding Title}"
                 TextTrimming="CharacterEllipsis"/>

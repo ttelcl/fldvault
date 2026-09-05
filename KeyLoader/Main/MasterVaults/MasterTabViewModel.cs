@@ -57,6 +57,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey, false);
     VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss), false);
     UpdateState();
+    UpdateTitleFromFileName();
     ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
     if(State == MasterTabState.CreatingKey)
     {
@@ -139,7 +140,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     private set {
       if(SetProperty(ref _fileName, value))
       {
-        Title = TitleFromFileName(_fileName);
+        UpdateTitleFromFileName();
         UpdateFileExists();
         if(!String.IsNullOrEmpty(_fileName) && File.Exists(_fileName) && MasterKey==null)
         {
@@ -150,6 +151,17 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     }
   }
   private string _fileName = null!; // The constructor WILL set a non-null value, but the compiler cannot deduce that
+
+  private void UpdateTitleFromFileName()
+  {
+    var title = TitleFromFileName(_fileName);
+    var keySuffix = "." + KeyId[..8];
+    if(title.EndsWith(keySuffix, StringComparison.InvariantCultureIgnoreCase))
+    {
+      title = title[..^9];
+    }
+    Title = title;
+  }
 
   /// <summary>
   /// The master key info record (null if not yet known, which happens

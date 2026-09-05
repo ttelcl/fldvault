@@ -1,0 +1,26 @@
+﻿<UserControl
+    x:Class="KeyLoader.Main.TaskTab.TabHostView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:KeyLoader.Main.TaskTab"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    mc:Ignorable="d" 
+    d:DataContext="{d:DesignInstance local:TabHostViewModel, IsDesignTimeCreatable=False}"
+    d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid Visibility="{Binding CurrentTab, Converter={StaticResource VisibleIfNull}}">
+            <TextBlock
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Foreground="{DynamicResource MahApps.Brushes.AccentBase}"
+                Text="TabHostView - no current tab - WIP"/>
+        </Grid>
+        <Grid Visibility="{Binding CurrentTab, Converter={StaticResource VisibleIfNotNull}}">
+            <!-- Types are mapped to views in the resources specified higher up the tree. -->
+            <ContentControl Content="{Binding CurrentTab}"/>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -8,6 +8,8 @@
     xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
     xmlns:local="clr-namespace:KeyLoader.Main"
     xmlns:serverwidget="clr-namespace:KeyLoader.Main.ServerWidget"
+    xmlns:tabs="clr-namespace:KeyLoader.Main.TaskTab"
+    xmlns:mzvlt="clr-namespace:KeyLoader.Main.MasterVaults"
     mc:Ignorable="d"
     d:DataContext="{d:DesignInstance local:MainViewModel, IsDesignTimeCreatable=False}"
     Title="{Binding WindowTitle}"
@@ -39,32 +41,52 @@
                 </Border>
             </StatusBarItem>
         </StatusBar>
-        <Grid DockPanel.Dock="Top" MinHeight="40">
-            <!-- Space for control center -->
-            <Border
-                BorderThickness="1"
-                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-                Background="{DynamicResource MahApps.Brushes.Accent4}">
-                <DockPanel>
-                    <!-- Server status -->
-                    <serverwidget:ServerWidgetView
-                        DockPanel.Dock="Right"
-                        DataContext="{Binding ServerWidget}"/>
-
-                    <!-- TBD -->
-
-                    <!-- filler -->
-                    <Grid/>
-                </DockPanel>
-            </Border>
-        </Grid>
-        <Grid>
-            <!-- Space for main content -->
-            <Border
-                BorderThickness="1"
-                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}">
-                <!-- TBD -->
-            </Border>
-        </Grid>
+        <!-- Control center: -->
+        <Border
+            DockPanel.Dock="Top"
+            MinHeight="40"
+            BorderThickness="1"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Accent4}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <!-- Server status -->
+                <serverwidget:ServerWidgetView
+                    Grid.Column="1"
+                    DataContext="{Binding ServerWidget}"/>
+            </Grid>
+        </Border>
+        <!-- Tab Pane -->
+        <Border
+            DockPanel.Dock="Top"
+            MinHeight="30"
+            BorderThickness="1,0,1,1"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Control.Background}">
+            <tabs:TabsPaneView DataContext="{Binding TabHost}"/>
+        </Border>
+        <!-- Tab frame and content -->
+        <Border
+            BorderThickness="1,0,1,1"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Control.Background}">
+            <tabs:TabHostView DataContext="{Binding TabHost}">
+                <tabs:TabHostView.Resources>
+                    <DataTemplate DataType="{x:Type mzvlt:MasterTabViewModel}">
+                        <mzvlt:MasterTabView />
+                    </DataTemplate>
+                    <DataTemplate DataType="{x:Type tabs:TaskTabBaseViewModel}">
+                        <!-- intended as fallback, but that won't work this way -->
+                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                            <TextBlock Text="TaskTabBaseViewModel (implementation missing)"/>
+                            <TextBlock Text="{Binding Title}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </tabs:TabHostView.Resources>
+            </tabs:TabHostView>
+        </Border>
     </DockPanel>
 </mah:MetroWindow>

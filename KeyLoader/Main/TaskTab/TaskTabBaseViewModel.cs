@@ -143,6 +143,25 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   }
 
   /// <summary>
+  /// Visualization helper - true between a click's mouse down and mouse up
+  /// </summary>
+  public bool IsClicking {
+    get => _isClicking;
+    set {
+      SetProperty(ref _isClicking, value);
+    }
+  }
+  private bool _isClicking;
+
+  /// <summary>
+  /// Callback to inform the VM that this tab's button has been clicked
+  /// </summary>
+  public void TabClicked()
+  {
+    Host.CurrentTab = this;
+  }
+
+  /// <summary>
   /// Callback from setting <see cref="TabHostViewModel.CurrentTab"/> to previous and new task tabs
   /// </summary>
   internal void BeforeIsActiveChange()

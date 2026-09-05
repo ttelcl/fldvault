@@ -89,7 +89,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       SetProperty(ref _statusMessage, value);
     }
   }
-  private string _statusMessage = "Key Loader and Master Key management application";
+  private string _statusMessage = "";
 
   /// <summary>
   /// The title of the application window

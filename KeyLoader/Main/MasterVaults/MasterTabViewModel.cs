@@ -321,7 +321,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     VaultFile.WriteMasterKeyFile(FileName, MasterKey, [], _childKeyChain, _masterKeyChain);
     UpdateFileExists();
     UpdateState();
-    ExpectStates(MasterTabState.Editing, MasterTabState.UsingMaster);
+    ExpectStates(MasterTabState.Editing, MasterTabState.Viewing);
     return FileExists;
   }
 
@@ -361,7 +361,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       Trace.TraceInformation($"Successfully unlocked key {MasterKey.KeyId}");
     }
     UpdateState();
-    ExpectStates(MasterTabState.UsingMaster, MasterTabState.Editing);
+    ExpectStates(MasterTabState.Viewing, MasterTabState.Editing);
     return MasterKeyLoaded;
   }
 
@@ -440,7 +440,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       return MasterTabState.Closed;
     }
-    return MasterTabState.UsingMaster;
+    return MasterTabState.Viewing;
   }
 
   /// <summary>

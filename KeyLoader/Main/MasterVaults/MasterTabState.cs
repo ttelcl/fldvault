@@ -30,7 +30,7 @@ public enum MasterTabState
 
   /// <summary>
   /// Waiting for the master key of an existing file
-  /// (expected next state: <see cref="UsingMaster"/>)
+  /// (expected next state: <see cref="Viewing"/>)
   /// </summary>
   AwaitingKey,
 
@@ -39,11 +39,11 @@ public enum MasterTabState
   /// to server)
   /// (expected next state: <see cref="Editing"/>, or close)
   /// </summary>
-  UsingMaster,
+  Viewing,
 
   /// <summary>
   /// Editing an existing or new master key file
-  /// (expected next state: <see cref="UsingMaster"/>, after save. or save and close)
+  /// (expected next state: <see cref="Viewing"/>, after save. or save and close)
   /// </summary>
   Editing,
 

@@ -66,7 +66,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     }
     else if(State == MasterTabState.AwaitingKey)
     {
-      // TODO
+      EnterVaultPassEntry.PasswordTask?.TryFocus();
     }
   }
 

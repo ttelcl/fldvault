@@ -48,16 +48,52 @@
             BorderThickness="1"
             BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
             Background="{DynamicResource MahApps.Brushes.Accent4}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
+            <DockPanel>
                 <!-- Server status -->
                 <serverwidget:ServerWidgetView
-                    Grid.Column="1"
+                    DockPanel.Dock="Right"
                     DataContext="{Binding ServerWidget}"/>
-            </Grid>
+                <Button
+                    DockPanel.Dock="Left"
+                    Margin="5,3"
+                    Padding="5,0"
+                    mah:ControlsHelper.CornerRadius="14"
+                    mah:ControlsHelper.MouseOverBorderBrush="White"
+                    Command="{Binding CreateMasterFileCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Margin="5,0"
+                            Height="20" Width="20"
+                            Kind="FileStarOutline" />
+                        <TextBlock
+                            Margin="5,0,10,0"
+                            FontSize="12"
+                            VerticalAlignment="Center"
+                            Text="New..."/>
+                    </StackPanel>
+                </Button>
+                <Button
+                    DockPanel.Dock="Left"
+                    Margin="5,3"
+                    Padding="5,0"
+                    mah:ControlsHelper.CornerRadius="14"
+                    mah:ControlsHelper.MouseOverBorderBrush="White"
+                    Command="{Binding OpenMasterFileCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Margin="5,0"
+                            Height="20" Width="20"
+                            Kind="FileDocumentArrowRightOutline" />
+                        <TextBlock
+                            Margin="5,0,10,0"
+                            FontSize="12"
+                            VerticalAlignment="Center"
+                            Text="Open..."/>
+                    </StackPanel>
+                </Button>
+                <!-- filler -->
+                <Grid/>
+            </DockPanel>
         </Border>
         <!-- Tab Pane -->
         <Border

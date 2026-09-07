@@ -25,7 +25,8 @@
             <TextBlock FontFamily="Consolas" FontSize="11" VerticalAlignment="Bottom"
                        Margin="5,3,5,5" Grid.Column="0" Text="{Binding KeyId}"/>
             <TextBlock VerticalAlignment="Bottom" TextAlignment="Center"
-                       Margin="10,3,10,5" Grid.Column="1" Text="{Binding FileName}"/>
+                       Margin="10,3,10,5" Grid.Column="1" Text="{Binding FileName}"
+                       TextTrimming="CharacterEllipsis"/>
             <TextBlock VerticalAlignment="Bottom"
                        Margin="5,3,5,5" Grid.Column="2" Text="{Binding State}"/>
         </Grid>
@@ -51,7 +52,7 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=UsingMaster}">
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Viewing}">
             <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Viewing</TextBlock>
         </Grid>
 

@@ -45,7 +45,10 @@
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=AwaitingKey}">
-            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Awaiting File Key</TextBlock>
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Awaiting File Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding EnterVaultPassEntry}"/>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=UsingMaster}">

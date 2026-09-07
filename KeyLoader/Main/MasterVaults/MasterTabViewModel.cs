@@ -56,6 +56,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     FileName = fileName;
     CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey, false);
     VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss), false);
+    EnterVaultPassEntry = new PasswordEntryViewModel(ss => EnterVaultKey(ss), false);
     UpdateState();
     UpdateTitleFromFileName();
     ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
@@ -243,11 +244,10 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// </summary>
   public PasswordEntryViewModel VerifyVaultPassEntry { get; }
 
-  ///// <summary>
-  ///// The password handling logic for entering and checking the key
-  ///// of an existing vault
-  ///// </summary>
-  //public PasswordEntryViewModel EnterVaultPassEntry { get; }
+  /// <summary>
+  /// The password handling logic for verifying an existing vault key
+  /// </summary>
+  public PasswordEntryViewModel EnterVaultPassEntry { get; }
 
   /// <summary>
   /// Start the process of creating a new key for a new vault file by generating a new
@@ -291,6 +291,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     ExpectStates(MasterTabState.ConfirmingKey);
     if(MasterKey == null || !_masterKeyChain.ContainsKey(MasterKey.KeyId) || String.IsNullOrEmpty(FileName))
     {
+      State = MasterTabState.Panic;
       throw new InvalidOperationException(
         "Cannot confirm a master key that hasn't been loaded yet");
     }
@@ -322,6 +323,46 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     UpdateState();
     ExpectStates(MasterTabState.Editing, MasterTabState.UsingMaster);
     return FileExists;
+  }
+
+  /// <summary>
+  /// Verify the passphrase for the file that is being opened
+  /// </summary>
+  /// <param name="passphrase"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  private bool EnterVaultKey(SecureString? passphrase)
+  {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return false;
+    }
+    ExpectStates(MasterTabState.AwaitingKey);
+    if(MasterKey == null)
+    {
+      State = MasterTabState.Panic;
+      throw new InvalidOperationException(
+        "Internal error: Expecting the master key metadata to be available");
+    }
+    using(var ppk = PassphraseKey.TryPassphrase(passphrase, MasterKey))
+    {
+      if(ppk == null)
+      {
+        MessageBox.Show(
+          "Incorrect passphrase for this vault",
+          "Wrong passphrase",
+          MessageBoxButton.OK,
+          MessageBoxImage.Error);
+        return false;
+      }
+      _masterKeyChain.PutCopy(ppk);
+      UpdateMasterKeyLoaded();
+      Trace.TraceInformation($"Successfully unlocked key {MasterKey.KeyId}");
+    }
+    UpdateState();
+    ExpectStates(MasterTabState.UsingMaster, MasterTabState.Editing);
+    return MasterKeyLoaded;
   }
 
   private void UpdateMasterKeyLoaded()

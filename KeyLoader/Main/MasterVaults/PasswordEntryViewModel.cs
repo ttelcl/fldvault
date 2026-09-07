@@ -29,11 +29,10 @@ public class PasswordEntryViewModel: ObservableObject
   /// <see cref="PasswordTask"/> using the given <paramref name="submitAction"/>.
   /// </summary>
   /// <param name="submitAction"></param>
-  /// <param name="supportCancel"></param>
-  public PasswordEntryViewModel(Action<SecureString?> submitAction, bool supportCancel)
+  public PasswordEntryViewModel(Action<SecureString?> submitAction)
     : this()
   {
-    PasswordTask = new PasswordEntryTaskViewModel(submitAction, supportCancel);
+    PasswordTask = new PasswordEntryTaskViewModel(submitAction);
   }
 
   /// <summary>

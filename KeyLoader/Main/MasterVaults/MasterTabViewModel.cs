@@ -54,14 +54,15 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     Owner = owner;
     MasterKey = masterKeyDescriptor;
     FileName = fileName;
-    CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey, false);
-    VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss), false);
-    EnterVaultPassEntry = new PasswordEntryViewModel(ss => EnterVaultKey(ss), false);
+    CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey);
+    VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss));
+    EnterVaultPassEntry = new PasswordEntryViewModel(ss => EnterVaultKey(ss));
     UpdateState();
     UpdateTitleFromFileName();
     ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
     if(State == MasterTabState.CreatingKey)
     {
+      Modified = true;
       CreateVaultPassEntry.PasswordTask?.TryFocus();
     }
     else if(State == MasterTabState.AwaitingKey)
@@ -156,11 +157,11 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   private void UpdateTitleFromFileName()
   {
     var title = TitleFromFileName(_fileName);
-    var keySuffix = "." + KeyId[..8];
-    if(title.EndsWith(keySuffix, StringComparison.InvariantCultureIgnoreCase))
-    {
-      title = title[..^9];
-    }
+    //var keySuffix = "." + KeyId[..8];
+    //if(title.EndsWith(keySuffix, StringComparison.InvariantCultureIgnoreCase))
+    //{
+    //  title = title[..^9];
+    //}
     Title = title;
   }
 
@@ -319,6 +320,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       }
     }
     VaultFile.WriteMasterKeyFile(FileName, MasterKey, [], _childKeyChain, _masterKeyChain);
+    Modified = false;
     UpdateFileExists();
     UpdateState();
     ExpectStates(MasterTabState.Editing, MasterTabState.Viewing);

@@ -42,6 +42,14 @@
                 x:Key="VisibleIfNot"
                 MatchValue="{x:Static Visibility.Collapsed}"
                 MismatchValue="{x:Static Visibility.Visible}"/>
+            <converters:VisibleIfConverter
+                x:Key="VisibleIfOrHidden"
+                MatchValue="{x:Static Visibility.Visible}"
+                MismatchValue="{x:Static Visibility.Hidden}"/>
+            <converters:VisibleIfConverter
+                x:Key="VisibleIfNotOrHidden"
+                MatchValue="{x:Static Visibility.Hidden}"
+                MismatchValue="{x:Static Visibility.Visible}"/>
             <converters:StringMatchVisibilityConverter
                 x:Key="VisibleIfMatch"/>
             <converters:StringMatchVisibilityConverter

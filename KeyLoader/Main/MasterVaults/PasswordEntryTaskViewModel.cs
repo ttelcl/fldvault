@@ -35,19 +35,16 @@ public class PasswordEntryTaskViewModel: ObservableObject
   /// <param name="submitAction">
   /// The <see cref="Action"/> that is called when submitting the password
   /// or cancelling it. Cancellation is indicated by calling this action
-  /// with argument <see langword="null"/>. Upon accepting the submission,
-  /// the action should ensure that this <see cref="PasswordEntryTaskViewModel"/>
-  /// is removed as <see cref="FrameworkElement.DataContext"/> of
-  /// the <see cref="PasswordBox"/>.
+  /// with argument <see langword="null"/>, and can be externally triggered by
+  /// calling <see cref="Cancel"/>. Upon accepting the submission,
+  /// the action should consider removing this <see cref="PasswordEntryTaskViewModel"/>
+  /// as <see cref="FrameworkElement.DataContext"/> of the <see cref="PasswordBox"/>.
   /// </param>
-  /// <param name="supportCancel"></param>
   public PasswordEntryTaskViewModel(
-    Action<SecureString?> submitAction, bool supportCancel)
+    Action<SecureString?> submitAction)
   {
     _submitAction = submitAction;
     SubmitCommand = new RelayCommand(() => Submit(false), () => _passwordBox != null);
-    CancelCommand = new RelayCommand(() => Submit(true));
-    SupportCancel = supportCancel;
   }
 
   /// <summary>
@@ -55,22 +52,6 @@ public class PasswordEntryTaskViewModel: ObservableObject
   /// the callback passed to the constructor
   /// </summary>
   public ICommand SubmitCommand { get; }
-
-  /// <summary>
-  /// Submits <see langword="null"/> to the callback passed to the constructor
-  /// </summary>
-  public ICommand CancelCommand { get; }
-
-  /// <summary>
-  /// Whether or not to show a "Cancel" button
-  /// </summary>
-  public bool SupportCancel {
-    get => _supportCancel;
-    set {
-      SetProperty(ref _supportCancel, value);
-    }
-  }
-  private bool _supportCancel;
 
   internal void Disconnect()
   {
@@ -89,6 +70,21 @@ public class PasswordEntryTaskViewModel: ObservableObject
     if(_pendingFocus)
     {
       TryFocus();
+    }
+  }
+
+  /// <summary>
+  /// Cancel passphrase entry: invoke the callback with a <see langword="null"/>
+  /// argument, and if that doesn't <see cref="Disconnect"/>, do so.
+  /// </summary>
+  public void Cancel()
+  {
+    var oldPwb = _passwordBox;
+    Submit(true);
+    if(_passwordBox == oldPwb)
+    {
+      // Otherwise assume that Submit() already caused disconnecting
+      Disconnect();
     }
   }
 

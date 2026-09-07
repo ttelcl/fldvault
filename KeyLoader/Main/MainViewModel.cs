@@ -174,8 +174,23 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     };
     if(dialog.ShowDialog() == true)
     {
-      var tab = MasterTabViewModel.OpenExisting(this, dialog.FileName);
-      TabHost.CurrentTab = tab;
+      var fileName = dialog.FileName;
+      var existingTab =
+        TabHost.TaskTabs
+        .OfType<MasterTabViewModel>()
+        .FirstOrDefault(tab => tab.FileName.Equals(fileName, StringComparison.InvariantCultureIgnoreCase));
+      if(existingTab != null)
+      {
+        MessageBox.Show(
+          "That file was already open",
+          "Already open");
+        TabHost.CurrentTab = existingTab;
+      }
+      else
+      {
+        var tab = MasterTabViewModel.OpenExisting(this, fileName);
+        TabHost.CurrentTab = tab;
+      }
     }
   }
 
@@ -189,6 +204,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       Filter = "Master key files (*.mzvlt)|*.mzvlt",
       AddExtension = true,
       ClientGuid = __masterFileDialogGuid,
+      CheckFileExists = false,
     };
     if(dialog.ShowDialog() == true)
     {

@@ -20,10 +20,28 @@
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">
-                <MenuItem Header="_New master key file..." Command="{Binding CreateMasterFileCommand}"/>
-                <MenuItem Header="_Open master key file..." Command="{Binding OpenMasterFileCommand}"/>
+                <MenuItem
+                    Header="_New master key file..."
+                    Command="{Binding CreateMasterFileCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="FileStarOutline" />
+                    </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem
+                    Header="_Open master key file..."
+                    Command="{Binding OpenMasterFileCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="FileDocumentArrowRightOutline" />
+                    </MenuItem.Icon>
+                </MenuItem>
                 <Separator/>
-                <MenuItem Header="E_xit" Command="{Binding ExitCommand}"/>
+                <MenuItem
+                    Header="E_xit"
+                    Command="{Binding ExitCommand}">
+                    <MenuItem.Icon>
+                        <iconPacks:PackIconMaterial Padding="5,0,0,0" Height="20" Width="25" Kind="ExitToApp" />
+                    </MenuItem.Icon>
+                </MenuItem>
             </MenuItem>
         </Menu>
         <StatusBar DockPanel.Dock="Bottom">

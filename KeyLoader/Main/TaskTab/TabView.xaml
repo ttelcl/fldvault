@@ -19,21 +19,32 @@
             Background="{DynamicResource MahApps.Brushes.AccentBase}"
             CornerRadius="6"
             Margin="2,3"
-            Visibility="{Binding IsActive, Converter={StaticResource VisibleIf}}">
-            <TextBlock
-                MaxWidth="100"
-                MinWidth="50"
-                Padding="10,3"
-                Foreground="{DynamicResource MahApps.Brushes.Text}"
-                TextAlignment="Center"
-                Text="{Binding Title}"
-                TextTrimming="CharacterEllipsis"/>
+            Visibility="{Binding IsActive, Converter={StaticResource VisibleIfOrHidden}}">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock
+                    MaxWidth="100"
+                    MinWidth="50"
+                    Margin="10,3,5,3"
+                    Foreground="{DynamicResource MahApps.Brushes.Text}"
+                    TextAlignment="Center"
+                    Text="{Binding Title}"
+                    TextTrimming="CharacterEllipsis"/>
+                <Button
+                    Padding="5,5" 
+                    Style="{DynamicResource MahApps.Styles.Button.Circle}"
+                    mah:ControlsHelper.MouseOverBorderBrush="White"
+                    Command="{Binding CloseIfUnmodifiedCommand}">
+                    <iconPacks:PackIconMaterial
+                        Kind="CloseThick"
+                        Width="10" Height="10"/>
+                </Button>
+            </StackPanel>
         </Border>
         <Border
             Background="{DynamicResource MahApps.Brushes.Accent3}"
             Margin="2,3"
             CornerRadius="10"
-            Visibility="{Binding IsActive, Converter={StaticResource VisibleIfNot}}">
+            Visibility="{Binding IsActive, Converter={StaticResource VisibleIfNotOrHidden}}">
             <TextBlock
                 MaxWidth="100"
                 MinWidth="50"

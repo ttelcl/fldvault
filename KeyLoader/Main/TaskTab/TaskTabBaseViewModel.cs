@@ -41,6 +41,9 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
     TryCloseInteractiveCommand = new RelayCommand(
       () => TryCloseGentle(),
       () => true);
+    _closeIfUnmodifiedCommand = new RelayCommand(
+      () => CloseHard(),
+      () => !Modified);
   }
 
   /// <summary>
@@ -66,6 +69,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
     get => _modified;
     protected set {
       SetProperty(ref _modified, value);
+      _closeIfUnmodifiedCommand.NotifyCanExecuteChanged();
     }
   }
   private bool _modified;
@@ -122,6 +126,13 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   /// which also allows cancelling the closing
   /// </summary>
   public ICommand TryCloseInteractiveCommand { get; }
+
+  /// <summary>
+  /// A command to close this tab, only enabled of this tab is not modified
+  /// </summary>
+  public ICommand CloseIfUnmodifiedCommand => _closeIfUnmodifiedCommand;
+
+  private RelayCommand _closeIfUnmodifiedCommand;
 
   /// <summary>
   /// Attempt to save the data. Upon success <see cref="Modified"/> will be

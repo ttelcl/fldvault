@@ -54,9 +54,12 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     Owner = owner;
     MasterKey = masterKeyDescriptor;
     FileName = fileName;
-    CreateVaultPassEntry = new PasswordEntryViewModel(SetNewVaultKey);
-    VerifyVaultPassEntry = new PasswordEntryViewModel(ss => ConfirmNewVaultKey(ss));
-    EnterVaultPassEntry = new PasswordEntryViewModel(ss => EnterVaultKey(ss));
+    CreateVaultPassEntry = new PasswordEntryViewModel(
+      SetNewVaultKey, "Enter passphrase for the new master vault file");
+    VerifyVaultPassEntry = new PasswordEntryViewModel(
+      ss => ConfirmNewVaultKey(ss), "Re-enter the passphrase for the new vault file");
+    EnterVaultPassEntry = new PasswordEntryViewModel(
+      ss => EnterVaultKey(ss), "Enter the passphrase for this master vault file");
     UpdateState();
     UpdateTitleFromFileName();
     ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);

@@ -20,8 +20,13 @@
             CornerRadius="6"
             Margin="2,3"
             Visibility="{Binding IsActive, Converter={StaticResource VisibleIfOrHidden}}">
-            <StackPanel Orientation="Horizontal">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="100"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <TextBlock
+                    Grid.Column="0"
                     MaxWidth="100"
                     MinWidth="50"
                     Margin="10,3,5,3"
@@ -30,7 +35,10 @@
                     Text="{Binding Title}"
                     TextTrimming="CharacterEllipsis"/>
                 <Button
-                    Padding="5,5" 
+                    Grid.Column="1"
+                    Padding="4,4" 
+                    Margin="2,2,2,2"
+                    Background="{DynamicResource MahApps.Brushes.Control.Background}"
                     Style="{DynamicResource MahApps.Styles.Button.Circle}"
                     mah:ControlsHelper.MouseOverBorderBrush="White"
                     Command="{Binding CloseIfUnmodifiedCommand}">
@@ -38,7 +46,7 @@
                         Kind="CloseThick"
                         Width="10" Height="10"/>
                 </Button>
-            </StackPanel>
+            </Grid>
         </Border>
         <Border
             Background="{DynamicResource MahApps.Brushes.Accent3}"

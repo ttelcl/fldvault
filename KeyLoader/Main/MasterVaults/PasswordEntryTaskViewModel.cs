@@ -53,6 +53,17 @@ public class PasswordEntryTaskViewModel: ObservableObject
   /// </summary>
   public ICommand SubmitCommand { get; }
 
+  /// <summary>
+  /// The watermark to show in the <see cref="PasswordBox"/> while it is still empty
+  /// </summary>
+  public string WaterMark {
+    get => _watermark;
+    set {
+      SetProperty(ref _watermark, value);
+    }
+  }
+  private string _watermark = "";
+
   internal void Disconnect()
   {
     _passwordBox?.Clear();

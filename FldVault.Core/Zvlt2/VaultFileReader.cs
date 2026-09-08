@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
 using FldVault.Core.Utilities;
+using FldVault.Core.Vaults;
 
 namespace FldVault.Core.Zvlt2;
 
@@ -204,6 +205,7 @@ public class VaultFileReader: IDisposable
   /// </returns>
   public IReadOnlySet<Guid> ReadChildKeys(KeyChain childKeyChain)
   {
+    CheckDisposed();
     var childKeys = new HashSet<Guid>();
     // Only expect the child blocks at top level of the block element tree
     foreach(var block in Vault.BlocksOfKind(Zvlt2BlockType.ChildKeyList))
@@ -212,6 +214,24 @@ public class VaultFileReader: IDisposable
       childKeys.UnionWith(ids);
     }
     return childKeys;
+  }
+
+  /// <summary>
+  /// Read all <see cref="Zvlt2BlockType.ExternalPassphraseLink"/> ('PASX')
+  /// blocks in the vault
+  /// </summary>
+  /// <returns></returns>
+  public IReadOnlyDictionary<Guid, PassphraseKeyInfoFile> ReadExternalPassphraseLinks()
+  {
+    CheckDisposed();
+    var map = new Dictionary<Guid, PassphraseKeyInfoFile>();
+    // Only expect the link blocks at top level of the block element tree
+    foreach(var block in Vault.BlocksOfKind(Zvlt2BlockType.ExternalPassphraseLink))
+    {
+      var pkif = PassphraseKeyInfoFile.ReadFromBlock(_stream, block);
+      map[pkif.KeyId] = pkif;
+    }
+    return map;
   }
 
   /// <summary>

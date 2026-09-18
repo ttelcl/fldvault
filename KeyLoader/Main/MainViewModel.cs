@@ -19,6 +19,7 @@ using FldVault.KeyServer;
 using KeyLoader.Main.MasterVaults;
 using KeyLoader.Main.ServerWidget;
 using KeyLoader.Main.TaskTab;
+using KeyLoader.UserMessages;
 
 using MahApps.Metro.Controls.Dialogs;
 
@@ -29,7 +30,7 @@ namespace KeyLoader.Main;
 /// <summary>
 /// The main application viewmodel
 /// </summary>
-public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessage>
+public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessage>, IMessageHost
 {
   private readonly CancellationTokenSource _modelAwakeTokenSource;
 
@@ -52,6 +53,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     Messenger.Register<CurrentTabChangedMessage>(this);
     OpenMasterFileCommand = new RelayCommand(OpenExistingMasterFile);
     CreateMasterFileCommand = new RelayCommand(CreateNewMasterFile);
+    ClearCurrentMessageCommand = new RelayCommand(this.ClearMessage);
   }
 
   /// <summary>
@@ -71,6 +73,12 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   public ICommand CreateMasterFileCommand { get; }
 
   /// <summary>
+  /// Clear the currently showing user message (pseudo-dialog),
+  /// if there is any.
+  /// </summary>
+  public ICommand ClearCurrentMessageCommand { get; }
+
+  /// <summary>
   /// The <see cref="CancellationToken"/> that is canceled when the app is closed.
   /// </summary>
   public CancellationToken AppAwakeToken { get; }
@@ -85,7 +93,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   /// </summary>
   public string StatusMessage {
     get => _statusMessage;
-    set {
+    private set {
       SetProperty(ref _statusMessage, value);
     }
   }
@@ -222,6 +230,44 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
         var tab = MasterTabViewModel.CreateNew(this, fileName);
         TabHost.CurrentTab = tab;
       }
+    }
+  }
+
+  /// <summary>
+  /// Get the currently showing <see cref="UserMessage"/>, if any.
+  /// This is set by <see cref="ShowMessage(UserMessage?)"/>, typically
+  /// via extension methods on <see cref="IMessageHost"/>.
+  /// </summary>
+  public UserMessage? CurrentMessage {
+    get => _currentUserMessage;
+    private set {
+      SetProperty(ref _currentUserMessage, value);
+    }
+  }
+  private UserMessage? _currentUserMessage;
+  
+  /// <inheritdoc/>
+  public void ShowMessage(UserMessage? message)
+  {
+    CurrentMessage = message;
+  }
+
+  /// <inheritdoc/>
+  public void SetStatus(string? status, TimeSpan? duration = null)
+  {
+    StatusMessage = status ?? "";
+    if(!String.IsNullOrEmpty(status) && duration.HasValue)
+    {
+      Trace.TraceError("Not yet implemented: ShowStatus auto-clear mechanism");
+    }
+  }
+
+  /// <inheritdoc/>
+  public void UnsetStatus(string status)
+  {
+    if(StatusMessage == status)
+    {
+      StatusMessage = "";
     }
   }
 }

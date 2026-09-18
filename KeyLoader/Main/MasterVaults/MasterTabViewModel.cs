@@ -13,6 +13,7 @@ using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
 
 using KeyLoader.Main.TaskTab;
+using KeyLoader.UserMessages;
 
 namespace KeyLoader.Main.MasterVaults;
 
@@ -354,11 +355,12 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       if(ppk == null)
       {
-        MessageBox.Show(
-          "Incorrect passphrase for this vault",
-          "Wrong passphrase",
-          MessageBoxButton.OK,
-          MessageBoxImage.Error);
+        //MessageBox.Show(
+        //  "Incorrect passphrase for this vault",
+        //  "Wrong passphrase",
+        //  MessageBoxButton.OK,
+        //  MessageBoxImage.Error);
+        Owner.ShowError("Incorrect passphrase for this vault");
         return false;
       }
       _masterKeyChain.PutCopy(ppk);

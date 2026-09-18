@@ -189,9 +189,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
         .FirstOrDefault(tab => tab.FileName.Equals(fileName, StringComparison.InvariantCultureIgnoreCase));
       if(existingTab != null)
       {
-        MessageBox.Show(
-          "That file was already open",
-          "Already open");
+        this.ShowError("That file was already open");
         TabHost.CurrentTab = existingTab;
       }
       else
@@ -219,11 +217,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       var fileName = dialog.FileName;
       if(File.Exists(fileName))
       {
-        MessageBox.Show(
-          "A file with that name already exists",
-          "Error",
-          MessageBoxButton.OK,
-          MessageBoxImage.Error);
+        this.ShowError("A file with that name already exists");
       }
       else
       {

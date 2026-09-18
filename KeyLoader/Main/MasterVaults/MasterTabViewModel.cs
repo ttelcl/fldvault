@@ -315,11 +315,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       if(ppk == null)
       {
-        MessageBox.Show(
-          "Passphrase did not match",
-          "Wrong passphrase",
-          MessageBoxButton.OK,
-          MessageBoxImage.Error);
+        Owner.ShowError("Passphrase did not match");
         return false;
       }
     }
@@ -355,11 +351,6 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       if(ppk == null)
       {
-        //MessageBox.Show(
-        //  "Incorrect passphrase for this vault",
-        //  "Wrong passphrase",
-        //  MessageBoxButton.OK,
-        //  MessageBoxImage.Error);
         Owner.ShowError("Incorrect passphrase for this vault");
         return false;
       }

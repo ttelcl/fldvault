@@ -11,6 +11,8 @@ using CommunityToolkit.Mvvm.Input;
 using FldVault.Core.Vaults;
 using FldVault.KeyServer;
 
+using KeyLoader.UserMessages;
+
 namespace KeyLoader.Main.MasterVaults;
 
 /// <summary>
@@ -43,6 +45,11 @@ public class ChildKeyViewModel: ObservableObject
   /// is part of
   /// </summary>
   public MasterVaultViewModel VaultModel { get; }
+
+  /// <summary>
+  /// Get the message host (implemented by the main VM)
+  /// </summary>
+  public IMessageHost MessageHost => VaultModel.Owner.Owner;
 
   /// <summary>
   /// The ID of the key that this object represents.
@@ -101,7 +108,7 @@ public class ChildKeyViewModel: ObservableObject
     var result = await VaultModel.TryRetrieveKey(KeyId);
     if(result == null)
     {
-      MessageBox.Show(
+      MessageHost.ShowWarning(
         "The key server is not available",
         "Failed");
     }
@@ -110,12 +117,12 @@ public class ChildKeyViewModel: ObservableObject
       switch(result.Value)
       {
         case KeyPresence.Unavailable:
-          MessageBox.Show(
+          MessageHost.ShowWarning(
             "The key is not available in the server",
             "Failed");
           return;
         case KeyPresence.Cloaked:
-          MessageBox.Show(
+          MessageHost.ShowWarning(
             "The key is present but hidden in the server. Consider unhiding it.",
             "Failed");
           return;
@@ -124,7 +131,7 @@ public class ChildKeyViewModel: ObservableObject
           UpdateKeyKnown();
           return;
         default:
-          MessageBox.Show(
+          MessageHost.ShowError(
             "Internal error. Unrecognized server response.",
             "Failed");
           return;

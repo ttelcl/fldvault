@@ -272,6 +272,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
         OnPropertyChanged(nameof(IsViewing));
         SaveAndViewCommand.NotifyCanExecuteChanged();
         StartEditingCommand.NotifyCanExecuteChanged();
+        UnlockedVault?.UpdateCommandEnabledStates();
       }
     }
   }
@@ -290,6 +291,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
         OnPropertyChanged(nameof(IsViewing));
         SaveAndViewCommand.NotifyCanExecuteChanged();
         StartEditingCommand.NotifyCanExecuteChanged();
+        UnlockedVault?.UpdateCommandEnabledStates();
       }
     }
   }

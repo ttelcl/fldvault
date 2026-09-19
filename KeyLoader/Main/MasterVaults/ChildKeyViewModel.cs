@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,7 +37,7 @@ public class ChildKeyViewModel: ObservableObject
     KeyId = keyId;
     TryLoadKeyCommand = new AsyncRelayCommand(
       () => TryLoadKey(),
-      () => !KeyKnown && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
+      () => !KeyKnown && VaultModel.Owner.IsEditing && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
     UpdateKeyKnown();
   }
 
@@ -69,7 +70,10 @@ public class ChildKeyViewModel: ObservableObject
   public bool KeyKnown {
     get => _keyKnown;
     private set {
-      SetProperty(ref _keyKnown, value);
+      if(SetProperty(ref _keyKnown, value))
+      {
+        TryLoadKeyCommand.NotifyCanExecuteChanged();
+      }
     }
   }
   private bool _keyKnown;
@@ -103,6 +107,12 @@ public class ChildKeyViewModel: ObservableObject
     UpdateKeyKnown();
     if(KeyKnown)
     {
+      return;
+    }
+    if(!VaultModel.Owner.IsEditing)
+    {
+      Trace.TraceWarning(
+        "Ignoring request to load key while in read only mode");
       return;
     }
     var result = await VaultModel.TryRetrieveKey(KeyId);

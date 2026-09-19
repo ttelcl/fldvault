@@ -14,17 +14,37 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock
-            Grid.Row="0"
-            TextAlignment="Center"
-            VerticalAlignment="Center">State: Viewing</TextBlock>
+        <!-- body -->
+        <Border
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            BorderThickness="1"
+            Grid.Row="0">
+            <ItemsControl
+                ItemsSource="{Binding Keys}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate >
+                        <local:ViewingKeyView/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <!-- buttons -->
+        <Border
+            MinHeight="45"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Accent3}"
+            BorderThickness="1"
+            Grid.Row="1">
+
+        </Border>
         <!-- footer -->
         <Border
             BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
             Background="{DynamicResource MahApps.Brushes.Accent4}"
             BorderThickness="1"
-            Grid.Row="1">
+            Grid.Row="2">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

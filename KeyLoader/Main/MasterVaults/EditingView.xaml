@@ -14,17 +14,41 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock
-            Grid.Row="0"
-            TextAlignment="Center"
-            VerticalAlignment="Center">State: Editing</TextBlock>
+        <Border
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            BorderThickness="1"
+            Grid.Row="0">
+            <ItemsControl
+                ItemsSource="{Binding Keys}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate >
+                        <local:ViewingKeyView/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <!-- edit buttons -->
+        <Border
+            MinHeight="25"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Accent3}"
+            BorderThickness="1"
+            Grid.Row="1">
+            <StackPanel Orientation="Horizontal">
+                <Button
+                    Command="{Binding TryPasteCommand}">
+                    <TextBlock>Paste Key Info</TextBlock>
+                </Button>
+            </StackPanel>
+        </Border>
         <!-- footer -->
         <Border
             BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
             Background="{DynamicResource MahApps.Brushes.Accent4}"
             BorderThickness="1"
-            Grid.Row="1">
+            Grid.Row="2">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

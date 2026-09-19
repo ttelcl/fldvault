@@ -15,6 +15,8 @@ using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
 using FldVault.KeyServer;
 
+using KeyLoader.UserMessages;
+
 namespace KeyLoader.Main.MasterVaults;
 
 /// <summary>
@@ -62,8 +64,13 @@ public class MasterVaultViewModel: ObservableObject
       throw new InvalidOperationException(
         "Cannot create the MasterVaultViewModel: the key is not available");
     }
+    TryPasteCommand = new RelayCommand(
+      TryPaste,
+      () => Owner.IsEditing);
     ReloadContent();
   }
+
+  public RelayCommand TryPasteCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -187,6 +194,29 @@ public class MasterVaultViewModel: ObservableObject
       return result;
     }
     return null;
+  }
+
+  /// <summary>
+  /// Try to paste whatever is found on the clipboard. As a new key, an update to an existing key,
+  /// or even a new master key tab.
+  /// </summary>
+  /// <remarks>
+  /// Tries to recognize the following:
+  /// <list type="bullet">
+  /// <item>A guid, treated as bare key id. Known master key ids are rejected</item>
+  /// <item>A ZKEY record, with or without passphrase</item>
+  /// <item>A master key file or master key file name</item>
+  /// <item>Another type of key-bearing file or their name (extracting a key-info record)</item>
+  /// </list>
+  /// </remarks>
+  private void TryPaste()
+  {
+    Owner.MessageHost.ShowError("Magic paste: Not yet implemented");
+  }
+
+  internal void UpdateCommandEnabledStates()
+  {
+    TryPasteCommand.NotifyCanExecuteChanged();
   }
 
   internal bool HasChildKey(Guid keyId)

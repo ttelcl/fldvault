@@ -163,6 +163,16 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     }
   }
 
+  internal IEnumerable<MasterTabViewModel> GetMasterTabs()
+  {
+    return TabHost.TaskTabs.OfType<MasterTabViewModel>();
+  }
+
+  internal IEnumerable<Guid> KnownMasterKeys()
+  {
+    return GetMasterTabs().Where(tab => tab.MasterKey != null).Select(tab => tab.MasterKey!.KeyId);
+  }
+
   /// <summary>
   /// Implements <see cref="IRecipient{TMessage}"/> for <see cref="CurrentTabChangedMessage"/>.
   /// </summary>

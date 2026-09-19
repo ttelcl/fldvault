@@ -68,6 +68,7 @@
                         <TextBlock
                             Margin="20,0"
                             VerticalAlignment="Center"
+                            TextWrapping="Wrap"
                             Text="{Binding CurrentMessage.Message}"/>
                     </Border>
                 </Grid>

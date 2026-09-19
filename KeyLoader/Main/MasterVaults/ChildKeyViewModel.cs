@@ -73,10 +73,23 @@ public class ChildKeyViewModel: ObservableObject
       if(SetProperty(ref _keyKnown, value))
       {
         TryLoadKeyCommand.NotifyCanExecuteChanged();
+        KeyIcon = _keyKnown ? "LockOpenCheck" : "LockAlert";
+        VaultModel.Owner.MarkModified(true);
       }
     }
   }
   private bool _keyKnown;
+
+  /// <summary>
+  /// An icon indicating key presence or absence
+  /// </summary>
+  public string KeyIcon {
+    get => _keyIcon;
+    set {
+      SetProperty(ref _keyIcon, value);
+    }
+  }
+  private string _keyIcon = "LockAlert";
 
   /// <summary>
   /// Get or set the key info (passphrase link) for this key
@@ -89,10 +102,49 @@ public class ChildKeyViewModel: ObservableObject
         throw new InvalidOperationException(
           "The key ids of the passphrase link and this key viewmodel do not match");
       }
-      SetProperty(ref _keyInfo, value);
+      var oldInfo = _keyInfo;
+      if(SetProperty(ref _keyInfo, value))
+      {
+        KeyInfoKnown = _keyInfo != null;
+        // determine if there were actual changes before declaring a modification
+        var realChange =
+           _keyInfo?.SaltBase64 != oldInfo?.SaltBase64
+           || _keyInfo?.KeyId != oldInfo?.KeyId
+           || _keyInfo?.UtcKeyStamp != oldInfo?.UtcKeyStamp;
+        if(realChange)
+        {
+          VaultModel.Owner.MarkModified(true);
+        }
+      }
     }
   }
   private PassphraseKeyInfoFile? _keyInfo;
+
+  /// <summary>
+  /// Whether or not the key info is available (which allows unlocking
+  /// a locked key with a passphrase).
+  /// </summary>
+  public bool KeyInfoKnown {
+    get => _keyInfoKnown;
+    private set {
+      if(SetProperty(ref _keyInfoKnown, value))
+      {
+        KeyInfoIcon = _keyInfoKnown ? "KeyboardOutline" : "KeyboardOffOutline";
+      }
+    }
+  }
+  private bool _keyInfoKnown;
+
+  /// <summary>
+  /// The icon to represent <see cref="KeyInfoKnown"/> (in PackIconMaterial)
+  /// </summary>
+  public string KeyInfoIcon { 
+    get => _keyInfoIcon;
+    private set {
+      SetProperty(ref _keyInfoIcon, value);
+    }
+  }
+  private string _keyInfoIcon = "KeyboardOffOutline";
 
   /// <summary>
   /// Updates the value of <see cref="KeyKnown"/> to its correct value

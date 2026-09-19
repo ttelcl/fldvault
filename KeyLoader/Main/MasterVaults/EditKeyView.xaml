@@ -12,10 +12,49 @@
     d:DesignHeight="60" d:DesignWidth="800">
     <Border
         BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-        BorderThickness="3"
+        BorderThickness="2"
+        MinHeight="45"
         >
         <Grid>
-            <TextBlock Text="{Binding KeyId}"/>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border
+                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                BorderThickness="1"
+                Grid.Column="0"
+                >
+                <TextBlock
+                    FontFamily="Consolas"
+                    FontSize="12"
+                    Margin="5,5,5,5"
+                    Foreground="{Binding KeyKnown, Converter={StaticResource TrueGreenFalseRed}}"
+                    Text="{Binding KeyId}"/>
+            </Border>
+            <Border
+                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                Background="{DynamicResource MahApps.Brushes.Accent4}"
+                BorderThickness="1"
+                Grid.Column="1">
+                <StackPanel Orientation="Horizontal">
+                    <iconPacks:PackIconMaterial
+                        Margin="5,5"
+                        VerticalAlignment="Stretch"
+                        Height="24" Width="24"
+                        Foreground="{Binding KeyKnown, Converter={StaticResource TrueGreenFalseRed}}"
+                        Kind="{Binding KeyIcon}" />
+                    <iconPacks:PackIconMaterial
+                        Margin="5,5"
+                        VerticalAlignment="Stretch"
+                        Height="24" Width="24"
+                        Foreground="{Binding KeyInfoKnown, Converter={StaticResource TrueGreenFalseRed}}"
+                        Kind="{Binding KeyInfoIcon}" />
+                </StackPanel>
+            </Border>
         </Grid>
     </Border>
 </UserControl>

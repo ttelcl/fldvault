@@ -24,7 +24,7 @@
                 ItemsSource="{Binding Keys}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate >
-                        <local:ViewingKeyView/>
+                        <local:EditKeyView/>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

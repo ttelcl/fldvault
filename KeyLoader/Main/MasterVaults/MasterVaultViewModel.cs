@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -70,6 +72,10 @@ public class MasterVaultViewModel: ObservableObject
     ReloadContent();
   }
 
+  /// <summary>
+  /// Command to attempt to paste information currently in the clipboard
+  /// as a partial key (or even a full key)
+  /// </summary>
   public RelayCommand TryPasteCommand { get; }
 
   /// <summary>
@@ -98,6 +104,7 @@ public class MasterVaultViewModel: ObservableObject
       childVm = new ChildKeyViewModel(this, keyId);
       _children.Add(keyId, childVm);
       Keys.Add(childVm);
+      Owner.MarkModified(true);
     }
     return childVm;
   }
@@ -211,7 +218,87 @@ public class MasterVaultViewModel: ObservableObject
   /// </remarks>
   private void TryPaste()
   {
-    Owner.MessageHost.ShowError("Magic paste: Not yet implemented");
+    if(Clipboard.ContainsFileDropList())
+    {
+      // One or more files were copied in explorer or similar apps
+      var fileDropList = Clipboard.GetFileDropList();
+      if(fileDropList != null && fileDropList.Count > 0)
+      {
+        foreach(var file in fileDropList)
+        {
+          if(!String.IsNullOrEmpty(file) && File.Exists(file))
+          {
+            TryPasteFile(file);
+          }
+        }
+        return;
+      }
+    }
+    else if(Clipboard.ContainsText())
+    {
+      var text = Clipboard.GetText();
+      var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+      if(lines.Length > 0)
+      {
+        using var zkeyEx = ZkeyEx.TryFromTransferLines(lines);
+        if(zkeyEx != null)
+        {
+          PasteZKey(zkeyEx);
+          return;
+        }
+        else if(lines.Length == 1 && Guid.TryParse(lines[0], out var keyId))
+        {
+          TryPasteGuid(keyId);
+          return;
+        }
+      }
+    }
+    Owner.MessageHost.ShowWarning(
+      "No content suitable for pasting found on the clipboard.");
+  }
+
+  private void TryPasteFile(string fileName)
+  {
+    Trace.TraceWarning(
+      $"NYI: file paste for: {fileName}");
+  }
+
+  private void PasteZKey(ZkeyEx zkeyData)
+  {
+    var cvm = TryPasteGuid(zkeyData.KeyGuid);
+    if(cvm != null) // else: rejected, and message is already showing
+    {
+      var pkif = zkeyData.ToPassphraseKeyInfoFile();
+      if(zkeyData.Passphrase != null)
+      {
+        using(var ppk = PassphraseKey.TryPassphrase(zkeyData.Passphrase, pkif))
+        {
+          if(ppk == null)
+          {
+            Owner.MessageHost.ShowError(
+              "The ZKEY contained a passphrase, but it was not correct",
+              "Error");
+            return;
+          }
+          _childKeyChain.PutCopy(ppk);
+          cvm.UpdateKeyKnown();
+        }
+      }
+      AddKey(pkif); // returns the same vm as 'cvm'
+    }
+  }
+
+  private ChildKeyViewModel? TryPasteGuid(Guid keyId)
+  {
+    if(Owner.Owner.KnownMasterKeys().Any(mk => mk == keyId))
+    {
+      Owner.MessageHost.ShowError(
+        $"Key '{keyId}' is known to be in use as master key. Paste aborted.",
+        "Key rejected");
+      return null;
+    }
+    var cvm = AddKey(keyId);
+    return cvm;
   }
 
   internal void UpdateCommandEnabledStates()

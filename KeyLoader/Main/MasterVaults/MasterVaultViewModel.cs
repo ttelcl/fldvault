@@ -181,7 +181,7 @@ public class MasterVaultViewModel: ObservableObject
   }
 
   /// <summary>
-  /// Asynchronously refresh the raw key value from the key server, if 
+  /// Asynchronously refresh the raw key value and key info from the key server, if 
   /// the key server is available.
   /// </summary>
   /// <param name="keyId"></param>
@@ -196,6 +196,14 @@ public class MasterVaultViewModel: ObservableObject
       if(result == KeyPresence.Present)
       {
         var vm = GetKey(keyId);
+        if(vm.KeyInfo == null)
+        {
+          var pkif = await server.LookupKeyInfoAsync(keyId, serverWidget.AppCancelationToken);
+          if(pkif != null)
+          {
+            vm.KeyInfo = pkif;
+          }
+        }
         vm.UpdateKeyKnown();
       }
       return result;

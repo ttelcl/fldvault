@@ -29,6 +29,11 @@
             <Style TargetType="{x:Type TabItem}" BasedOn="{StaticResource MahApps.Styles.TabItem}">
                 <Setter Property="mah:HeaderedControlHelper.HeaderFontSize" Value="20"/>
             </Style>
+            <Style TargetType="{x:Type MenuItem}" BasedOn="{StaticResource MahApps.Styles.MenuItem}">
+                <Setter Property="HorizontalContentAlignment" Value="Left" />
+                <Setter Property="VerticalContentAlignment" Value="Top" />
+            </Style>
+
             <!-- Converters -->
             <converters:NullVisibilityConverter
                 x:Key="VisibleIfNotNull"/>

@@ -37,7 +37,13 @@ public class ChildKeyViewModel: ObservableObject
     KeyId = keyId;
     TryLoadKeyCommand = new AsyncRelayCommand(
       () => TryLoadKey(),
-      () => !KeyKnown && VaultModel.Owner.IsEditing && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
+      () => (!KeyKnown || !KeyInfoKnown) && VaultModel.Owner.IsEditing && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
+    CopyPrefixCommand = new RelayCommand(CopyKeyPrefix);
+    CopyKeyIdCommand = new RelayCommand(CopyKeyId);
+    RemoveKeyInfoCommand = new RelayCommand(
+      RemoveKeyInfo,
+      () => KeyInfo != null);
+    DeleteKeyCommand = new RelayCommand(DeleteKey);
     UpdateKeyKnown();
   }
 
@@ -46,6 +52,28 @@ public class ChildKeyViewModel: ObservableObject
   /// server is available
   /// </summary>
   public AsyncRelayCommand TryLoadKeyCommand { get; }
+
+  /// <summary>
+  /// Copy the key prefix to the clipboard
+  /// </summary>
+  public RelayCommand CopyPrefixCommand { get; }
+
+  /// <summary>
+  /// Copy the full key ID to the clipboard
+  /// </summary>
+  public RelayCommand CopyKeyIdCommand { get; }
+
+  /// <summary>
+  /// Remove the passphrase link for the key
+  /// </summary>
+  public RelayCommand RemoveKeyInfoCommand { get; }
+
+  /// <summary>
+  /// Delete this key record from <see cref="VaultModel"/>.
+  /// Note that the raw key stays in the keychain, so it can be re-added
+  /// without reentering the passphrase.
+  /// </summary>
+  public RelayCommand DeleteKeyCommand { get; }
 
   /// <summary>
   /// The owning <see cref="MasterVaultViewModel"/> that this child
@@ -106,6 +134,7 @@ public class ChildKeyViewModel: ObservableObject
       if(SetProperty(ref _keyInfo, value))
       {
         KeyInfoKnown = _keyInfo != null;
+        RemoveKeyInfoCommand.NotifyCanExecuteChanged();
         // determine if there were actual changes before declaring a modification
         var realChange =
            _keyInfo?.SaltBase64 != oldInfo?.SaltBase64
@@ -130,6 +159,7 @@ public class ChildKeyViewModel: ObservableObject
       if(SetProperty(ref _keyInfoKnown, value))
       {
         KeyInfoIcon = _keyInfoKnown ? "KeyboardOutline" : "KeyboardOffOutline";
+        TryLoadKeyCommand.NotifyCanExecuteChanged();
       }
     }
   }
@@ -154,10 +184,33 @@ public class ChildKeyViewModel: ObservableObject
     KeyKnown = VaultModel.HasChildKey(KeyId);
   }
 
+  private void CopyKeyPrefix()
+  {
+    var text = KeyId.ToString().Substring(0, 8);
+    Clipboard.SetText(text);
+  }
+
+  private void CopyKeyId()
+  {
+    var text = KeyId.ToString();
+    Clipboard.SetText(text);
+  }
+
+  private void RemoveKeyInfo()
+  {
+    KeyInfo = null;
+  }
+
+  private void DeleteKey()
+  {
+    VaultModel.Owner.MessageHost.ShowError(
+      "Key deletion is not yet implemented");
+  }
+
   private async Task TryLoadKey()
   {
     UpdateKeyKnown();
-    if(KeyKnown)
+    if(KeyKnown && KeyInfoKnown)
     {
       return;
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,5 +30,18 @@ public partial class MainWindow: MetroWindow
   public MainWindow()
   {
     InitializeComponent();
+  }
+
+  /// <summary>
+  /// Callback invoked when closing
+  /// </summary>
+  /// <param name="e"></param>
+  protected override void OnClosing(CancelEventArgs e)
+  {
+    if(DataContext is MainViewModel vm)
+    {
+      vm.OnClosing(e);
+    }
+    base.OnClosing(e);
   }
 }

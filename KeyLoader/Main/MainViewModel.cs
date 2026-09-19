@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -9,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -33,6 +35,8 @@ namespace KeyLoader.Main;
 public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessage>, IMessageHost
 {
   private readonly CancellationTokenSource _modelAwakeTokenSource;
+  private DateTimeOffset? _clearStatusAfter = null;
+  private DispatcherTimer _timer;
 
   /// <summary>
   /// Create a new <see cref="MainViewModel"/>. Called as part of the bootstrapping
@@ -54,6 +58,11 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     OpenMasterFileCommand = new RelayCommand(OpenExistingMasterFile);
     CreateMasterFileCommand = new RelayCommand(CreateNewMasterFile);
     ClearCurrentMessageCommand = new RelayCommand(this.ClearMessage);
+    _timer = new DispatcherTimer() {
+      Interval = TimeSpan.FromSeconds(0.25)
+    };
+    _timer.Tick += CheckStatusExpiry;
+    // only start the timer once a non-empty status message is set.
   }
 
   /// <summary>
@@ -250,9 +259,19 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   public void SetStatus(string? status, TimeSpan? duration = null)
   {
     StatusMessage = status ?? "";
-    if(!String.IsNullOrEmpty(status) && duration.HasValue)
+    if(String.IsNullOrEmpty(status))
     {
-      Trace.TraceError("Not yet implemented: ShowStatus auto-clear mechanism");
+      duration = null;
+    }
+    if(duration.HasValue)
+    {
+      _clearStatusAfter = DateTimeOffset.UtcNow + duration.Value;
+      _timer.Start();
+    }
+    else
+    {
+      _clearStatusAfter = null;
+      _timer.Stop();
     }
   }
 
@@ -261,7 +280,26 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   {
     if(StatusMessage == status)
     {
-      StatusMessage = "";
+      SetStatus("");
+    }
+  }
+
+  /// <summary>
+  /// Callback invoked when the application is closing
+  /// </summary>
+  /// <param name="e"></param>
+  public void OnClosing(CancelEventArgs e)
+  {
+    // this disables the status timer if it was running
+    SetStatus(null);
+    Trace.TraceInformation("Shutting down");
+  }
+
+  private void CheckStatusExpiry(object? sender, EventArgs e)
+  {
+    if(_clearStatusAfter.HasValue && DateTimeOffset.UtcNow > _clearStatusAfter.Value)
+    {
+      SetStatus("");
     }
   }
 }

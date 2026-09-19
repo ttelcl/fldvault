@@ -139,6 +139,11 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   public MainViewModel Owner { get; }
 
   /// <summary>
+  /// Get the message host for this tab
+  /// </summary>
+  public IMessageHost MessageHost => Owner;
+
+  /// <summary>
   /// Get the file name associated with this tab
   /// </summary>
   public string FileName {
@@ -315,7 +320,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       if(ppk == null)
       {
-        Owner.ShowError("Passphrase did not match");
+        MessageHost.ShowError("Passphrase did not match");
         return false;
       }
     }
@@ -351,7 +356,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     {
       if(ppk == null)
       {
-        Owner.ShowError("Incorrect passphrase for this vault");
+        MessageHost.ShowError("Incorrect passphrase for this vault");
         return false;
       }
       _masterKeyChain.PutCopy(ppk);
@@ -456,7 +461,19 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       }
 
       // TODO: actually save...
+      MessageHost.ShowWarning("Saving not yet implemented");
     }
+  }
+
+  /// <summary>
+  /// Overrides error message display to use the pseudo-dialog instead of
+  /// <see cref="MessageBox"/>.
+  /// </summary>
+  /// <param name="message"></param>
+  /// <param name="title"></param>
+  protected override void ShowErrorMessage(string message, string title = "Error")
+  {
+    MessageHost.ShowError(message, title);
   }
 
   /// <summary>

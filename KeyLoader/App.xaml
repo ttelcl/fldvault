@@ -62,7 +62,7 @@
                 x:Key="StringToBrush"/>
             <converters:PrefixBrushConverter
                 x:Key="TrueGreenFalseRed"
-                Prefix="/TrueGreenFalseRed/"/>
+                Prefix="TrueGreenFalseRed/"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

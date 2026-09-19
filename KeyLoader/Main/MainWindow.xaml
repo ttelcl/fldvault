@@ -151,62 +151,11 @@
                 </tabs:TabHostView>
             </Border>
             <!-- Message overlay -->
-            <Border
+            <local:MessageView
                 Panel.ZIndex="10"
                 Grid.Row="0"
                 Grid.RowSpan="3"
-                Background="#88000000"
-                Visibility="{Binding CurrentMessage, Converter={StaticResource VisibleIfNotNull}}">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="3*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    <Border
-                        Grid.Row="1" Grid.Column="1"
-                        BorderThickness="1"
-                        BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-                        Background="{DynamicResource MahApps.Brushes.Control.Background}">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock
-                                Grid.Row="0" Grid.Column="0"
-                                VerticalAlignment="Center"
-                                TextAlignment="Center"
-                                Text="{Binding CurrentMessage.Title}"/>
-                            <Button
-                                Grid.Row="0" Grid.Column="1"
-                                Command="{Binding ClearCurrentMessageCommand}">
-                                Close
-                            </Button>
-                            <Border
-                                Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                BorderThickness="1"
-                                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-                                Background="{DynamicResource MahApps.Brushes.Accent4}"
-                                >
-                                <TextBlock
-                                    Margin="20,0"
-                                    VerticalAlignment="Center"
-                                    Text="{Binding CurrentMessage.Message}"/>
-                            </Border>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </Border>
+                Visibility="{Binding CurrentMessage, Converter={StaticResource VisibleIfNotNull}}"/>
         </Grid>
     </DockPanel>
 </mah:MetroWindow>

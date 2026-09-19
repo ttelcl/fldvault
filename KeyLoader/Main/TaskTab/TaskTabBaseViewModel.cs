@@ -111,7 +111,7 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
         if(Modified)
         {
           // save failed
-          MessageBox.Show("Saving failed. Canceling the closing.");
+          ShowErrorMessage("Saving failed. Canceling the closing.");
           return false;
         }
       }
@@ -119,6 +119,23 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
     // Not modified, answered "No", or Save succeeded
     CloseHard();
     return true;
+  }
+
+  /// <summary>
+  /// Show an error message. The default implementation uses 
+  /// <see cref="MessageBox.Show(string, string, MessageBoxButton, MessageBoxImage)"/>,
+  /// but subclasses can override this.
+  /// This is used by <see cref="TryCloseGentle"/>
+  /// </summary>
+  /// <param name="message"></param>
+  /// <param name="title"></param>
+  protected virtual void ShowErrorMessage(string message, string title = "Error")
+  {
+    MessageBox.Show(
+      message,
+      title,
+      MessageBoxButton.OK,
+      MessageBoxImage.Error);
   }
 
   /// <summary>

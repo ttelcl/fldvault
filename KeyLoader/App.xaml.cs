@@ -79,8 +79,9 @@ public partial class App: Application
     cache
       .Set("default/red", "#dd5555")
       .Set("default/green", "#339933")
-      .Set("/TrueGreenFalseRed/True", "default/green")
-      .Set("/TrueGreenFalseRed/False", "default/red");
+      .Set("TrueGreenFalseRed/True", "default/green")
+      .Set("TrueGreenFalseRed/False", "default/red")
+      ;
   }
 }
 

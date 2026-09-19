@@ -15,20 +15,33 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Background="{DynamicResource MahApps.Brushes.AccentBase}">
-            <!-- development time status panel -->
+        <Grid Grid.Row="0" Background="{DynamicResource MahApps.Brushes.Accent2}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <TextBlock FontFamily="Consolas" FontSize="11" VerticalAlignment="Bottom"
-                       Margin="5,3,5,5" Grid.Column="0" Text="{Binding KeyId}"/>
-            <TextBlock VerticalAlignment="Bottom" TextAlignment="Center"
-                       Margin="10,3,10,5" Grid.Column="1" Text="{Binding FileName}"
-                       TextTrimming="CharacterEllipsis"/>
-            <TextBlock VerticalAlignment="Bottom"
-                       Margin="5,3,5,5" Grid.Column="2" Text="{Binding State}"/>
+            <TextBlock 
+                Grid.Column="1"
+                VerticalAlignment="Bottom"
+                Margin="5,3,5,5"
+                Text="Key ID:"/>
+            <TextBlock
+                Grid.Column="2"
+                FontFamily="Consolas"
+                FontSize="11"
+                VerticalAlignment="Bottom"
+                Margin="5,3,5,5"
+                Text="{Binding KeyId}"/>
+            <Button
+                Command="{Binding CopyKeyCommand}"
+                Style="{StaticResource MahApps.Styles.Button.Circle}"
+                Margin="5,0"
+                Padding="6"
+                Grid.Column="3">
+                <iconPacks:PackIconMaterial Kind="ContentCopy" />
+            </Button>
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=CreatingKey}">
@@ -52,12 +65,12 @@
             </StackPanel>
         </Grid>
 
-        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Viewing}">
-            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Viewing</TextBlock>
+        <Grid Grid.Row="1" Visibility="{Binding IsViewing, Converter={StaticResource VisibleIf}}">
+            <local:ViewingView DataContext="{Binding UnlockedVault}"/>
         </Grid>
 
-        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Editing}">
-            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Editing</TextBlock>
+        <Grid Grid.Row="1" Visibility="{Binding IsEditing, Converter={StaticResource VisibleIf}}">
+            <local:EditingView DataContext="{Binding UnlockedVault}"/>
         </Grid>
 
         <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Panic}">

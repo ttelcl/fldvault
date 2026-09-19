@@ -68,11 +68,22 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   public bool Modified {
     get => _modified;
     protected set {
-      SetProperty(ref _modified, value);
-      CloseIfUnmodifiedCommand.NotifyCanExecuteChanged();
+      if(SetProperty(ref _modified, value))
+      {
+        CloseIfUnmodifiedCommand.NotifyCanExecuteChanged();
+        ModifiedChanged();
+      }
     }
   }
   private bool _modified;
+
+  /// <summary>
+  /// Called when <see cref="Modified"/> changes. The default implementation
+  /// does nothing, but this allows subclasses to act on that change
+  /// </summary>
+  protected virtual void ModifiedChanged()
+  {
+  }
 
   /// <summary>
   /// Forcefully close this tab. If <see cref="Modified"/>, the changes are lost and exact behaviour

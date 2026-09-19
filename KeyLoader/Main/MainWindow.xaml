@@ -15,8 +15,8 @@
     Title="{Binding WindowTitle}"
     TitleCharacterCasing="Normal"
     ResizeMode="CanResizeWithGrip"
-    Height="400" Width="640"
-    MinHeight="150" MinWidth="200">
+    Height="640" Width="480"
+    MinHeight="300" MinWidth="260">
     <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="_File">

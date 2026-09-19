@@ -41,6 +41,12 @@ public class ChildKeyViewModel: ObservableObject
   }
 
   /// <summary>
+  /// Try to load the raw key from the server, if it is still missing and the
+  /// server is available
+  /// </summary>
+  public AsyncRelayCommand TryLoadKeyCommand { get; }
+
+  /// <summary>
   /// The owning <see cref="MasterVaultViewModel"/> that this child
   /// is part of
   /// </summary>
@@ -49,7 +55,7 @@ public class ChildKeyViewModel: ObservableObject
   /// <summary>
   /// Get the message host (implemented by the main VM)
   /// </summary>
-  public IMessageHost MessageHost => VaultModel.Owner.Owner;
+  public IMessageHost MessageHost => VaultModel.Owner.MessageHost;
 
   /// <summary>
   /// The ID of the key that this object represents.
@@ -83,12 +89,6 @@ public class ChildKeyViewModel: ObservableObject
     }
   }
   private PassphraseKeyInfoFile? _keyInfo;
-
-  /// <summary>
-  /// Try to load the raw key from the server, if it is still missing and the
-  /// server is available
-  /// </summary>
-  public AsyncRelayCommand TryLoadKeyCommand { get; }
 
   /// <summary>
   /// Updates the value of <see cref="KeyKnown"/> to its correct value

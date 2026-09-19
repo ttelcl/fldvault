@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
+using CommunityToolkit.Mvvm.Input;
+
 using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
@@ -52,6 +54,15 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   {
     _masterKeyChain = new KeyChain();
     _childKeyChain = new KeyChain();
+    SaveAndViewCommand = new RelayCommand(
+      SaveAndStopEditing,
+      () => State == MasterTabState.Editing && UnlockedVault != null);
+    StartEditingCommand = new RelayCommand(
+      StartEditing,
+      () => State == MasterTabState.Viewing && UnlockedVault != null);
+    CopyKeyCommand = new RelayCommand(
+      CopyKey,
+      () => MasterKey != null);
     Owner = owner;
     MasterKey = masterKeyDescriptor;
     FileName = fileName;
@@ -133,6 +144,21 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   }
 
   /// <summary>
+  /// Save the file if modified and switch to view mode if editing
+  /// </summary>
+  public RelayCommand SaveAndViewCommand { get; }
+
+  /// <summary>
+  /// Switch from view mode to edit mode
+  /// </summary>
+  public RelayCommand StartEditingCommand { get; }
+
+  /// <summary>
+  /// Command to copy the master key for this tab
+  /// </summary>
+  public RelayCommand CopyKeyCommand { get; }
+
+  /// <summary>
   /// The <see cref="MainViewModel"/> of the application (the owner of
   /// <see cref="TaskTabBaseViewModel.Host"/>)
   /// </summary>
@@ -212,6 +238,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
       {
         // Do not update state here to avoid double updates. Instead, have the caller
         // do so.
+        CopyKeyCommand.NotifyCanExecuteChanged();
       }
     }
   }
@@ -239,10 +266,46 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   public MasterTabState State {
     get => _state;
     private set {
-      SetProperty(ref _state, value);
+      if(SetProperty(ref _state, value))
+      {
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsViewing));
+        SaveAndViewCommand.NotifyCanExecuteChanged();
+        StartEditingCommand.NotifyCanExecuteChanged();
+      }
     }
   }
   private MasterTabState _state;
+
+  /// <summary>
+  /// The unlocked view on the vault, ready for viewing or editing.
+  /// Or <see langword="null"/> if not yet unlocked.
+  /// </summary>
+  public MasterVaultViewModel? UnlockedVault {
+    get => _unlockedVault;
+    private set {
+      if(SetProperty(ref _unlockedVault, value))
+      {
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsViewing));
+        SaveAndViewCommand.NotifyCanExecuteChanged();
+        StartEditingCommand.NotifyCanExecuteChanged();
+      }
+    }
+  }
+  private MasterVaultViewModel? _unlockedVault;
+
+  /// <summary>
+  /// True if the state is <see cref="MasterTabState.Editing"/> and the unlocked
+  /// vault model is available
+  /// </summary>
+  public bool IsEditing => _unlockedVault != null && State == MasterTabState.Editing;
+
+  /// <summary>
+  /// True if the state is <see cref="MasterTabState.Viewing"/> and the unlocked
+  /// vault model is available
+  /// </summary>
+  public bool IsViewing => _unlockedVault != null && State == MasterTabState.Viewing;
 
   /// <summary>
   /// The password handling logic for creating a brand new vault
@@ -258,6 +321,11 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// The password handling logic for verifying an existing vault key
   /// </summary>
   public PasswordEntryViewModel EnterVaultPassEntry { get; }
+
+  internal void MarkModified(bool modified)
+  {
+    Modified = modified;
+  }
 
   /// <summary>
   /// Start the process of creating a new key for a new vault file by generating a new
@@ -329,6 +397,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     UpdateFileExists();
     UpdateState();
     ExpectStates(MasterTabState.Editing, MasterTabState.Viewing);
+    UnlockedVault = new MasterVaultViewModel(this, _childKeyChain, _masterKeyChain);
     return FileExists;
   }
 
@@ -365,6 +434,7 @@ public class MasterTabViewModel: TaskTabBaseViewModel
     }
     UpdateState();
     ExpectStates(MasterTabState.Viewing, MasterTabState.Editing);
+    UnlockedVault = new MasterVaultViewModel(this, _childKeyChain, _masterKeyChain);
     return MasterKeyLoaded;
   }
 
@@ -447,6 +517,65 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   }
 
   /// <summary>
+  /// Save if modified and change from edit mode to view mode
+  /// (implementation for <see cref="SaveAndViewCommand"/>)
+  /// </summary>
+  public void SaveAndStopEditing()
+  {
+    if(State != MasterTabState.Editing || UnlockedVault == null)
+    {
+      ShowErrorMessage(
+        "Invalid state, expecting to be in edit state");
+      return;
+    }
+    if(Modified)
+    {
+      TrySave();
+      if(Modified)
+      {
+        MessageHost.ShowWarning(
+          "Saving failed");
+        return;
+      }
+    }
+    State = MasterTabState.Viewing;
+  }
+
+  /// <summary>
+  /// Get the label to show on the Save / View button in the edit mode UI
+  /// </summary>
+  public string SaveButtonLabel {
+    get => _saveButtonLabel;
+    set {
+      SetProperty(ref _saveButtonLabel, value);
+    }
+  }
+  private string _saveButtonLabel = "View";
+
+  /// <summary>
+  /// Callback when the <see cref="TaskTabBaseViewModel.Modified"/> flag changes
+  /// </summary>
+  protected override void ModifiedChanged()
+  {
+    SaveButtonLabel = Modified ? "Save" : "View";
+  }
+
+  /// <summary>
+  /// Switch from view mode to edit mode.
+  /// Implementation for <see cref="StartEditingCommand"/>.
+  /// </summary>
+  public void StartEditing()
+  {
+    if(State != MasterTabState.Viewing || UnlockedVault == null)
+    {
+      ShowErrorMessage(
+        "Invalid state, expecting to be in edit state");
+      return;
+    }
+    State = MasterTabState.Editing;
+  }
+
+  /// <summary>
   /// Try to save, updating <see cref="TaskTabBaseViewModel.Modified"/> on success
   /// </summary>
   protected override void TrySave()
@@ -460,8 +589,13 @@ public class MasterTabViewModel: TaskTabBaseViewModel
         return;
       }
 
-      // TODO: actually save...
-      MessageHost.ShowWarning("Saving not yet implemented");
+      if(UnlockedVault == null)
+      {
+        MessageHost.ShowError("Cannot save a locked vault");
+        return;
+      }
+
+      UnlockedVault.Save(); // clears the Modified flag, if all goes well
     }
   }
 
@@ -474,6 +608,19 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   protected override void ShowErrorMessage(string message, string title = "Error")
   {
     MessageHost.ShowError(message, title);
+  }
+
+  private void CopyKey()
+  {
+    if(MasterKey == null)
+    {
+      MessageHost.ShowError(
+        "Cannot copy the key ID before it is known...");
+      return;
+    }
+    var key = MasterKey.KeyId.ToString();
+    Clipboard.SetText(key);
+    MessageHost.SetStatus("Key ID copied to clipboard", TimeSpan.FromSeconds(2.0));
   }
 
   /// <summary>

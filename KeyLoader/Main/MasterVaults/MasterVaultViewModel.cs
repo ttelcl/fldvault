@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ using CommunityToolkit.Mvvm.Input;
 
 using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
 using FldVault.KeyServer;
 
 namespace KeyLoader.Main.MasterVaults;
@@ -24,6 +26,7 @@ public class MasterVaultViewModel: ObservableObject
   /// A copy of <see cref="Owner"/>'s child key chain
   /// </summary>
   private readonly KeyChain _childKeyChain;
+  private readonly KeyChain _masterKeyChain;
   private readonly Dictionary<Guid, ChildKeyViewModel> _children;
 
   /// <summary>
@@ -36,12 +39,17 @@ public class MasterVaultViewModel: ObservableObject
   /// <param name="childKeyChain">
   /// The child key chain from <paramref name="owner"/>
   /// </param>
+  /// <param name="masterKeyChain">
+  /// The master key chain containing the key to unlock the master vault
+  /// </param>
   public MasterVaultViewModel(
     MasterTabViewModel owner,
-    KeyChain childKeyChain)
+    KeyChain childKeyChain,
+    KeyChain masterKeyChain)
   {
     Owner = owner;
     _childKeyChain = childKeyChain;
+    _masterKeyChain = masterKeyChain;
     Keys = new ObservableCollection<ChildKeyViewModel>();
     _children = new Dictionary<Guid, ChildKeyViewModel>();
     if(!Owner.FileExists)
@@ -131,6 +139,34 @@ public class MasterVaultViewModel: ObservableObject
   }
 
   /// <summary>
+  /// Try to save the vault file given the current state.
+  /// </summary>
+  /// <returns></returns>
+  internal void Save()
+  {
+    if(!Owner.Modified)
+    {
+      Trace.TraceWarning($"Saving unmodified vault '{Owner.Title}'");
+    }
+    else
+    {
+      Trace.TraceInformation($"Saving modified vault '{Owner.Title}'");
+    }
+    var destination = Owner.FileName;
+    var masterKey = Owner.MasterKey ?? throw new InvalidOperationException("Missing master key info");
+    var keyIds = Keys.Select(ckv => ckv.KeyId).Where(_childKeyChain.ContainsKey).ToList();
+    var links = Keys.Where(ckv => ckv.KeyInfo != null).Select(ckv => ckv.KeyInfo!).ToList();
+    VaultFile.WriteMasterKeyFile(
+      destination,
+      masterKey,
+      keyIds,
+      _childKeyChain,
+      _masterKeyChain,
+      links);
+    Owner.MarkModified(false);
+  }
+
+  /// <summary>
   /// Asynchronously refresh the raw key value from the key server, if 
   /// the key server is available.
   /// </summary>
@@ -160,6 +196,29 @@ public class MasterVaultViewModel: ObservableObject
 
   private void ReloadContent()
   {
-    // not yet implemented
+    Trace.TraceInformation(
+      $"Loading master vault '{Owner.Title}'");
+    Keys.Clear();
+    _children.Clear();
+    var vault = new VaultFile(Owner.FileName, ZvltPurpose.Master);
+    using var cryptor = vault.CreateCryptor(_masterKeyChain);
+    using var reader = new VaultFileReader(vault, cryptor);
+    var keyset = reader.ReadChildKeys(_childKeyChain);
+    var linkmap = reader.ReadExternalPassphraseLinks();
+    var fullKeySet = new HashSet<Guid>();
+    fullKeySet.UnionWith(keyset);
+    fullKeySet.UnionWith(linkmap.Keys);
+    var sortedKeys = fullKeySet.OrderBy(guid => guid.ToString()).ToList();
+    foreach(var key in sortedKeys)
+    {
+      AddKey(key);
+      if(linkmap.TryGetValue(key, out var pkif))
+      {
+        AddKey(pkif);
+      }
+    }
+    Trace.TraceInformation(
+      $"  loaded {Keys.Count} child keys for master vault '{Owner.Title}'");
+    Owner.MarkModified(false);
   }
 }

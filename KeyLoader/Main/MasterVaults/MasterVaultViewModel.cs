@@ -206,6 +206,17 @@ public class MasterVaultViewModel: ObservableObject
         }
         vm.UpdateKeyKnown();
       }
+      else if(result == KeyPresence.Unavailable)
+      {
+        if(TryFindKey(keyId, out var vm) && vm.KeyInfo != null)
+        {
+          // upload key info, to avoid needlessly announcing a ghost key to the server
+
+          // MISSING FUNCTIONALITY!
+          
+          // await server.RegisterFileAsync
+        }
+      }
       return result;
     }
     return null;
@@ -267,8 +278,31 @@ public class MasterVaultViewModel: ObservableObject
 
   private void TryPasteFile(string fileName)
   {
-    Trace.TraceWarning(
-      $"NYI: file paste for: {fileName}");
+    var extension = Path.GetExtension(fileName).ToLowerInvariant();
+    switch(extension)
+    {
+      case ".mzvlt":
+        Owner.Owner.OpenDroppedMasterKeyFile(fileName);
+        break;
+      case ".zvlt":
+      case ".mvlt":
+      case ".key-info":
+      case ".zkey":
+        TryPasteKeyBearingFile(fileName);
+        break;
+    }
+  }
+
+  private void TryPasteKeyBearingFile(string fileName)
+  {
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif != null)
+    {
+      AddKey(pkif);
+      Owner.MessageHost.SetStatus(
+        $"Added info for key {pkif.KeyId}",
+        TimeSpan.FromSeconds(3));
+    }
   }
 
   private void PasteZKey(ZkeyEx zkeyData)

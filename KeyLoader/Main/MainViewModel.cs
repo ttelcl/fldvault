@@ -220,6 +220,30 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   }
 
   /// <summary>
+  /// Open a *.mzvlt file whose name is already known (no user interaction)
+  /// </summary>
+  /// <param name="fileName"></param>
+  public void OpenDroppedMasterKeyFile(
+    string fileName)
+  {
+    var existingTab =
+      TabHost.TaskTabs
+      .OfType<MasterTabViewModel>()
+      .FirstOrDefault(tab => tab.FileName.Equals(fileName, StringComparison.InvariantCultureIgnoreCase));
+    if(existingTab != null)
+    {
+      this.SetStatus(
+        "That file was already open", TimeSpan.FromSeconds(5));
+      TabHost.CurrentTab = existingTab;
+    }
+    else
+    {
+      var tab = MasterTabViewModel.OpenExisting(this, fileName);
+      TabHost.CurrentTab = tab;
+    }
+  }
+
+  /// <summary>
   /// Asks the user for a new file name and starts the process of creating it
   /// </summary>
   public void CreateNewMasterFile()

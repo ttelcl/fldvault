@@ -120,6 +120,18 @@ public static class KeyServerMessages
   public const int KeyInfoUploadManyCode = 0x1001000A;
 
   /// <summary>
+  /// A duplicate of <see cref="MessageCodes.NoServer"/>. Not an actual message code,
+  /// but a library response code indicating the server was unreachable.
+  /// </summary>
+  public const int NoServer = MessageCodes.NoServer;
+
+  /// <summary>
+  /// A duplicate of <see cref="MessageCodes.Unrecognized"/>. Indicates that the
+  /// server did not recognize or support the request.
+  /// </summary>
+  public const int Unrecognized = MessageCodes.Unrecognized;
+
+  /// <summary>
   /// Read the key to look up from the key request message in the frame
   /// </summary>
   /// <param name="frame">
@@ -328,7 +340,9 @@ public static class KeyServerMessages
   }
 
   /// <summary>
-  /// Write a key upload message into the output frame
+  /// Write a multikey upload message into the output frame.
+  /// Consider using <see cref="WriteKeysUpload(MessageFrameOut, KeyChain, IEnumerable{Guid})"/>
+  /// instead.
   /// </summary>
   /// <param name="frame"></param>
   /// <param name="keys">
@@ -344,6 +358,39 @@ public static class KeyServerMessages
     foreach(var key in keys)
     {
       frame.AppendBytes(key.Bytes);
+    }
+    if(checkpoint == frame.Position)
+    {
+      throw new InvalidOperationException(
+        "There should be at least 1 key as argument");
+    }
+  }
+
+  /// <summary>
+  /// Write a multikey upload message into the output frame
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <param name="keyChain">
+  /// The keychain containing the actual keys
+  /// </param>
+  /// <param name="keyIds">
+  /// The IDs of one or more keys to upload (there must be at least one, and all keys
+  /// must be present in <paramref name="keyChain"/>)
+  /// </param>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static void WriteKeysUpload(this MessageFrameOut frame, KeyChain keyChain, IEnumerable<Guid> keyIds)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyUploadManyCode);
+    var checkpoint = frame.Position;
+    foreach(var keyId in keyIds)
+    {
+      if(!keyChain.TryUseKey(keyId, (id,keyBytes) => frame.AppendBytes(keyBytes.Bytes)))
+      {
+        throw new InvalidOperationException(
+          $"Key {keyId} is missing from the provided key chain");
+      }
     }
     if(checkpoint == frame.Position)
     {

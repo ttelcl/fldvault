@@ -43,6 +43,12 @@ public static class MessageCodes
   public const int KeepAlive = 0x00000000;
 
   /// <summary>
+  /// Not an actual message code, but a status code reserved for client libraries
+  /// to indicate there was no server available
+  /// </summary>
+  public const int NoServer = 0x00000500;
+
+  /// <summary>
   /// Generic request carrying just a string as content. Also used as response
   /// to that request (possibly carrying an empty string)
   /// </summary>

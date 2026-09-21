@@ -408,6 +408,126 @@ public class KeyServerService
   }
 
   /// <summary>
+  /// Upload the keys with IDs <paramref name="keyIds"/> to the server. Each of the keys
+  /// must be present in <paramref name="keychain"/>.
+  /// </summary>
+  /// <remarks>
+  /// The return value can be one of:
+  /// <list type="bullet">
+  /// <item><see cref="KeyServerMessages.KeyUploadedCode"/> - keys were uploaded successfully</item>
+  /// <item><see cref="KeyServerMessages.NoServer"/> - No server found</item>
+  /// <item><see cref="KeyServerMessages.Unrecognized"/> - The server does not support key upload (yet)</item>
+  /// </list>
+  /// Other responses lead to an exception.
+  /// </remarks>
+  /// <param name="keychain">
+  /// The keychain containing the actual key bytes
+  /// </param>
+  /// <param name="keyIds">
+  /// The IDs of the keys to upload. If this is empty the server communication is skipped
+  /// and <see cref="KeyServerMessages.KeyUploadedCode"/> is returned immediately.
+  /// </param>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public async Task<int> UploadKeysAsync(
+    KeyChain keychain, IEnumerable<Guid> keyIds, CancellationToken cancellationToken)
+  {
+    if(!ServerAvailable)
+    {
+      return KeyServerMessages.NoServer;
+    }
+    var keyList = keyIds.ToList();
+    // Treat an empty request as a successful upload of no keys
+    if(keyList.Count == 0)
+    {
+      return KeyServerMessages.KeyUploadedCode;
+    }
+    using var frameOut = new MessageFrameOut();
+    frameOut.WriteKeysUpload(keychain, keyList);
+    using var client = await SocketService.ConnectClientAsync(cancellationToken);
+    await client.SendFrameAsync(frameOut, cancellationToken);
+    using var frameIn = new MessageFrameIn();
+    var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
+    if(!receiveOk)
+    {
+      return KeyServerMessages.NoServer;
+    }
+    var messageCode = frameIn.MessageCode();
+    switch(messageCode)
+    {
+      case KeyServerMessages.KeyUploadedCode:
+        return KeyServerMessages.KeyUploadedCode;
+      case KeyServerMessages.Unrecognized:
+        // this indicates the server has not been updated
+        return KeyServerMessages.Unrecognized;
+      case MessageCodes.ErrorText:
+        var error = frameIn.ReadError() ?? "Unknown error";
+        throw new InvalidOperationException(
+          $"The server rejected the key upload: {error}");
+      default:
+        throw new InvalidOperationException(
+          $"Unexpected response from server: 0x{messageCode:X08}");
+    }
+  }
+
+  /// <summary>
+  /// Upload the key info objects <paramref name="keyInfos"/> to the server.
+  /// </summary>
+  /// <remarks>
+  /// The return value can be one of:
+  /// <list type="bullet">
+  /// <item><see cref="KeyServerMessages.KeyUploadedCode"/> - key info objects were uploaded successfully</item>
+  /// <item><see cref="KeyServerMessages.NoServer"/> - No server found</item>
+  /// <item><see cref="KeyServerMessages.Unrecognized"/> - The server does not support key upload (yet)</item>
+  /// </list>
+  /// Other responses lead to an exception.
+  /// </remarks>
+  /// <param name="keyInfos"></param>
+  /// <param name="cancellationToken"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public async Task<int> UploadKeyInfosAsync(
+    IEnumerable<PassphraseKeyInfoFile> keyInfos, CancellationToken cancellationToken)
+  {
+    var list = keyInfos.ToList();
+    if(!ServerAvailable)
+    {
+      return KeyServerMessages.NoServer;
+    }
+    if(list.Count == 0)
+    {
+      return KeyServerMessages.KeyUploadedCode;
+    }
+    using var frameOut = new MessageFrameOut();
+    frameOut.WriteKeyInfosUpload(list);
+    using var client = await SocketService.ConnectClientAsync(cancellationToken);
+    await client.SendFrameAsync(frameOut, cancellationToken);
+    using var frameIn = new MessageFrameIn();
+    var receiveOk = await client.TryFillFrameAsync(frameIn, cancellationToken);
+    if(!receiveOk)
+    {
+      return KeyServerMessages.NoServer;
+    }
+    var messageCode = frameIn.MessageCode();
+    switch(messageCode)
+    {
+      case KeyServerMessages.KeyUploadedCode:
+        return KeyServerMessages.KeyUploadedCode;
+      case KeyServerMessages.Unrecognized:
+        // this indicates the server has not been updated
+        return KeyServerMessages.Unrecognized;
+      case MessageCodes.ErrorText:
+        var error = frameIn.ReadError() ?? "Unknown error";
+        throw new InvalidOperationException(
+          $"The server rejected the key info upload: {error}");
+      default:
+        throw new InvalidOperationException(
+          $"Unexpected response from server: 0x{messageCode:X08}");
+    }
+  }
+
+  /// <summary>
   /// Lookup the key descriptor for the given key ID in the key server.
   /// This can be returned if the key is not unlocked.
   /// </summary>

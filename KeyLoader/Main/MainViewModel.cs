@@ -290,6 +290,12 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   }
 
   /// <inheritdoc/>
+  public MessageSeverity? CurrentMessageSeverity()
+  {
+    return CurrentMessage?.Severity;
+  }
+
+  /// <inheritdoc/>
   public void SetStatus(string? status, TimeSpan? duration = null)
   {
     StatusMessage = status ?? "";

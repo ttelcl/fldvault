@@ -30,5 +30,4 @@ public enum MessageSeverity
   /// The message is an error message
   /// </summary>
   Error,
-
 }

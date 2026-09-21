@@ -223,18 +223,24 @@ public class ChildKeyViewModel: ObservableObject
     var result = await VaultModel.TryRetrieveKey(KeyId);
     if(result == null)
     {
-      MessageHost.ShowWarning(
-        "The key server is not available",
-        "Failed");
+      if(!MessageHost.CurrentMessageSeverity().HasValue)
+      {
+        MessageHost.ShowWarning(
+          "The key server is not available",
+          "Failed");
+      }
     }
     else
     {
       switch(result.Value)
       {
         case KeyPresence.Unavailable:
-          MessageHost.ShowWarning(
-            "The key is not available in the server",
-            "Failed");
+          if(!MessageHost.CurrentMessageSeverity().HasValue)
+          {
+            MessageHost.ShowWarning(
+              "The key is not available in the server",
+              "Failed");
+          }
           return;
         case KeyPresence.Cloaked:
           MessageHost.ShowWarning(

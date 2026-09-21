@@ -25,6 +25,12 @@ public interface IMessageHost
   void ShowMessage(UserMessage? message);
 
   /// <summary>
+  /// Return the severity of the currently showing message, or return null if no message is currently showing
+  /// </summary>
+  /// <returns></returns>
+  MessageSeverity? CurrentMessageSeverity();
+
+  /// <summary>
   /// Change the current status message to <paramref name="status"/>.
   /// After <paramref name="duration"/> automatically clear the message
   /// (if not <see langword="null"/>)

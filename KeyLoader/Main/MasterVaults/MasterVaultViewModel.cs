@@ -211,10 +211,23 @@ public class MasterVaultViewModel: ObservableObject
         if(TryFindKey(keyId, out var vm) && vm.KeyInfo != null)
         {
           // upload key info, to avoid needlessly announcing a ghost key to the server
-
-          // MISSING FUNCTIONALITY!
-          
-          // await server.RegisterFileAsync
+          var response = await server.UploadKeyInfosAsync([vm.KeyInfo], serverWidget.AppCancelationToken);
+          switch(response)
+          {
+            case KeyServerMessages.KeyUploadCode:
+              // everything is fine
+              break;
+            case KeyServerMessages.NoServer:
+              // This should not happen - we could communicate before
+              Owner.MessageHost.ShowError(
+                "Error communicating with the key server");
+              return null;
+            case KeyServerMessages.Unrecognized:
+              Owner.MessageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              break;
+          }
         }
       }
       return result;

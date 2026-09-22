@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 using FldVault.Core.Crypto;
 using FldVault.Core.KeyResolution;
+using FldVault.Core.Vaults;
 using FldVault.Upi;
 
 namespace FldVault.Upi.Implementation.Keys;
@@ -205,6 +206,21 @@ public class KeyState: IKeyInfo
         SetSeed(PassphraseKeySeed2.TryFromFile(fileName));
       }
       return true;
+    }
+  }
+
+  /// <summary>
+  /// Register a key info object. Logically related to registering a file,
+  /// except that there is no file involved.
+  /// </summary>
+  /// <param name="pkif"></param>
+  public void AssociateKeyInfo(PassphraseKeyInfoFile pkif)
+  {
+    lock(_lock)
+    {
+      var time = DateTimeOffset.Now;
+      LastAssociated = time;
+      SetSeed(new PassphraseKeySeed2(pkif));
     }
   }
 

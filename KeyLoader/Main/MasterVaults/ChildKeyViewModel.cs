@@ -203,8 +203,8 @@ public class ChildKeyViewModel: ObservableObject
 
   private void DeleteKey()
   {
-    VaultModel.Owner.MessageHost.ShowError(
-      "Key deletion is not yet implemented");
+    // Hard delete, no questions asked
+    VaultModel.DeleteKey(KeyId);
   }
 
   private async Task TryLoadKey()

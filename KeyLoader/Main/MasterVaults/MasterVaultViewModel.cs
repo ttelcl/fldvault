@@ -136,6 +136,24 @@ public class MasterVaultViewModel: ObservableObject
   }
 
   /// <summary>
+  /// Delete both raw key and key info for a key. No questions asked.
+  /// The key is not removed from the key chain (but no longer accessible without
+  /// re-adding it)
+  /// </summary>
+  /// <param name="keyId"></param>
+  public void DeleteKey(Guid keyId)
+  {
+    if(TryFindKey(keyId, out var vm))
+    {
+      _children.Remove(keyId);
+      vm.UpdateKeyKnown();
+      Keys.Remove(vm);
+      // for now, do NOT remove the key from the key chain
+      Owner.MarkModified(true);
+    }
+  }
+
+  /// <summary>
   /// Try to get the <see cref="ChildKeyViewModel"/> for the given <paramref name="keyId"/>
   /// </summary>
   /// <param name="keyId">

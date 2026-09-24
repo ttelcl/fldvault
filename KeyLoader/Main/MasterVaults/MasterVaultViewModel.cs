@@ -69,6 +69,9 @@ public class MasterVaultViewModel: ObservableObject
     TryPasteCommand = new RelayCommand(
       TryPaste,
       () => Owner.IsEditing);
+    TryUploadAllCommand = new AsyncRelayCommand(
+      TryPushAllKeys,
+      () => true); // for now, simplify the enabled handling
     ReloadContent();
   }
 
@@ -77,6 +80,11 @@ public class MasterVaultViewModel: ObservableObject
   /// as a partial key (or even a full key)
   /// </summary>
   public RelayCommand TryPasteCommand { get; }
+
+  /// <summary>
+  /// Command to upload all child keys at once
+  /// </summary>
+  public AsyncRelayCommand TryUploadAllCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -101,7 +109,7 @@ public class MasterVaultViewModel: ObservableObject
   {
     if(!_children.TryGetValue(keyId, out var childVm))
     {
-      childVm = new ChildKeyViewModel(this, keyId);
+      childVm = new ChildKeyViewModel(_childKeyChain, this, keyId);
       _children.Add(keyId, childVm);
       Keys.Add(childVm);
       Owner.MarkModified(true);
@@ -133,6 +141,24 @@ public class MasterVaultViewModel: ObservableObject
     var vm = GetKey(pkif.KeyId);
     vm.KeyInfo = pkif;
     return vm;
+  }
+
+  /// <summary>
+  /// Delete both raw key and key info for a key. No questions asked.
+  /// The key is not removed from the key chain (but no longer accessible without
+  /// re-adding it)
+  /// </summary>
+  /// <param name="keyId"></param>
+  public void DeleteKey(Guid keyId)
+  {
+    if(TryFindKey(keyId, out var vm))
+    {
+      _children.Remove(keyId);
+      vm.UpdateKeyKnown();
+      Keys.Remove(vm);
+      // for now, do NOT remove the key from the key chain
+      Owner.MarkModified(true);
+    }
   }
 
   /// <summary>
@@ -178,61 +204,6 @@ public class MasterVaultViewModel: ObservableObject
       _masterKeyChain,
       links);
     Owner.MarkModified(false);
-  }
-
-  /// <summary>
-  /// Asynchronously refresh the raw key value and key info from the key server, if 
-  /// the key server is available.
-  /// </summary>
-  /// <param name="keyId"></param>
-  /// <returns></returns>
-  public async Task<KeyPresence?> TryRetrieveKey(Guid keyId)
-  {
-    var serverWidget = Owner.Owner.ServerWidget;
-    var server = serverWidget.Server;
-    if(server.ServerAvailable)
-    {
-      var result = await server.LookupKeyAsync(keyId, _childKeyChain, serverWidget.AppCancelationToken);
-      if(result == KeyPresence.Present)
-      {
-        var vm = GetKey(keyId);
-        if(vm.KeyInfo == null)
-        {
-          var pkif = await server.LookupKeyInfoAsync(keyId, serverWidget.AppCancelationToken);
-          if(pkif != null)
-          {
-            vm.KeyInfo = pkif;
-          }
-        }
-        vm.UpdateKeyKnown();
-      }
-      else if(result == KeyPresence.Unavailable)
-      {
-        if(TryFindKey(keyId, out var vm) && vm.KeyInfo != null)
-        {
-          // upload key info, to avoid needlessly announcing a ghost key to the server
-          var response = await server.UploadKeyInfosAsync([vm.KeyInfo], serverWidget.AppCancelationToken);
-          switch(response)
-          {
-            case KeyServerMessages.KeyUploadCode:
-              // everything is fine
-              break;
-            case KeyServerMessages.NoServer:
-              // This should not happen - we could communicate before
-              Owner.MessageHost.ShowError(
-                "Error communicating with the key server");
-              return null;
-            case KeyServerMessages.Unrecognized:
-              Owner.MessageHost.ShowWarning(
-                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
-                "Incompatible key server detected");
-              break;
-          }
-        }
-      }
-      return result;
-    }
-    return null;
   }
 
   /// <summary>
@@ -364,6 +335,90 @@ public class MasterVaultViewModel: ObservableObject
   internal bool HasChildKey(Guid keyId)
   {
     return _childKeyChain.ContainsKey(keyId);
+  }
+
+  private async Task TryPushAllKeys()
+  {
+    var tabVm = Owner;
+    var mainVm = tabVm.Owner;
+    var serverWidget = mainVm.ServerWidget;
+    var server = serverWidget.Server;
+    var messageHost = tabVm.MessageHost;
+    if(server.ServerAvailable)
+    {
+      var keys =
+        Keys.Select(k => k.KeyId).Where(kid => HasChildKey(kid)).ToList();
+      var keyInfos =
+        Keys.Where(k => k.KeyInfo != null).Select(k => k.KeyInfo!).ToList();
+      if(keys.Count == 0 && keyInfos.Count == 0)
+      {
+        messageHost.ShowInfo(
+          "No keys or key info objects available to upload");
+      }
+      else
+      {
+        if(keyInfos.Count > 0)
+        {
+          var result = await server.UploadKeyInfosAsync(
+            keyInfos, serverWidget.AppCancelationToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+        if(keys.Count > 0)
+        {
+          var result = await server.UploadKeysAsync(
+            _childKeyChain, keys, serverWidget.AppCancelationToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+      }
+    }
+    else
+    {
+      messageHost.ShowError(
+        "The Key Server is not running",
+        "No key server found");
+    }
   }
 
   private void ReloadContent()

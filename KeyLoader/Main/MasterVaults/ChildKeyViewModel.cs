@@ -62,6 +62,9 @@ public class ChildKeyViewModel: ObservableObject
   /// </summary>
   public AsyncRelayCommand TryLoadKeyCommand { get; }
 
+  /// <summary>
+  /// Try to push the raw key and key info object to the server
+  /// </summary>
   public AsyncRelayCommand TryPushKeyCommand { get; }
 
   /// <summary>
@@ -294,7 +297,8 @@ public class ChildKeyViewModel: ObservableObject
     else
     {
       MessageHost.ShowError(
-        "The Key Server is not running");
+        "The Key Server is not running",
+        "No key server found");
     }
   }
 

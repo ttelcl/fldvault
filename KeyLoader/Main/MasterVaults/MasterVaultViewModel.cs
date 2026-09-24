@@ -15,6 +15,7 @@ using CommunityToolkit.Mvvm.Input;
 using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
+using FldVault.KeyServer;
 
 using KeyLoader.UserMessages;
 
@@ -68,6 +69,9 @@ public class MasterVaultViewModel: ObservableObject
     TryPasteCommand = new RelayCommand(
       TryPaste,
       () => Owner.IsEditing);
+    TryUploadAllCommand = new AsyncRelayCommand(
+      TryPushAllKeys,
+      () => true); // for now, simplify the enabled handling
     ReloadContent();
   }
 
@@ -76,6 +80,11 @@ public class MasterVaultViewModel: ObservableObject
   /// as a partial key (or even a full key)
   /// </summary>
   public RelayCommand TryPasteCommand { get; }
+
+  /// <summary>
+  /// Command to upload all child keys at once
+  /// </summary>
+  public AsyncRelayCommand TryUploadAllCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -326,6 +335,90 @@ public class MasterVaultViewModel: ObservableObject
   internal bool HasChildKey(Guid keyId)
   {
     return _childKeyChain.ContainsKey(keyId);
+  }
+
+  private async Task TryPushAllKeys()
+  {
+    var tabVm = Owner;
+    var mainVm = tabVm.Owner;
+    var serverWidget = mainVm.ServerWidget;
+    var server = serverWidget.Server;
+    var messageHost = tabVm.MessageHost;
+    if(server.ServerAvailable)
+    {
+      var keys =
+        Keys.Select(k => k.KeyId).Where(kid => HasChildKey(kid)).ToList();
+      var keyInfos =
+        Keys.Where(k => k.KeyInfo != null).Select(k => k.KeyInfo!).ToList();
+      if(keys.Count == 0 && keyInfos.Count == 0)
+      {
+        messageHost.ShowInfo(
+          "No keys or key info objects available to upload");
+      }
+      else
+      {
+        if(keyInfos.Count > 0)
+        {
+          var result = await server.UploadKeyInfosAsync(
+            keyInfos, serverWidget.AppCancelationToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+        if(keys.Count > 0)
+        {
+          var result = await server.UploadKeysAsync(
+            _childKeyChain, keys, serverWidget.AppCancelationToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+      }
+    }
+    else
+    {
+      messageHost.ShowError(
+        "The Key Server is not running",
+        "No key server found");
+    }
   }
 
   private void ReloadContent()

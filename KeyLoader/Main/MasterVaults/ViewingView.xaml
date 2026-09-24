@@ -37,7 +37,28 @@
             Background="{DynamicResource MahApps.Brushes.Accent3}"
             BorderThickness="1"
             Grid.Row="1">
-
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Column="0"
+                        Margin="5,5"
+                    Command="{Binding TryUploadAllCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Kind="TrayArrowUp"
+                            Margin="10,0"
+                            Height="24"
+                            Width="24"/>
+                        <TextBlock
+                            Margin="10,5"
+                            VerticalAlignment="Stretch"
+                            Text="Upload All"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
         </Border>
         <!-- footer -->
         <Border

@@ -15,7 +15,6 @@ using CommunityToolkit.Mvvm.Input;
 using FldVault.Core.Crypto;
 using FldVault.Core.Vaults;
 using FldVault.Core.Zvlt2;
-using FldVault.KeyServer;
 
 using KeyLoader.UserMessages;
 
@@ -101,7 +100,7 @@ public class MasterVaultViewModel: ObservableObject
   {
     if(!_children.TryGetValue(keyId, out var childVm))
     {
-      childVm = new ChildKeyViewModel(this, keyId);
+      childVm = new ChildKeyViewModel(_childKeyChain, this, keyId);
       _children.Add(keyId, childVm);
       Keys.Add(childVm);
       Owner.MarkModified(true);
@@ -196,61 +195,6 @@ public class MasterVaultViewModel: ObservableObject
       _masterKeyChain,
       links);
     Owner.MarkModified(false);
-  }
-
-  /// <summary>
-  /// Asynchronously refresh the raw key value and key info from the key server, if 
-  /// the key server is available.
-  /// </summary>
-  /// <param name="keyId"></param>
-  /// <returns></returns>
-  public async Task<KeyPresence?> TryRetrieveKey(Guid keyId)
-  {
-    var serverWidget = Owner.Owner.ServerWidget;
-    var server = serverWidget.Server;
-    if(server.ServerAvailable)
-    {
-      var result = await server.LookupKeyAsync(keyId, _childKeyChain, serverWidget.AppCancelationToken);
-      if(result == KeyPresence.Present)
-      {
-        var vm = GetKey(keyId);
-        if(vm.KeyInfo == null)
-        {
-          var pkif = await server.LookupKeyInfoAsync(keyId, serverWidget.AppCancelationToken);
-          if(pkif != null)
-          {
-            vm.KeyInfo = pkif;
-          }
-        }
-        vm.UpdateKeyKnown();
-      }
-      else if(result == KeyPresence.Unavailable)
-      {
-        if(TryFindKey(keyId, out var vm) && vm.KeyInfo != null)
-        {
-          // upload key info, to avoid needlessly announcing a ghost key to the server
-          var response = await server.UploadKeyInfosAsync([vm.KeyInfo], serverWidget.AppCancelationToken);
-          switch(response)
-          {
-            case KeyServerMessages.KeyUploadCode:
-              // everything is fine
-              break;
-            case KeyServerMessages.NoServer:
-              // This should not happen - we could communicate before
-              Owner.MessageHost.ShowError(
-                "Error communicating with the key server");
-              return null;
-            case KeyServerMessages.Unrecognized:
-              Owner.MessageHost.ShowWarning(
-                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
-                "Incompatible key server detected");
-              break;
-          }
-        }
-      }
-      return result;
-    }
-    return null;
   }
 
   /// <summary>

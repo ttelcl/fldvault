@@ -13,7 +13,7 @@
     <Border
         BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
         BorderThickness="1"
-        MinHeight="45"
+        MinHeight="25"
         >
         <Grid>
             <Grid.ColumnDefinitions>
@@ -57,63 +57,74 @@
             <!-- for now, leave column 2 unused -->
             <Border
                 Grid.Column="3">
-                <!-- with some help from Google AI -->
-                <mah:DropDownButton
-                    Margin="5,5"
-                    BorderThickness="0"
-                    >
-                    <mah:DropDownButton.Icon>
+                <StackPanel Orientation="Horizontal">
+                    <Button
+                        Margin="5,5" Padding="5,2"
+                        Style="{StaticResource MahApps.Styles.Button.Chromeless}"
+                        Command="{Binding TryLoadKeyCommand}">
                         <iconPacks:PackIconMaterial
-                            Kind="DotsHorizontal"
-                            Margin="5,0" />
-                    </mah:DropDownButton.Icon>
-                    <mah:DropDownButton.ItemsSource>
-                        <CompositeCollection>
-                            <MenuItem
-                                Header="Copy Key Prefix"
-                                Command="{Binding CopyPrefixCommand}"
-                                Icon="{iconPacks:Material Kind=ContentCopy, Height=12, Width=12}"/>
-                            <MenuItem
-                                Header="Copy Full Key ID"
-                                Command="{Binding CopyKeyIdCommand}"
-                                Icon="{iconPacks:Material Kind=ContentCopy, Height=20, Width=20}"/>
-                            <MenuItem
-                                Header="Import from Key Server"
-                                Command="{Binding TryLoadKeyCommand}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial
-                                        Kind="TrayArrowDown"
-                                        Foreground="#AAEEAA"
-                                        Height="20"
-                                        Width="20"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <Separator />
-                            <MenuItem
-                                Header="Remove Passphrase Link" 
-                                Command="{Binding RemoveKeyInfoCommand}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial
-                                        Kind="KeyboardOffOutline"
-                                        Foreground="#EE9966"
-                                        Height="20"
-                                        Width="20"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                            <MenuItem
-                                Header="Delete"
-                                Command="{Binding DeleteKeyCommand}">
-                                <MenuItem.Icon>
-                                    <iconPacks:PackIconMaterial
-                                        Kind="TrashCanOutline"
-                                        Foreground="#FF6666"
-                                        Height="20"
-                                        Width="20"/>
-                                </MenuItem.Icon>
-                            </MenuItem>
-                        </CompositeCollection>
-                    </mah:DropDownButton.ItemsSource>
-                </mah:DropDownButton>
+                            Kind="TrayArrowDown"
+                            Height="20"
+                            Width="20"/>
+                    </Button>
+                    <!-- DropDown 'menu', with some help from Google AI -->
+                    <mah:DropDownButton
+                        Margin="5,5"
+                        BorderThickness="0"
+                        >
+                        <mah:DropDownButton.Icon>
+                            <iconPacks:PackIconMaterial
+                                Kind="DotsHorizontal"
+                                Margin="5,0" />
+                        </mah:DropDownButton.Icon>
+                        <mah:DropDownButton.ItemsSource>
+                            <CompositeCollection>
+                                <MenuItem
+                                    Header="Copy Key Prefix"
+                                    Command="{Binding CopyPrefixCommand}"
+                                    Icon="{iconPacks:Material Kind=ContentCopy, Height=12, Width=12}"/>
+                                <MenuItem
+                                    Header="Copy Full Key ID"
+                                    Command="{Binding CopyKeyIdCommand}"
+                                    Icon="{iconPacks:Material Kind=ContentCopy, Height=20, Width=20}"/>
+                                <MenuItem
+                                    Header="Import from Key Server"
+                                    Command="{Binding TryLoadKeyCommand}">
+                                    <MenuItem.Icon>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="TrayArrowDown"
+                                            Foreground="#AAEEAA"
+                                            Height="20"
+                                            Width="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <Separator />
+                                <MenuItem
+                                    Header="Remove Passphrase Link" 
+                                    Command="{Binding RemoveKeyInfoCommand}">
+                                    <MenuItem.Icon>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="KeyboardOffOutline"
+                                            Foreground="#EE9966"
+                                            Height="20"
+                                            Width="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem
+                                    Header="Delete"
+                                    Command="{Binding DeleteKeyCommand}">
+                                    <MenuItem.Icon>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="TrashCanOutline"
+                                            Foreground="#FF6666"
+                                            Height="20"
+                                            Width="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                            </CompositeCollection>
+                        </mah:DropDownButton.ItemsSource>
+                    </mah:DropDownButton>
+                </StackPanel>
             </Border>
         </Grid>
     </Border>

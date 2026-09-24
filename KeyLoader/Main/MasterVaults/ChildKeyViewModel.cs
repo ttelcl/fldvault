@@ -44,6 +44,9 @@ public class ChildKeyViewModel: ObservableObject
     TryLoadKeyCommand = new AsyncRelayCommand(
       () => TryLoadKey(),
       () => (!KeyKnown || !KeyInfoKnown) && VaultModel.Owner.IsEditing && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
+    TryPushKeyCommand = new AsyncRelayCommand(
+      TryPushKey,
+      () => (KeyKnown || KeyInfoKnown) && VaultModel.Owner.Owner.KeyServer.ServerAvailable);
     CopyPrefixCommand = new RelayCommand(CopyKeyPrefix);
     CopyKeyIdCommand = new RelayCommand(CopyKeyId);
     RemoveKeyInfoCommand = new RelayCommand(
@@ -58,6 +61,8 @@ public class ChildKeyViewModel: ObservableObject
   /// server is available
   /// </summary>
   public AsyncRelayCommand TryLoadKeyCommand { get; }
+
+  public AsyncRelayCommand TryPushKeyCommand { get; }
 
   /// <summary>
   /// Copy the key prefix to the clipboard
@@ -107,6 +112,7 @@ public class ChildKeyViewModel: ObservableObject
       if(SetProperty(ref _keyKnown, value))
       {
         TryLoadKeyCommand.NotifyCanExecuteChanged();
+        TryPushKeyCommand.NotifyCanExecuteChanged();
         KeyIcon = _keyKnown ? "LockOpenCheck" : "LockAlert";
         VaultModel.Owner.MarkModified(true);
       }
@@ -165,6 +171,7 @@ public class ChildKeyViewModel: ObservableObject
       if(SetProperty(ref _keyInfoKnown, value))
       {
         KeyInfoIcon = _keyInfoKnown ? "KeyboardOutline" : "KeyboardOffOutline";
+        TryPushKeyCommand.NotifyCanExecuteChanged();
         TryLoadKeyCommand.NotifyCanExecuteChanged();
       }
     }
@@ -211,6 +218,84 @@ public class ChildKeyViewModel: ObservableObject
   {
     // Hard delete, no questions asked
     VaultModel.DeleteKey(KeyId);
+  }
+
+  private async Task TryPushKey()
+  {
+    UpdateKeyKnown();
+    if(!KeyKnown && !KeyInfoKnown)
+    {
+      // nothing to upload - command should not have been enabled
+      return;
+    }
+    var vaultModel = VaultModel;
+    var tabVm = vaultModel.Owner;
+    var mainVm = tabVm.Owner;
+    var serverWidget = mainVm.ServerWidget;
+    var server = serverWidget.Server;
+    var messageHost = tabVm.MessageHost;
+    if(server.ServerAvailable)
+    {
+      if(KeyInfo != null)
+      {
+        var result = await server.UploadKeyInfosAsync(
+          [KeyInfo], serverWidget.AppCancelationToken);
+        switch(result)
+        {
+          case KeyServerMessages.KeyUploadedCode:
+            // success, continue
+            break;
+          case KeyServerMessages.NoServer:
+            MessageHost.ShowError(
+              "The key server is not responding",
+              "Key server down");
+            return;
+          case KeyServerMessages.Unrecognized:
+            MessageHost.ShowWarning(
+              "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+              "Incompatible key server detected");
+            return;
+          default:
+            // should not happen
+            MessageHost.ShowError(
+              $"Unexpected server response 0x{result:X8}",
+              "Internal error");
+            return;
+        }
+      }
+      if(KeyKnown)
+      {
+        var result = await server.UploadKeysAsync(
+          _childKeyChain, [KeyId], serverWidget.AppCancelationToken);
+        switch(result)
+        {
+          case KeyServerMessages.KeyUploadedCode:
+            // success, continue
+            break;
+          case KeyServerMessages.NoServer:
+            MessageHost.ShowError(
+              "The key server is not responding",
+              "Key server down");
+            return;
+          case KeyServerMessages.Unrecognized:
+            MessageHost.ShowWarning(
+              "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+              "Incompatible key server detected");
+            return;
+          default:
+            // should not happen
+            MessageHost.ShowError(
+              $"Unexpected server response 0x{result:X8}",
+              "Internal error");
+            return;
+        }
+      }
+    }
+    else
+    {
+      MessageHost.ShowError(
+        "The Key Server is not running");
+    }
   }
 
   /// <summary>

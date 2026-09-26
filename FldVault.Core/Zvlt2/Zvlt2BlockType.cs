@@ -28,6 +28,12 @@ public static class Zvlt2BlockType
   public const int PassphraseLink = 0x53534150;
 
   /// <summary>
+  /// Embedded external *.pass.key-info file ('PASX').
+  /// For use in master key files only.
+  /// </summary>
+  public const int ExternalPassphraseLink = 0x58534150;
+
+  /// <summary>
   /// File name block ('FNAM')
   /// </summary>
   [Obsolete]
@@ -49,7 +55,13 @@ public static class Zvlt2BlockType
   public const int FileContentV3 = 0x5A4E4346;
 
   /// <summary>
+  /// Child key list block ('CKEY'). For use in master key files.
+  /// </summary>
+  public const int ChildKeyList = 0x59454B43;
+
+  /// <summary>
   /// Key transform block ('KTRX'), used in master key files.
+  /// DEPRECATED
   /// </summary>
   public const int KeyTransform = 0x5852544B;
 

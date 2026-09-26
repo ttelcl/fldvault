@@ -40,6 +40,7 @@ public class NoVaultViewModel: ViewModelBase
   ];
 
   private static readonly IReadOnlyList<string> __fileTypesToTemplate = [
+    // ".mzvlt" is excluded!
     ".mvlt",
     ".zkey",
     ".pass.key-info",
@@ -77,7 +78,7 @@ public class NoVaultViewModel: ViewModelBase
         }
         else
         {
-          Trace.TraceError($"Unrecognized dropped file: {file}");
+          Trace.TraceError($"Unrecognized or unsupported dropped file: {file}");
           SetStatus($"Unrecognized file format");
         }
       }

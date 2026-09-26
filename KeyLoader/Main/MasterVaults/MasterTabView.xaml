@@ -1,0 +1,85 @@
+﻿<UserControl
+    x:Class="KeyLoader.Main.MasterVaults.MasterTabView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:KeyLoader.Main.MasterVaults"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    d:DataContext="{d:DesignInstance local:MasterTabViewModel, IsDesignTimeCreatable=False}"
+    mc:Ignorable="d" 
+    d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0" Background="{DynamicResource MahApps.Brushes.Accent2}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock 
+                Grid.Column="1"
+                VerticalAlignment="Bottom"
+                Margin="5,3,5,5"
+                Text="Key ID:"/>
+            <TextBlock
+                Grid.Column="2"
+                FontFamily="Consolas"
+                FontSize="11"
+                VerticalAlignment="Bottom"
+                Margin="5,3,5,5"
+                Text="{Binding KeyId}"/>
+            <Button
+                Command="{Binding CopyKeyCommand}"
+                Style="{StaticResource MahApps.Styles.Button.Circle}"
+                Margin="5,0"
+                Padding="6"
+                Grid.Column="3">
+                <iconPacks:PackIconMaterial Kind="ContentCopy" />
+            </Button>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=CreatingKey}">
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Creating Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding CreateVaultPassEntry}"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=ConfirmingKey}">
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Confirming Created Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding VerifyVaultPassEntry}"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=AwaitingKey}">
+            <StackPanel Orientation="Vertical">
+                <TextBlock TextAlignment="Center">State: Awaiting File Key</TextBlock>
+                <local:PasswordEntryView DataContext="{Binding EnterVaultPassEntry}"/>
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding IsViewing, Converter={StaticResource VisibleIf}}">
+            <local:ViewingView DataContext="{Binding UnlockedVault}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding IsEditing, Converter={StaticResource VisibleIf}}">
+            <local:EditingView DataContext="{Binding UnlockedVault}"/>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Panic}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center" Foreground="Red">State: Internal Error</TextBlock>
+        </Grid>
+
+        <Grid Grid.Row="1" Visibility="{Binding State, Converter={StaticResource VisibleIfMatch}, ConverterParameter=Closed}">
+            <TextBlock TextAlignment="Center" VerticalAlignment="Center">State: Closed</TextBlock>
+        </Grid>
+
+    </Grid>
+</UserControl>

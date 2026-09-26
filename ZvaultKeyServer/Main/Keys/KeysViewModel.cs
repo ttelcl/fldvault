@@ -272,6 +272,8 @@ public class KeysViewModel: ViewModelBase
   {
     StatusHost.StatusMessage = "Select file(s) to import the key of.";
     var dialog = new OpenFileDialog() {
+      // *.mzvlt is deliberately excluded since master keys should not be treated as
+      // generally available keys
       Filter = "All supported files (*.zkey, *.mvlt, *.zvlt, *.pass.key-info)|*.zkey;*.mvlt;*.zvlt;*.pass.key-info",
       Multiselect = true,
     };
@@ -300,6 +302,12 @@ public class KeysViewModel: ViewModelBase
 
   public Guid? LinkFile(string fileName)
   {
+    if(fileName.EndsWith("*.mzvlt", StringComparison.InvariantCultureIgnoreCase))
+    {
+      Trace.TraceWarning($"Master key files are explicitly unsupported by this app: {fileName}");
+      StatusHost.StatusMessage = $"Rejecting master key files ({Path.GetFileName(fileName)})";
+      return null;
+    }
     var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
     if(pkif == null)
     {

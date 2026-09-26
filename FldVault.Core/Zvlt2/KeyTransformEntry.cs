@@ -18,6 +18,7 @@ namespace FldVault.Core.Zvlt2;
 /// <summary>
 /// Describes and caches a KeyTransform block in a ZVLT file, providing
 /// an API to read its contents.
+/// Use <see cref="ReadFrom(VaultFileReader, IBlockInfo)"/> to create instances.
 /// </summary>
 public class KeyTransformEntry
 {
@@ -129,17 +130,6 @@ public class KeyTransformEntry
       keyChain.PutCopy(plainTextBuffer);
       return true;
     }
-  }
-
-  /// <summary>
-  /// Import the key described by this block into a key chain, using the
-  /// decryptor from the vault file to decrypt the key.
-  /// </summary>
-  public bool ImportKey(KeyChain keyChain, VaultFileReader reader)
-  {
-    // The reader does not expose the cryptor, so we have to use a method
-    // in the reader. It, in turn, calls the overload above.
-    return reader.ImportChildKey(keyChain, this);
   }
 
   /// <summary>

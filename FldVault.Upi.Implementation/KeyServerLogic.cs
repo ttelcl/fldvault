@@ -82,6 +82,8 @@ public class KeyServerLogic: IDisposable
       [KeyServerMessages.KeyPresenceListCode] = HandleKeyPresenceList,
       [KeyServerMessages.ServerDiagnosticsCode] = HandleServerDiagnostics,
       [KeyServerMessages.KeyInfoCode] = HandleKeyInfoRequest,
+      [KeyServerMessages.KeyUploadManyCode] = HandleKeysUpload,
+      [KeyServerMessages.KeyInfoUploadManyCode] = HandleKeyInfosUpload,
     };
   }
 
@@ -244,7 +246,7 @@ public class KeyServerLogic: IDisposable
           }
           else
           {
-            _frameOut.WriteNoContentMessage(MessageCodes.Unrecognized);
+            _frameOut.WriteNoContentMessage(KeyServerMessages.Unrecognized);
           }
         }
         catch(OperationCanceledException)
@@ -374,6 +376,29 @@ public class KeyServerLogic: IDisposable
     var state = KeyStates.GetKey(keyId);
     frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode);
     await Callbacks.KeyStatusChanged(Owner, keyId, state.Status);
+  }
+
+  private async Task HandleKeysUpload(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var keys = frameIn.ReadKeysUpload(KeyStates.KeyChain);
+    frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode);
+    foreach(var keyId in keys)
+    {
+      var state = KeyStates.GetKey(keyId);
+      await Callbacks.KeyStatusChanged(Owner, keyId, state.Status);
+    }
+  }
+
+  private async Task HandleKeyInfosUpload(MessageFrameIn frameIn, MessageFrameOut frameOut)
+  {
+    var pkifList = frameIn.ReadKeyInfosUpload();
+    frameOut.WriteNoContentMessage(KeyServerMessages.KeyUploadedCode);
+    foreach(var pkif in pkifList)
+    {
+      var state = KeyStates.GetKey(pkif.KeyId);
+      state.AssociateKeyInfo(pkif);
+      await Callbacks.KeyStatusChanged(Owner, state.KeyId, state.Status);
+    }
   }
 
   private async Task HandleKeyPresenceList(MessageFrameIn frameIn, MessageFrameOut frameOut)

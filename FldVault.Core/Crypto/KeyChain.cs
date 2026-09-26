@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -122,12 +123,14 @@ public class KeyChain: IDisposable
   /// </summary>
   /// <param name="keyBytes">
   /// A <see cref="CryptoBuffer{T}"/> containing the 32 bytes of the key.
+  /// (if your buffer contains more than just the 32 key bytes, use 
+  /// <see cref="PutSlice(CryptoBuffer{byte}, int)"/> instead)
   /// </param>
   /// <returns>
   /// True if the key was added, false if it was already present.
   /// </returns>
   /// <exception cref="ArgumentOutOfRangeException"></exception>
-  public KeyBuffer PutCopy(CryptoBuffer<byte> keyBytes)
+  public bool PutCopy(CryptoBuffer<byte> keyBytes)
   {
     if(keyBytes.Length != 32)
     {
@@ -142,8 +145,76 @@ public class KeyChain: IDisposable
       {
         var copy = new KeyBuffer(keyBytes.Span());
         _store.Add(copy.GetId(), copy);
+        return true;
       }
-      return _store[keyId];
+      else
+      {
+        return false;
+      }
+    }
+  }
+
+  /// <summary>
+  /// Create a random new key and add it into this keychain.
+  /// Note that there is no passphrase associated with the new key, so recovering it
+  /// at a later time requires saving it somehow.
+  /// </summary>
+  /// <returns>
+  /// The ID of the newly created key.
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// The randomly generated key was already known. If this ever happens the most likely
+  /// cause is a hacker messing with your system's RNG.
+  /// </exception>
+  public Guid CreateNewRandomKey()
+  {
+    using(var keyBytes = new CryptoBuffer<byte>(32))
+    {
+      RandomNumberGenerator.Fill(keyBytes.Span());
+      var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+      if(_store.ContainsKey(keyId))
+      {
+        throw new InvalidOperationException(
+          "The system cryptographic random number generator is misbehaving. "+
+          "Not expecting a random key to match an existing one.");
+      }
+      PutCopy(keyBytes);
+      return keyId;
+    }
+  }
+
+  /// <summary>
+  /// Copy a key from a 32 byte slice in <paramref name="buffer"/> at the given
+  /// <paramref name="offset"/> into this key chain, returning the Key ID of
+  /// the imported key. If the key already is known, no change is made.
+  /// </summary>
+  /// <param name="buffer">
+  /// The buffer containing the 32 key bytes starting from <paramref name="offset"/>.
+  /// </param>
+  /// <param name="offset">
+  /// The offset in <paramref name="buffer"/> where the key bytes start.
+  /// </param>
+  /// <returns>
+  /// The Key ID of the imported key (or the existing key)
+  /// </returns>
+  public Guid PutSlice(CryptoBuffer<byte> buffer, int offset)
+  {
+    if(buffer.Length < offset + 32)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(offset),
+        "The offset must be less than the buffer size minus 32.");
+    }
+    lock(_lock)
+    {
+      var keyBytes = buffer.Span(offset, 32);
+      var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+      if(!_store.ContainsKey(keyId))
+      {
+        var copy = new KeyBuffer(keyBytes);
+        _store.Add(keyId, copy);
+      }
+      return keyId;
     }
   }
 
@@ -196,7 +267,7 @@ public class KeyChain: IDisposable
   /// The return value from the function if the key was found, or null if not found
   /// </returns>
   /// <seealso cref="TryUseKey(Guid, Action{Guid, IBytesWrapper})"/>
-  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T: class
+  public T? TryMapKey<T>(Guid keyId, Func<Guid, IBytesWrapper, T> keyFunction) where T : class
   {
     KeyBuffer kb;
     lock(_lock)

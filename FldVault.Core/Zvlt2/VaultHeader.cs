@@ -49,10 +49,24 @@ public class VaultHeader
   /// <param name="vaultStream">
   /// The stream to read from
   /// </param>
+  /// <param name="anyPurpose">
+  /// If true: do not validate the 'purpose' field of the header.
+  /// If false: validate that the 'purpose' field in the header matches
+  /// <paramref name="purpose"/>.
+  /// </param>
+  /// <param name="purpose">
+  /// If <paramref name="anyPurpose"/> is false, this is the expected value
+  /// for the header's 'purpose' field. Ignored if <paramref name="anyPurpose"/> is true.
+  /// Usually <see cref="ZvltPurpose.Default"/> for normal ZVLT files,
+  /// or <see cref="ZvltPurpose.Master"/> for master key files.
+  /// </param>
   /// <returns>
   /// The newly read header on success
   /// </returns>
-  public static VaultHeader ReadSync(Stream vaultStream)
+  public static VaultHeader ReadSync(
+    Stream vaultStream,
+    bool anyPurpose,
+    int purpose)
   {
     var hdr = BlockInfo.TryReadHeaderSync(vaultStream, false);
     hdr = CheckHeader(hdr);
@@ -62,7 +76,7 @@ public class VaultHeader
       throw new EndOfStreamException(
         "Unexpected end of stream while reading the header");
     }
-    var header = FromRaw(hdr, data);
+    var header = FromRaw(hdr, data, anyPurpose, purpose);
     return header;
   }
 
@@ -143,7 +157,11 @@ public class VaultHeader
     return hdr;
   }
 
-  private static VaultHeader FromRaw(BlockInfo hdr, ReadOnlySpan<byte> data)
+  private static VaultHeader FromRaw(
+    BlockInfo hdr,
+    ReadOnlySpan<byte> data,
+    bool anyPurpose,
+    int expectedPurpose)
   {
     var version = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(0, 4));
     if(version != VaultFormat.VaultFileVersion)
@@ -152,10 +170,10 @@ public class VaultHeader
         "Incompatible ZVLT version");
     }
     var purpose = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(4, 4));
-    if(purpose != 0)
+    if(!anyPurpose && purpose != expectedPurpose)
     {
       throw new InvalidOperationException(
-        "Expecting reserved field 1 in header to be 0");
+        $"Expecting 'purpose' field in header to be 0x{expectedPurpose:X8} but got 0x{purpose:X8}");
     }
     var keyId = new Guid(data.Slice(8, 16));
     var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(data.Slice(24, 8)));

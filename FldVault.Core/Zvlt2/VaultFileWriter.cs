@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using FldVault.Core.BlockFiles;
 using FldVault.Core.Crypto;
 using FldVault.Core.Utilities;
+using FldVault.Core.Vaults;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -331,7 +332,7 @@ public class VaultFileWriter: IDisposable
   }
 
   /// <summary>
-  /// Append a key transform block, storing the specified key (encrypted
+  /// (Deprecated) Append a key transform block, storing the specified key (encrypted
   /// by this vault file's key).
   /// </summary>
   /// <param name="keyId">
@@ -355,6 +356,79 @@ public class VaultFileWriter: IDisposable
     return blockElement ?? throw new ArgumentException(
         "The key was not found in the key chain",
         nameof(keyId));
+  }
+
+  /// <summary>
+  /// Append an external passphrase link block ('PASX')
+  /// </summary>
+  /// <param name="pkif"></param>
+  /// <returns></returns>
+  public BlockElement AppendExternalPassphraseLink(
+    PassphraseKeyInfoFile pkif)
+  {
+    _stream.Position = _stream.Length;
+    var bi = pkif.WriteBlock(_stream, Zvlt2BlockType.ExternalPassphraseLink);
+    Vault.Blocks.Add(bi);
+    return new BlockElement(bi);
+  }
+
+  /// <summary>
+  /// Append a Child Key List (CKEY) block
+  /// </summary>
+  /// <param name="keyIds">
+  /// The ids of the keys to include
+  /// </param>
+  /// <param name="keyChain">
+  /// The key chain providing the values of the keys in <paramref name="keyIds"/>.
+  /// </param>
+  /// <returns>
+  /// Returns the <see cref="BlockElement"/> that was created to represent the new block
+  /// </returns>
+  /// <exception cref="KeyNotFoundException"></exception>
+  /// <exception cref="InvalidOperationException"></exception>
+  public BlockElement AppendChildKeyList(
+    IReadOnlyCollection<Guid> keyIds,
+    KeyChain keyChain)
+  {
+    CheckDisposed();
+    _stream.Position = _stream.Length;
+    using(var keys = new ByteCryptoBuffer(keyIds.Count * 32))
+    {
+      using(var writer = keys.WriteableStream())
+      {
+        foreach(var keyId in keyIds)
+        {
+          if(!keyChain.TryUseKey(keyId, (_,ibw) => writer.Write(ibw.Bytes)))
+          {
+            throw new KeyNotFoundException(
+              $"Key {keyId} is not available to write");
+          }
+        }
+        if(writer.Position != writer.Capacity)
+        {
+          throw new InvalidOperationException(
+            "Internal error. Key list length incorrect.");
+        }
+      }
+      var keyBytesSize = keys.Length;
+      var contentSize = keyBytesSize + 12 /* nonce */ + 16 /* auth tag */;
+      var blockSize = contentSize + 8;
+      var bi = new BlockInfo(Zvlt2BlockType.ChildKeyList, blockSize, _stream.Position);
+      Span<byte> nonce = stackalloc byte[12];
+      Span<byte> tagOut = stackalloc byte[16];
+      // Assume the key list is (much) smaller than the file chunk size
+      Span<byte> cipherText = _buffer.Span(0, keys.Length);
+      _cryptor.Encrypt([], keys.Span(), cipherText, nonce, tagOut);
+      Span<byte> blockHeader = stackalloc byte[8];
+      bi.FormatBlockHeader(blockHeader);
+      _stream.Write(blockHeader);
+      _stream.Write(nonce);
+      _stream.Write(tagOut);
+      _stream.Write(cipherText);
+      bi.VerifyBlockEnd(_stream);
+      Vault.Blocks.Add(bi);
+      return new BlockElement(bi);
+    }
   }
 
   /// <summary>

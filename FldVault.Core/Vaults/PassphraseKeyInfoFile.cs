@@ -137,20 +137,22 @@ public class PassphraseKeyInfoFile
 
   /// <summary>
   /// Read a new instance from a "PASS" (<see cref="Zvlt2BlockType.PassphraseLink"/>)
-  /// block embedded in a block file
+  /// or "PASX" (<see cref="Zvlt2BlockType.ExternalPassphraseLink"/>) block embedded
+  /// in a block file
   /// </summary>
   /// <param name="stream">
   /// The block file stream (usually *.zvlt)
   /// </param>
   /// <param name="blockInfo">
-  /// The descriptor of the existing PASS block in the stream
+  /// The descriptor of the existing PASS or PASX block in the stream
   /// </param>
   /// <returns>
   /// A new <see cref="PassphraseKeyInfoFile"/> instance
   /// </returns>
-  public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, BlockInfo blockInfo)
+  public static PassphraseKeyInfoFile ReadFromBlock(Stream stream, IBlockInfo blockInfo)
   {
-    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink)
+    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink
+      && blockInfo.Kind != Zvlt2BlockType.ExternalPassphraseLink)
     {
       throw new InvalidOperationException("Incorrect block kind");
     }
@@ -158,8 +160,41 @@ public class PassphraseKeyInfoFile
     {
       throw new InvalidOperationException("Unexpected block size");
     }
-    Span<byte> content = stackalloc byte[blockInfo.ContentSize];
-    blockInfo.ReadSync(stream, content);
+    Span<byte> content = stackalloc byte[blockInfo.ContentLength()];
+    blockInfo.ReadContentSync(stream, content);
+    var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)));
+    var guid = new Guid(content.Slice(8, 16));
+    return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);
+  }
+
+  /// <summary>
+  /// Read a new instance from a "PASS" (<see cref="Zvlt2BlockType.PassphraseLink"/>)
+  /// or "PASX" (<see cref="Zvlt2BlockType.ExternalPassphraseLink"/>) block embedded
+  /// in a block file using a <see cref="VaultFileReader"/>.
+  /// </summary>
+  /// <param name="reader">
+  /// The vault file reader
+  /// </param>
+  /// <param name="blockInfo">
+  /// The descriptor of the existing PASS or PASX block in the stream
+  /// </param>
+  /// <returns>
+  /// A new <see cref="PassphraseKeyInfoFile"/> instance
+  /// </returns>
+  public static PassphraseKeyInfoFile ReadFromBlock(VaultFileReader reader, IBlockInfo blockInfo)
+  {
+    if(blockInfo.Kind != Zvlt2BlockType.PassphraseLink
+      && blockInfo.Kind != Zvlt2BlockType.ExternalPassphraseLink)
+    {
+      throw new InvalidOperationException("Incorrect block kind");
+    }
+    if(blockInfo.Size != 96)
+    {
+      throw new InvalidOperationException("Unexpected block size");
+    }
+    reader.SeekBlock(blockInfo);
+    Span<byte> content = stackalloc byte[blockInfo.ContentLength()];
+    reader.ReadSpan(content);
     var stamp = EpochTicks.ToUtc(BinaryPrimitives.ReadInt64LittleEndian(content.Slice(0, 8)));
     var guid = new Guid(content.Slice(8, 16));
     return new PassphraseKeyInfoFile(guid, content.Slice(24, 64), stamp);
@@ -266,7 +301,12 @@ public class PassphraseKeyInfoFile
     }
     if(fileName.EndsWith(".zvlt"))
     {
-      var vaultFile = new VaultFile(fileName);
+      var vaultFile = new VaultFile(fileName, ZvltPurpose.Default);
+      return vaultFile.GetPassphraseInfo();
+    }
+    if(fileName.EndsWith(".mzvlt"))
+    {
+      var vaultFile = new VaultFile(fileName, ZvltPurpose.Master);
       return vaultFile.GetPassphraseInfo();
     }
     if(fileName.EndsWith(".mvlt"))
@@ -332,14 +372,18 @@ public class PassphraseKeyInfoFile
   /// <param name="blockStream">
   /// The open ZVLT v2 block stream.
   /// </param>
-  public BlockInfo WriteBlock(Stream blockStream)
+  /// <param name="blockType">
+  /// The block type to write the block as. Default <see cref="Zvlt2BlockType.PassphraseLink"/>
+  /// (but <see cref="Zvlt2BlockType.ExternalPassphraseLink"/> is valid too).
+  /// </param>
+  public BlockInfo WriteBlock(Stream blockStream, int blockType = Zvlt2BlockType.PassphraseLink)
   {
     blockStream.Position = blockStream.Length;
     Span<byte> block = stackalloc byte[96-8];
     BinaryPrimitives.WriteInt64LittleEndian(block.Slice(0, 8), EpochTicks.FromUtc(UtcKeyStamp));
     KeyId.TryWriteBytes(block.Slice(8, 16));
     Salt.CopyTo(block.Slice(24, 64));
-    var bi = BlockInfo.WriteSync(blockStream, Zvlt2BlockType.PassphraseLink, block);
+    var bi = BlockInfo.WriteSync(blockStream, blockType, block);
     return bi;
   }
 

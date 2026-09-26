@@ -22,11 +22,16 @@ namespace FldVault.Core.Crypto
     /// Of the 128 input bits, 6 will be adjusted to make
     /// a type 4 GUID.
     /// </summary>
+    /// <remarks>
+    /// Much code and existing data relies on this, but for new applications
+    /// consider <see cref="BytesToGuid8(ReadOnlySpan{byte})"/> instead,
+    /// which better aligns with the RFC.
+    /// </remarks>
     /// <param name="bytes">
     /// The 16 input bytes
     /// </param>
     /// <returns>
-    /// A new GUID
+    /// A new type 4 GUID
     /// </returns>
     public static Guid BytesToGuid(ReadOnlySpan<byte> bytes)
     {
@@ -40,6 +45,34 @@ namespace FldVault.Core.Crypto
       Span<byte> span = stackalloc byte[16];
       bytes.CopyTo(span);
       span[7] = (byte)(span[7] & 0x0F | 0x40);
+      span[8] = (byte)(span[8] & 0x3F | 0x80);
+      return new Guid(span);
+    }
+
+    /// <summary>
+    /// Create a type 8 GUID from a span of 16 bytes.
+    /// Of the 128 input bits, 6 will be adjusted to make
+    /// a type 8 GUID. If you still have a choice, prefer this one over
+    /// <see cref="BytesToGuid(ReadOnlySpan{byte})"/>.
+    /// </summary>
+    /// <param name="bytes">
+    /// The 16 input bytes
+    /// </param>
+    /// <returns>
+    /// A new type 8 GUID
+    /// </returns>
+    public static Guid BytesToGuid8(ReadOnlySpan<byte> bytes)
+    {
+      if(bytes.Length != 16)
+      {
+        throw new ArgumentException(
+          "Expecting 16 bytes as input", nameof(bytes));
+      }
+      // We need a temporary copy of the input to be able to set
+      // the 6 bits that makes a type 8 GUID
+      Span<byte> span = stackalloc byte[16];
+      bytes.CopyTo(span);
+      span[7] = (byte)(span[7] & 0x0F | 0x80);
       span[8] = (byte)(span[8] & 0x3F | 0x80);
       return new Guid(span);
     }

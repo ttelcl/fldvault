@@ -44,12 +44,12 @@
                 </Grid.ColumnDefinitions>
                 <Button
                     Grid.Column="0"
-                        Margin="5,5"
+                    Margin="5,5"
                     Command="{Binding TryUploadAllCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial
                             Kind="TrayArrowUp"
-                            Margin="10,0"
+                            Margin="5,0"
                             Height="24"
                             Width="24"/>
                         <TextBlock

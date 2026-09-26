@@ -38,8 +38,20 @@
             Grid.Row="1">
             <StackPanel Orientation="Horizontal">
                 <Button
+                    Margin="5,5"
+                    ToolTip="Paste key id, zkey, key bearing file, etc."
                     Command="{Binding TryPasteCommand}">
-                    <TextBlock>Paste Key Info</TextBlock>
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Kind="ContentPaste"
+                            Margin="5,0"
+                            Height="24"
+                            Width="24"/>
+                        <TextBlock
+                            Margin="10,5"
+                            VerticalAlignment="Stretch"
+                            Text="Paste Clipboard"/>
+                    </StackPanel>
                 </Button>
             </StackPanel>
         </Border>

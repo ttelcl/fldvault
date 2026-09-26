@@ -65,16 +65,48 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <Border
                     Grid.Column="1">
                     <Button
-                        MinWidth="80"
+                        Margin="5,5"
+                        MinWidth="120"
+                        Visibility="{Binding Owner.Modified, Converter={StaticResource VisibleIf}}"
+                        Command="{Binding RevertCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial
+                                Kind="SyncAlert"
+                                Foreground="#EEAA44"
+                                Margin="5,0"
+                                Height="16"
+                                Width="16"/>
+                            <TextBlock
+                                Margin="5,0"
+                                TextAlignment="Center"
+                                VerticalAlignment="Center"
+                                Text="Revert!"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+                <Border
+                    Grid.Column="2">
+                    <Button
+                        MinWidth="120"
                         Margin="5,5"
                         Command="{Binding Owner.SaveAndViewCommand}">
-                        <TextBlock
-                            TextAlignment="Center"
-                            Text="{Binding Owner.SaveButtonLabel}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial
+                                Kind="{Binding Owner.SaveButtonIcon}"
+                                Margin="5,0"
+                                Height="16"
+                                Width="16"/>
+                            <TextBlock
+                                Margin="5,0"
+                                TextAlignment="Center"
+                                VerticalAlignment="Center"
+                                Text="{Binding Owner.SaveButtonLabel}"/>
+                        </StackPanel>
                     </Button>
                 </Border>
             </Grid>

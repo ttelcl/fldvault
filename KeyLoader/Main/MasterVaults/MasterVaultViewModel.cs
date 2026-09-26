@@ -72,6 +72,9 @@ public class MasterVaultViewModel: ObservableObject
     TryUploadAllCommand = new AsyncRelayCommand(
       TryPushAllKeys,
       () => true); // for now, simplify the enabled handling
+    RevertCommand = new RelayCommand(
+      ReloadContent,
+      () => Owner.Modified);
     ReloadContent();
   }
 
@@ -85,6 +88,12 @@ public class MasterVaultViewModel: ObservableObject
   /// Command to upload all child keys at once
   /// </summary>
   public AsyncRelayCommand TryUploadAllCommand { get; }
+
+  /// <summary>
+  /// Revert all changes, reloading the data from the file and marking
+  /// this master vault as "unmodified"
+  /// </summary>
+  public RelayCommand RevertCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -327,9 +336,15 @@ public class MasterVaultViewModel: ObservableObject
     return cvm;
   }
 
+  /// <summary>
+  /// Callback when changes may affect whether or not commands are enabled.
+  /// Triggered when the Modified flag or State of the owner changes, as well
+  /// as when this object is installed as the owner's unlocked vault.
+  /// </summary>
   internal void UpdateCommandEnabledStates()
   {
     TryPasteCommand.NotifyCanExecuteChanged();
+    RevertCommand.NotifyCanExecuteChanged();
   }
 
   internal bool HasChildKey(Guid keyId)

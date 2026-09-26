@@ -548,18 +548,31 @@ public class MasterTabViewModel: TaskTabBaseViewModel
   /// </summary>
   public string SaveButtonLabel {
     get => _saveButtonLabel;
-    set {
+    private set {
       SetProperty(ref _saveButtonLabel, value);
     }
   }
-  private string _saveButtonLabel = "View";
+  private string _saveButtonLabel = "Done Editing";
+
+  /// <summary>
+  /// Get the icon to show on the Save / View button in the edit mode UI
+  /// </summary>
+  public string SaveButtonIcon {
+    get => _saveButtonIcon;
+    private set {
+      SetProperty(ref _saveButtonIcon, value);
+    }
+  }
+  private string _saveButtonIcon = "PencilOff";
 
   /// <summary>
   /// Callback when the <see cref="TaskTabBaseViewModel.Modified"/> flag changes
   /// </summary>
   protected override void ModifiedChanged()
   {
-    SaveButtonLabel = Modified ? "Save" : "View";
+    SaveButtonLabel = Modified ? "Save" : "Done Editing";
+    SaveButtonIcon = Modified ? "ContentSaveOutline" : "PencilOff";
+    UnlockedVault?.UpdateCommandEnabledStates();
   }
 
   /// <summary>

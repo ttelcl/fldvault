@@ -47,11 +47,15 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   {
     Messenger = WeakReferenceMessenger.Default;
     _modelAwakeTokenSource = new CancellationTokenSource();
-    AppAwakeToken = _modelAwakeTokenSource.Token;
+    AppShutdownToken = _modelAwakeTokenSource.Token;
     TabHost = new TabHostViewModel<MainViewModel>(Messenger, this);
     ServerWidget = new ServerWidgetViewModel(this);
+    DefaultMasterVaultsFolder = TryGetDefaultFolder();
+    DefaultMasterVaultsPlace =
+      DefaultMasterVaultsFolder == null
+      ? null
+      : new FileDialogCustomPlace(DefaultMasterVaultsFolder);
     ExitCommand = new RelayCommand(ExitWindow);
-    Messenger.Register<CurrentTabChangedMessage>(this);
     OpenMasterFileCommand = new RelayCommand(OpenExistingMasterFile);
     CreateMasterFileCommand = new RelayCommand(CreateNewMasterFile);
     ClearCurrentMessageCommand = new RelayCommand(this.ClearMessage);
@@ -59,6 +63,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       Interval = TimeSpan.FromSeconds(0.25)
     };
     _timer.Tick += CheckStatusExpiry;
+    Messenger.Register<CurrentTabChangedMessage>(this);
     // only start the timer once a non-empty status message is set.
   }
 
@@ -87,12 +92,25 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   /// <summary>
   /// The <see cref="CancellationToken"/> that is canceled when the app is closed.
   /// </summary>
-  public CancellationToken AppAwakeToken { get; }
+  public CancellationToken AppShutdownToken { get; }
 
   /// <summary>
   /// The server widget
   /// </summary>
   public ServerWidgetViewModel ServerWidget { get; }
+
+  /// <summary>
+  /// The existing default master vaults folder if not null, or null if
+  /// that could not be created if missing. When used with file dialogs
+  /// use <see cref="DefaultMasterVaultsPlace"/> instead, if applicable.
+  /// </summary>
+  public string? DefaultMasterVaultsFolder { get; }
+
+  /// <summary>
+  /// The <see cref="FileDialogCustomPlace"/> corresponding to
+  /// <see cref="DefaultMasterVaultsFolder"/>.
+  /// </summary>
+  public FileDialogCustomPlace? DefaultMasterVaultsPlace { get; }
 
   /// <summary>
   /// Get or set the message shown in the status bar
@@ -185,6 +203,10 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       CheckFileExists = true,
       ClientGuid = __masterFileDialogGuid,
     };
+    if(DefaultMasterVaultsPlace != null)
+    {
+      dialog.CustomPlaces.Add(DefaultMasterVaultsPlace);
+    }
     if(dialog.ShowDialog() == true)
     {
       var fileName = dialog.FileName;
@@ -242,6 +264,10 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       ClientGuid = __masterFileDialogGuid,
       CheckFileExists = false,
     };
+    if(DefaultMasterVaultsPlace != null)
+    {
+      dialog.CustomPlaces.Add(DefaultMasterVaultsPlace);
+    }
     if(dialog.ShowDialog() == true)
     {
       var fileName = dialog.FileName;
@@ -383,7 +409,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   }
 
   /// <summary>
-  /// Callback when the application closes. Cancels <see cref="AppAwakeToken"/>.
+  /// Callback when the application closes. Cancels <see cref="AppShutdownToken"/>.
   /// </summary>
   internal void ApplicationClosing()
   {
@@ -393,5 +419,32 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     {
       _modelAwakeTokenSource.Cancel();
     }
+  }
+
+  /// <summary>
+  /// Return the default master vault folder, trying to create it if it did not yet exist.
+  /// </summary>
+  /// <returns>
+  /// The folder if iot exists (or was created), null if creating it failed.
+  /// </returns>
+  private static string? TryGetDefaultFolder()
+  {
+    var defaultFolder = Path.Combine(
+      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+      "Lcl",
+      "MasterVaults");
+    if(!Directory.Exists(defaultFolder))
+    {
+      try
+      {
+        Directory.CreateDirectory(defaultFolder);
+      }
+      catch(Exception ex)
+      {
+        Trace.TraceError($"Error while trying to create the default master vault folder: {ex}");
+        return null;
+      }
+    }
+    return defaultFolder;
   }
 }

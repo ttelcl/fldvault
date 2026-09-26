@@ -360,7 +360,7 @@ public class MasterVaultViewModel: ObservableObject
         if(keyInfos.Count > 0)
         {
           var result = await server.UploadKeyInfosAsync(
-            keyInfos, serverWidget.AppCancelationToken);
+            keyInfos, mainVm.AppShutdownToken);
           switch(result)
           {
             case KeyServerMessages.KeyUploadedCode:
@@ -387,7 +387,7 @@ public class MasterVaultViewModel: ObservableObject
         if(keys.Count > 0)
         {
           var result = await server.UploadKeysAsync(
-            _childKeyChain, keys, serverWidget.AppCancelationToken);
+            _childKeyChain, keys, mainVm.AppShutdownToken);
           switch(result)
           {
             case KeyServerMessages.KeyUploadedCode:

@@ -45,12 +45,6 @@ public sealed class ServerWidgetViewModel : ObservableObject
   public KeyServerService Server { get; }
 
   /// <summary>
-  /// The <see cref="CancellationToken"/> that gets canceled upon application shutdown.
-  /// This is the token that gets used for all async operations.
-  /// </summary>
-  internal CancellationToken AppCancelationToken => Owner.AppAwakeToken;
-
-  /// <summary>
   /// Whether or not the server appears to be active. This is a cached value
   /// of the latest server activity test result
   /// </summary>

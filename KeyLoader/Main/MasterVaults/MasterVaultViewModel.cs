@@ -75,6 +75,9 @@ public class MasterVaultViewModel: ObservableObject
     RevertCommand = new RelayCommand(
       ReloadContent,
       () => Owner.Modified);
+    CreateRandomKeyCommand = new RelayCommand(
+      NewRandomRawKey,
+      () => Owner.IsEditing);
     ReloadContent();
   }
 
@@ -94,6 +97,12 @@ public class MasterVaultViewModel: ObservableObject
   /// this master vault as "unmodified"
   /// </summary>
   public RelayCommand RevertCommand { get; }
+
+  /// <summary>
+  /// Create a new random key. The key can only be recovered from this master vault,
+  /// there is no passphrase for it.
+  /// </summary>
+  public RelayCommand CreateRandomKeyCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -213,6 +222,17 @@ public class MasterVaultViewModel: ObservableObject
       _masterKeyChain,
       links);
     Owner.MarkModified(false);
+  }
+
+  private void NewRandomRawKey()
+  {
+    var newGuid = _childKeyChain.CreateNewRandomKey();
+    AddKey(newGuid);
+    Owner.MessageHost.SetStatus(
+      $"Created new random key {newGuid}. Beware! There is no passphrase to ever recover it!",
+      TimeSpan.FromSeconds(15));
+    Trace.TraceInformation(
+      $"Created new random key {newGuid}");
   }
 
   /// <summary>
@@ -345,6 +365,7 @@ public class MasterVaultViewModel: ObservableObject
   {
     TryPasteCommand.NotifyCanExecuteChanged();
     RevertCommand.NotifyCanExecuteChanged();
+    CreateRandomKeyCommand.NotifyCanExecuteChanged();
   }
 
   internal bool HasChildKey(Guid keyId)

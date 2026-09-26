@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -150,6 +151,35 @@ public class KeyChain: IDisposable
       {
         return false;
       }
+    }
+  }
+
+  /// <summary>
+  /// Create a random new key and add it into this keychain.
+  /// Note that there is no passphrase associated with the new key, so recovering it
+  /// at a later time requires saving it somehow.
+  /// </summary>
+  /// <returns>
+  /// The ID of the newly created key.
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// The randomly generated key was already known. If this ever happens the most likely
+  /// cause is a hacker messing with your system's RNG.
+  /// </exception>
+  public Guid CreateNewRandomKey()
+  {
+    using(var keyBytes = new CryptoBuffer<byte>(32))
+    {
+      RandomNumberGenerator.Fill(keyBytes.Span());
+      var keyId = HashResult.FromSha256(keyBytes).AsGuid;
+      if(_store.ContainsKey(keyId))
+      {
+        throw new InvalidOperationException(
+          "The system cryptographic random number generator is misbehaving. "+
+          "Not expecting a random key to match an existing one.");
+      }
+      PutCopy(keyBytes);
+      return keyId;
     }
   }
 

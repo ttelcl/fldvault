@@ -53,6 +53,22 @@
                             Text="Paste Clipboard"/>
                     </StackPanel>
                 </Button>
+                <Button
+                    Margin="5,5"
+                    ToolTip="Create a new random key.\nIt can only be recovered from a master key vault, there is no passphrase."
+                    Command="{Binding CreateRandomKeyCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Kind="DiceMultiple"
+                            Margin="5,0"
+                            Height="24"
+                            Width="24"/>
+                        <TextBlock
+                            Margin="10,5"
+                            VerticalAlignment="Stretch"
+                            Text="Create Random Key"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </Border>
         <!-- footer -->

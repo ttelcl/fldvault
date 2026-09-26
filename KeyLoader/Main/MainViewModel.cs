@@ -212,6 +212,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   public void OpenDroppedMasterKeyFile(
     string fileName)
   {
+    fileName = Path.GetFullPath(fileName);
     var existingTab =
       TabHost.TaskTabs
       .OfType<MasterTabViewModel>()

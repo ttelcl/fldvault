@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Configuration;
-using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 
 using ControlzEx.Theming;
@@ -25,16 +24,35 @@ public partial class App: Application
   {
     DispatcherUnhandledException += (s, e) =>
       ProcessUnhandledException(e);
-    Trace.TraceInformation($"App.App_Startup enter");
+    Trace.TraceInformation($"App.App_Startup: enter");
     ThemeManager.Current.ChangeTheme(this, "Dark.Olive");
     MainModel = new MainViewModel();
     var mainWindow = new MainWindow() {
       DataContext = MainModel,
     };
     InitializePrefixColors();
-    Trace.TraceInformation($"App.App_Startup showing main window");
+    foreach(var arg in e.Args)
+    {
+      if(arg.EndsWith(".mzvlt"))
+      {
+        if(File.Exists(arg))
+        {
+          Trace.TraceInformation($"App.App_Startup: Opening command line argument '{arg}'");
+          MainModel.OpenDroppedMasterKeyFile(arg); // takes care of expanding relative names
+        }
+        else
+        {
+          Trace.TraceWarning($"App.App_Startup: File does not exist: '{arg}'");
+        }
+      }
+      else
+      {
+        Trace.TraceWarning($"App.App_Startup: Ignoring unrecognized command line argument '{arg}'");
+      }
+    }
+    Trace.TraceInformation($"App.App_Startup: showing main window");
     mainWindow.Show();
-    Trace.TraceInformation($"App.App_Startup done");
+    Trace.TraceInformation($"App.App_Startup: done");
   }
 
   /// <summary>

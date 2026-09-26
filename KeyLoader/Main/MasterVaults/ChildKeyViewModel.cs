@@ -242,7 +242,7 @@ public class ChildKeyViewModel: ObservableObject
       if(KeyInfo != null)
       {
         var result = await server.UploadKeyInfosAsync(
-          [KeyInfo], serverWidget.AppCancelationToken);
+          [KeyInfo], mainVm.AppShutdownToken);
         switch(result)
         {
           case KeyServerMessages.KeyUploadedCode:
@@ -269,7 +269,7 @@ public class ChildKeyViewModel: ObservableObject
       if(KeyKnown)
       {
         var result = await server.UploadKeysAsync(
-          _childKeyChain, [KeyId], serverWidget.AppCancelationToken);
+          _childKeyChain, [KeyId], mainVm.AppShutdownToken);
         switch(result)
         {
           case KeyServerMessages.KeyUploadedCode:
@@ -374,13 +374,13 @@ public class ChildKeyViewModel: ObservableObject
     var messageHost = tabVm.MessageHost;
     if(server.ServerAvailable)
     {
-      var result = await server.LookupKeyAsync(KeyId, _childKeyChain, serverWidget.AppCancelationToken);
+      var result = await server.LookupKeyAsync(KeyId, _childKeyChain, mainVm.AppShutdownToken);
       if(result == KeyPresence.Present)
       {
         if(KeyInfo == null)
         {
           // Also try to fetch key info
-          var pkif = await server.LookupKeyInfoAsync(KeyId, serverWidget.AppCancelationToken);
+          var pkif = await server.LookupKeyInfoAsync(KeyId, mainVm.AppShutdownToken);
           if(pkif != null)
           {
             KeyInfo = pkif;
@@ -392,7 +392,7 @@ public class ChildKeyViewModel: ObservableObject
         if(KeyInfo != null)
         {
           // upload key info, to avoid needlessly announcing a ghost key to the server
-          var response = await server.UploadKeyInfosAsync([KeyInfo], serverWidget.AppCancelationToken);
+          var response = await server.UploadKeyInfosAsync([KeyInfo], mainVm.AppShutdownToken);
           switch(response)
           {
             case KeyServerMessages.KeyUploadCode:
@@ -413,7 +413,7 @@ public class ChildKeyViewModel: ObservableObject
         else // KeyInfo == null
         {
           // the key is not in the server - but it may still have the key info, which we do not have yet here
-          KeyInfo = await server.LookupKeyInfoAsync(KeyId, serverWidget.AppCancelationToken);
+          KeyInfo = await server.LookupKeyInfoAsync(KeyId, mainVm.AppShutdownToken);
         }
       }
       UpdateKeyKnown();

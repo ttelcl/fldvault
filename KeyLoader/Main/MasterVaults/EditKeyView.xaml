@@ -18,45 +18,50 @@
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Border
-                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
-                BorderThickness="1"
-                Grid.Column="0"
-                >
-                <TextBlock
-                    FontFamily="Consolas"
-                    FontSize="12"
-                    Margin="5,5,5,5"
-                    Foreground="{Binding KeyKnown, Converter={StaticResource TrueGreenFalseRed}}"
-                    Text="{Binding KeyId}"/>
-            </Border>
+            <!-- Status icons -->
             <Border
                 BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
                 Background="{DynamicResource MahApps.Brushes.Accent4}"
-                BorderThickness="1"
-                Grid.Column="1">
+                BorderThickness="0"
+                Grid.Column="0">
                 <StackPanel Orientation="Horizontal">
                     <iconPacks:PackIconMaterial
                         Margin="5,5"
                         VerticalAlignment="Stretch"
-                        Height="24" Width="24"
+                        ToolTip="Key known?"
+                        Height="20" Width="20"
                         Foreground="{Binding KeyKnown, Converter={StaticResource TrueGreenFalseRed}}"
                         Kind="{Binding KeyIcon}" />
                     <iconPacks:PackIconMaterial
                         Margin="5,5"
                         VerticalAlignment="Stretch"
-                        Height="24" Width="24"
+                        ToolTip="Passphrase link known?"
+                        Height="20" Width="20"
                         Foreground="{Binding KeyInfoKnown, Converter={StaticResource TrueGreenFalseRed}}"
                         Kind="{Binding KeyInfoIcon}" />
                 </StackPanel>
             </Border>
-            <!-- for now, leave column 2 unused -->
+            <!-- Key Label -->
             <Border
-                Grid.Column="3">
+                BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+                BorderThickness="0"
+                Grid.Column="1"
+                >
+                <TextBlock
+                    FontFamily="Consolas"
+                    TextAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontSize="14"
+                    Margin="5,5,5,5"
+                    Foreground="{Binding KeyKnown, Converter={StaticResource TrueGreenFalseRed}}"
+                    Text="{Binding KeyId}"/>
+            </Border>
+            <!-- Buttons and controls -->
+            <Border
+                Grid.Column="2">
                 <StackPanel Orientation="Horizontal">
                     <Button
                         Margin="5,5" Padding="5,2"
@@ -87,6 +92,7 @@
                                     Header="Copy Full Key ID"
                                     Command="{Binding CopyKeyIdCommand}"
                                     Icon="{iconPacks:Material Kind=ContentCopy, Height=20, Width=20}"/>
+                                <Separator />
                                 <MenuItem
                                     Header="Import from Key Server"
                                     Command="{Binding TryLoadKeyCommand}">
@@ -94,6 +100,16 @@
                                         <iconPacks:PackIconMaterial
                                             Kind="TrayArrowDown"
                                             Foreground="#AAEEAA"
+                                            Height="20"
+                                            Width="20"/>
+                                    </MenuItem.Icon>
+                                </MenuItem>
+                                <MenuItem
+                                    Header="Push Key to Server"
+                                    Command="{Binding TryPushKeyCommand}">
+                                    <MenuItem.Icon>
+                                        <iconPacks:PackIconMaterial
+                                            Kind="TrayArrowUp"
                                             Height="20"
                                             Width="20"/>
                                     </MenuItem.Icon>

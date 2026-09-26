@@ -112,15 +112,24 @@ public class TabHostViewModel: ObservableObject
   {
     if(tab == CurrentTab)
     {
-      // Not yet implemented, but throwing an exception is not safe now.
-      // Todo: pick and activate a different tab in a sensible way
-
-      // Temporary plug: pick *first* other tab (if there is any)
-      var othertab = TaskTabs.Where(t => t != tab).FirstOrDefault();
-      CurrentTab = othertab;
-      Trace.TraceError(
-        $"Deactivating tabs is currently using a simplified implementation. Tab was '{tab.Title}'");
+      var nextTab =
+        MostRecentActivatedTabs()
+        .Where(t => t != tab)
+        .FirstOrDefault();
+      CurrentTab = nextTab;
+      Trace.TraceInformation(
+        $"Deactivating tab '{tab.Title}' and changing to '{CurrentTab?.Title ?? "<None>"}'");
     }
+  }
+
+  /// <summary>
+  /// Returns all tabs, sorted by <see cref="TaskTabBaseViewModel.LastActivated"/> in reverse
+  /// order
+  /// </summary>
+  /// <returns></returns>
+  public IEnumerable<TaskTabBaseViewModel> MostRecentActivatedTabs()
+  {
+    return TaskTabs.OrderByDescending(tab => tab.LastActivated);
   }
 
   /// <summary>

@@ -15,6 +15,7 @@
     Title="{Binding WindowTitle}"
     TitleCharacterCasing="Normal"
     ResizeMode="CanResizeWithGrip"
+    Icon="pack://application:,,,/KeyLoader;component/assets/keyloader.ico"
     Height="640" Width="480"
     MinHeight="300" MinWidth="260">
     <DockPanel>

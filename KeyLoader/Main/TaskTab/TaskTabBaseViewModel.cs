@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -180,6 +181,17 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   }
 
   /// <summary>
+  /// Get the time this tab was last activated (local time)
+  /// </summary>
+  public DateTimeOffset LastActivated {
+    get => _lastActivated;
+    private set {
+      SetProperty(ref _lastActivated, value);
+    }
+  }
+  private DateTimeOffset _lastActivated;
+
+  /// <summary>
   /// Visualization helper - true between a click's mouse down and mouse up
   /// </summary>
   public bool IsClicking {
@@ -212,6 +224,13 @@ public class TaskTabBaseViewModel: ObservableObject, IDisposable
   internal void AfterIsActiveChange()
   {
     OnPropertyChanged(nameof(IsActive));
+    if(IsActive)
+    {
+      LastActivated = DateTimeOffset.Now;
+      var stamp = LastActivated.ToString("yyyy-MM-dd HH:mm:ss K");
+      Trace.TraceInformation(
+        $"Activating tab '{Title}' at {stamp}");
+    }
   }
 
   /// <summary>

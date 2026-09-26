@@ -7,6 +7,7 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <ApplicationIcon>Assets\keyloader.ico</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -17,6 +18,15 @@
     -->
     <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\keyloader.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\keyloader.ico" />
+    <Resource Include="Assets\keyloader.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

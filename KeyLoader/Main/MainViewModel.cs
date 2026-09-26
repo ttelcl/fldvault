@@ -37,6 +37,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   private readonly CancellationTokenSource _modelAwakeTokenSource;
   private DateTimeOffset? _clearStatusAfter = null;
   private DispatcherTimer _timer;
+  private bool _shutdown = false;
 
   /// <summary>
   /// Create a new <see cref="MainViewModel"/>. Called as part of the bootstrapping
@@ -46,15 +47,15 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   {
     Messenger = WeakReferenceMessenger.Default;
     _modelAwakeTokenSource = new CancellationTokenSource();
-    AppAwakeToken = _modelAwakeTokenSource.Token;
+    AppShutdownToken = _modelAwakeTokenSource.Token;
     TabHost = new TabHostViewModel<MainViewModel>(Messenger, this);
     ServerWidget = new ServerWidgetViewModel(this);
-    ExitCommand = new RelayCommand(() => {
-      ApplicationClosing(); // One of two paths calling it. The other is in App.
-      var w = Application.Current.MainWindow;
-      w?.Close();
-    });
-    Messenger.Register<CurrentTabChangedMessage>(this);
+    DefaultMasterVaultsFolder = TryGetDefaultFolder();
+    DefaultMasterVaultsPlace =
+      DefaultMasterVaultsFolder == null
+      ? null
+      : new FileDialogCustomPlace(DefaultMasterVaultsFolder);
+    ExitCommand = new RelayCommand(ExitWindow);
     OpenMasterFileCommand = new RelayCommand(OpenExistingMasterFile);
     CreateMasterFileCommand = new RelayCommand(CreateNewMasterFile);
     ClearCurrentMessageCommand = new RelayCommand(this.ClearMessage);
@@ -62,6 +63,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       Interval = TimeSpan.FromSeconds(0.25)
     };
     _timer.Tick += CheckStatusExpiry;
+    Messenger.Register<CurrentTabChangedMessage>(this);
     // only start the timer once a non-empty status message is set.
   }
 
@@ -90,12 +92,25 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   /// <summary>
   /// The <see cref="CancellationToken"/> that is canceled when the app is closed.
   /// </summary>
-  public CancellationToken AppAwakeToken { get; }
+  public CancellationToken AppShutdownToken { get; }
 
   /// <summary>
   /// The server widget
   /// </summary>
   public ServerWidgetViewModel ServerWidget { get; }
+
+  /// <summary>
+  /// The existing default master vaults folder if not null, or null if
+  /// that could not be created if missing. When used with file dialogs
+  /// use <see cref="DefaultMasterVaultsPlace"/> instead, if applicable.
+  /// </summary>
+  public string? DefaultMasterVaultsFolder { get; }
+
+  /// <summary>
+  /// The <see cref="FileDialogCustomPlace"/> corresponding to
+  /// <see cref="DefaultMasterVaultsFolder"/>.
+  /// </summary>
+  public FileDialogCustomPlace? DefaultMasterVaultsPlace { get; }
 
   /// <summary>
   /// Get or set the message shown in the status bar
@@ -152,17 +167,6 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     }
   }
 
-  /// <summary>
-  /// Callback when the application closes. Cancels <see cref="AppAwakeToken"/>.
-  /// </summary>
-  internal void ApplicationClosing()
-  {
-    if(!_modelAwakeTokenSource.IsCancellationRequested)
-    {
-      _modelAwakeTokenSource.Cancel();
-    }
-  }
-
   internal IEnumerable<MasterTabViewModel> GetMasterTabs()
   {
     return TabHost.TaskTabs.OfType<MasterTabViewModel>();
@@ -199,6 +203,10 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       CheckFileExists = true,
       ClientGuid = __masterFileDialogGuid,
     };
+    if(DefaultMasterVaultsPlace != null)
+    {
+      dialog.CustomPlaces.Add(DefaultMasterVaultsPlace);
+    }
     if(dialog.ShowDialog() == true)
     {
       var fileName = dialog.FileName;
@@ -226,6 +234,7 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
   public void OpenDroppedMasterKeyFile(
     string fileName)
   {
+    fileName = Path.GetFullPath(fileName);
     var existingTab =
       TabHost.TaskTabs
       .OfType<MasterTabViewModel>()
@@ -255,6 +264,10 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
       ClientGuid = __masterFileDialogGuid,
       CheckFileExists = false,
     };
+    if(DefaultMasterVaultsPlace != null)
+    {
+      dialog.CustomPlaces.Add(DefaultMasterVaultsPlace);
+    }
     if(dialog.ShowDialog() == true)
     {
       var fileName = dialog.FileName;
@@ -324,22 +337,114 @@ public class MainViewModel: ObservableObject, IRecipient<CurrentTabChangedMessag
     }
   }
 
-  /// <summary>
-  /// Callback invoked when the application is closing
-  /// </summary>
-  /// <param name="e"></param>
-  public void OnClosing(CancelEventArgs e)
-  {
-    // this disables the status timer if it was running
-    SetStatus(null);
-    Trace.TraceInformation("Shutting down");
-  }
-
   private void CheckStatusExpiry(object? sender, EventArgs e)
   {
     if(_clearStatusAfter.HasValue && DateTimeOffset.UtcNow > _clearStatusAfter.Value)
     {
       SetStatus("");
     }
+  }
+
+  /// <summary>
+  /// Invoked by File | Exit
+  /// </summary>
+  private void ExitWindow()
+  {
+    Trace.TraceInformation("Shutting down (ExitWindow())");
+    // This disables the status timer if it was running:
+    SetStatus(null);
+    var w = Application.Current.MainWindow;
+    w?.Close(); // includes asking for confirmation
+  }
+
+  /// <summary>
+  /// Callback invoked when the window close button is clicked
+  /// </summary>
+  /// <param name="e"></param>
+  public void OnClosing(CancelEventArgs e)
+  {
+    // This disables the status timer if it was running:
+    SetStatus(null);
+    Trace.TraceInformation("Shutting down (OnClosing())");
+    if(!_shutdown)
+    {
+      // Shutdown is not yet inevitable
+      if(OfferAbortOnUnsavedWindows())
+      {
+        e.Cancel = true;
+      }
+    }
+  }
+
+  /// <summary>
+  /// Check if there are unsaved documents and ask if closing should be aborted
+  /// if there are any (if still possible)
+  /// </summary>
+  /// <returns></returns>
+  private bool OfferAbortOnUnsavedWindows()
+  {
+    if(TabHost.TaskTabs.Any(tab => tab.Modified))
+    {
+      if(_shutdown)
+      {
+        Trace.TraceWarning(
+          "There are unsaved windows, but it is too late to ask if they should be saved");
+      }
+      else
+      {
+        Trace.TraceInformation(
+          "There are unsaved documents. Asking for confirmation to close.");
+        var reply = MessageBox.Show(
+          "There are unsaved documents. \nAre you sure you want to close this app and lose your changes?",
+          "Unsaved documents",
+          MessageBoxButton.OKCancel,
+          MessageBoxImage.Question);
+        if(reply == MessageBoxResult.Cancel)
+        {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// <summary>
+  /// Callback when the application closes. Cancels <see cref="AppShutdownToken"/>.
+  /// </summary>
+  internal void ApplicationClosing()
+  {
+    Trace.TraceInformation("Shutting down (Application close)");
+    _shutdown = true; // the point of no return
+    if(!_modelAwakeTokenSource.IsCancellationRequested)
+    {
+      _modelAwakeTokenSource.Cancel();
+    }
+  }
+
+  /// <summary>
+  /// Return the default master vault folder, trying to create it if it did not yet exist.
+  /// </summary>
+  /// <returns>
+  /// The folder if iot exists (or was created), null if creating it failed.
+  /// </returns>
+  private static string? TryGetDefaultFolder()
+  {
+    var defaultFolder = Path.Combine(
+      Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+      "Lcl",
+      "MasterVaults");
+    if(!Directory.Exists(defaultFolder))
+    {
+      try
+      {
+        Directory.CreateDirectory(defaultFolder);
+      }
+      catch(Exception ex)
+      {
+        Trace.TraceError($"Error while trying to create the default master vault folder: {ex}");
+        return null;
+      }
+    }
+    return defaultFolder;
   }
 }

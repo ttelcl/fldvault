@@ -72,6 +72,12 @@ public class MasterVaultViewModel: ObservableObject
     TryUploadAllCommand = new AsyncRelayCommand(
       TryPushAllKeys,
       () => true); // for now, simplify the enabled handling
+    RevertCommand = new RelayCommand(
+      ReloadContent,
+      () => Owner.Modified);
+    CreateRandomKeyCommand = new RelayCommand(
+      NewRandomRawKey,
+      () => Owner.IsEditing);
     ReloadContent();
   }
 
@@ -85,6 +91,18 @@ public class MasterVaultViewModel: ObservableObject
   /// Command to upload all child keys at once
   /// </summary>
   public AsyncRelayCommand TryUploadAllCommand { get; }
+
+  /// <summary>
+  /// Revert all changes, reloading the data from the file and marking
+  /// this master vault as "unmodified"
+  /// </summary>
+  public RelayCommand RevertCommand { get; }
+
+  /// <summary>
+  /// Create a new random key. The key can only be recovered from this master vault,
+  /// there is no passphrase for it.
+  /// </summary>
+  public RelayCommand CreateRandomKeyCommand { get; }
 
   /// <summary>
   /// The owner of this unlocked master vault viewmodel, providing the details
@@ -204,6 +222,17 @@ public class MasterVaultViewModel: ObservableObject
       _masterKeyChain,
       links);
     Owner.MarkModified(false);
+  }
+
+  private void NewRandomRawKey()
+  {
+    var newGuid = _childKeyChain.CreateNewRandomKey();
+    AddKey(newGuid);
+    Owner.MessageHost.SetStatus(
+      $"Created new random key {newGuid}. Beware! There is no passphrase to ever recover it!",
+      TimeSpan.FromSeconds(15));
+    Trace.TraceInformation(
+      $"Created new random key {newGuid}");
   }
 
   /// <summary>
@@ -327,9 +356,16 @@ public class MasterVaultViewModel: ObservableObject
     return cvm;
   }
 
+  /// <summary>
+  /// Callback when changes may affect whether or not commands are enabled.
+  /// Triggered when the Modified flag or State of the owner changes, as well
+  /// as when this object is installed as the owner's unlocked vault.
+  /// </summary>
   internal void UpdateCommandEnabledStates()
   {
     TryPasteCommand.NotifyCanExecuteChanged();
+    RevertCommand.NotifyCanExecuteChanged();
+    CreateRandomKeyCommand.NotifyCanExecuteChanged();
   }
 
   internal bool HasChildKey(Guid keyId)
@@ -360,7 +396,7 @@ public class MasterVaultViewModel: ObservableObject
         if(keyInfos.Count > 0)
         {
           var result = await server.UploadKeyInfosAsync(
-            keyInfos, serverWidget.AppCancelationToken);
+            keyInfos, mainVm.AppShutdownToken);
           switch(result)
           {
             case KeyServerMessages.KeyUploadedCode:
@@ -387,7 +423,7 @@ public class MasterVaultViewModel: ObservableObject
         if(keys.Count > 0)
         {
           var result = await server.UploadKeysAsync(
-            _childKeyChain, keys, serverWidget.AppCancelationToken);
+            _childKeyChain, keys, mainVm.AppShutdownToken);
           switch(result)
           {
             case KeyServerMessages.KeyUploadedCode:

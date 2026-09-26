@@ -44,12 +44,12 @@
                 </Grid.ColumnDefinitions>
                 <Button
                     Grid.Column="0"
-                        Margin="5,5"
+                    Margin="5,5"
                     Command="{Binding TryUploadAllCommand}">
                     <StackPanel Orientation="Horizontal">
                         <iconPacks:PackIconMaterial
                             Kind="TrayArrowUp"
-                            Margin="10,0"
+                            Margin="5,0"
                             Height="24"
                             Width="24"/>
                         <TextBlock
@@ -74,12 +74,21 @@
                 <Border
                     Grid.Column="1">
                     <Button
-                        MinWidth="80"
+                        MinWidth="120"
                         Margin="5,5"
                         Command="{Binding Owner.StartEditingCommand}">
-                        <TextBlock
-                            TextAlignment="Center"
-                            Text="Edit"/>
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial
+                                Kind="PencilOutline"
+                                Margin="5,0"
+                                Height="16"
+                                Width="16"/>
+                            <TextBlock
+                                Margin="5,0"
+                                TextAlignment="Center"
+                                VerticalAlignment="Center"
+                                Text="Edit"/>
+                        </StackPanel>
                     </Button>
                 </Border>
             </Grid>

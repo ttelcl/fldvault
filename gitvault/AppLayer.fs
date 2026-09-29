@@ -25,6 +25,7 @@ type private Options = {
   LayerTag: string option
   Dependencies: string list
   Force: bool
+  Scaffold: string option
 }
 
 let private parseOptions args =
@@ -37,13 +38,29 @@ let private parseOptions args =
     | "-h" :: _ ->
       None
     | "-tag" :: tag :: rest ->
-      let tag =
-        if tag |> String.IsNullOrEmpty then
-          None
-        else
-          // TODO: argument validation
-          tag |> Some
-      rest |> parseMore {o with LayerTag = tag }
+      if o.Scaffold |> Option.isSome then
+        cp "\fg-tag\f0 and \fg-scaffold\f0 are mutaually exclusive"
+        None
+      else
+        let tag =
+          if tag |> String.IsNullOrEmpty then
+            None
+          else
+            // TODO: tag syntax validation
+            cp "\frTODO:\f0 check tag validity"
+            tag |> Some
+        rest |> parseMore {o with LayerTag = tag }
+    | "-scaffold" :: groupname :: rest ->
+      if o.LayerTag |> Option.isSome then
+        cp "\fg-tag\f0 and \fg-scaffold\f0 are mutaually exclusive"
+        None
+      elif groupname |> String.IsNullOrEmpty then
+        cp "the scaffold group name cannot be empty"
+        None
+      else
+        // TODO: validate group name syntax
+        cp "\frTODO:\f0 check scaffold group name validity"
+        rest |> parseMore {o with Scaffold = groupname |> Some}
     | "-on" :: tag :: rest ->
       if tag |> String.IsNullOrEmpty then
         cp "\fo-on\fr argument cannot be empty\f0."
@@ -61,6 +78,7 @@ let private parseOptions args =
     LayerTag = None
     Dependencies = []
     Force = false
+    Scaffold = None
   }
 
 let private runLayer o =

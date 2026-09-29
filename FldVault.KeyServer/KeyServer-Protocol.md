@@ -62,6 +62,10 @@ case).
 |  | `KSM.KeyNotFoundCode` | Key not found. |
 | `KSM.KeyUploadCode` |  | Upload a key to the server. |
 |  | `KSM.KeyUploadedCode` | Succesful response to a key upload (no content). |
+| `KSM.KeyUploadManyCode` (*) |  | Upload one or more keys to the server. |
+|  | `KSM.KeyUploadedCode` | Succesful response to multiple keys upload (no content). |
+| `KSM.KeyInfoUploadManyCode` (*) |  | Upload one or more key info blobs to the server (without a file association). |
+|  | `KSM.KeyUploadedCode` | Succesful response to key info blobs upload (no content). |
 | `KSM.KeyRemoveCode` |  | Remove a key from the server. |
 |  | `KSM.KeyRemovedCode` | Succesful response to a key removal. |
 | `KSM.KeyPresenceListCode` |  | Check a list of key IDs for their presence in the server. _Note: for security reasons there is no API to list ALL keys._ |
@@ -69,7 +73,8 @@ case).
 | `KSM.ServerDiagnosticsCode` |  | Trigger server diagnostics. The diagnostics are logged by the server, not returned |
 |  | `MC.OkNoContent` | The (empty) response. |
 
-
+(*) _These are messages that were introduced after the initial release. Older
+servers may reject these!_
 
 
 

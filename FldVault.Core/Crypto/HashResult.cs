@@ -52,9 +52,21 @@ namespace FldVault.Core.Crypto
     public ReadOnlySpan<byte> HashBytes { get => _hash; }
 
     /// <summary>
-    /// Derive a type 4 GUID from the first 16 bytes of the stored hash
+    /// Derive a type 4 GUID from the first 16 bytes of the stored hash.
+    /// If not yet comitted, use <see cref="AsGuid8"/> instead.
     /// </summary>
+    /// <remarks>
+    /// This should actually be deprecated, as it is a misuse of type 4 Guids,
+    /// but too much code and existing data relies on it. Type 4 Guids are
+    /// expected to use true randomness, not anything deterministic. Type 8
+    /// Guids (as created by <see cref="AsGuid8"/>) are a better match.
+    /// </remarks>
     public Guid AsGuid { get => Conversions.BytesToGuid(_hash.AsSpan(0, 16)); }
 
+    /// <summary>
+    /// Derive a type 8 GUID from the first 16 bytes of the stored hash.
+    /// Preferred over <see cref="AsGuid"/> if your design allows.
+    /// </summary>
+    public Guid AsGuid8 { get => Conversions.BytesToGuid8(_hash.AsSpan(0, 16)); }
   }
 }

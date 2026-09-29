@@ -1,0 +1,667 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Security;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+
+using CommunityToolkit.Mvvm.Input;
+
+using FldVault.Core.Crypto;
+using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
+
+using KeyLoader.Main.TaskTab;
+using KeyLoader.UserMessages;
+
+namespace KeyLoader.Main.MasterVaults;
+
+/// <summary>
+/// A tab for using, editing and creating a master key file
+/// </summary>
+public class MasterTabViewModel: TaskTabBaseViewModel
+{
+  private bool _disposed; // local to this class (not the superclass or child classes)
+  private readonly KeyChain _masterKeyChain;
+  private readonly KeyChain _childKeyChain;
+
+  /// <summary>
+  /// Create a new instance of <see cref="MasterTabViewModel"/>.
+  /// </summary>
+  /// <param name="owner">
+  /// The owning <see cref="MainViewModel"/>
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the file to open or create. This must be known before creating
+  /// this object. The file name must be valid, but the file does not yet need to exist.
+  /// </param>
+  /// <param name="masterKeyDescriptor">
+  /// The master key descriptor. Must be non-null if <paramref name="fileName"/> exists.
+  /// This is expected to be null when the file does not yet exist.
+  /// </param>
+  /// <param name="modified">
+  /// True if the data should be considered 'modified' and in need of saving
+  /// </param>
+  private MasterTabViewModel(
+    MainViewModel owner,
+    string fileName,
+    PassphraseKeyInfoFile? masterKeyDescriptor = null,
+    bool modified = false)
+    : base(owner.TabHost, TitleFromFileName(fileName), modified)
+  {
+    _masterKeyChain = new KeyChain();
+    _childKeyChain = new KeyChain();
+    SaveAndViewCommand = new RelayCommand(
+      SaveAndStopEditing,
+      () => State == MasterTabState.Editing && UnlockedVault != null);
+    StartEditingCommand = new RelayCommand(
+      StartEditing,
+      () => State == MasterTabState.Viewing && UnlockedVault != null);
+    CopyKeyCommand = new RelayCommand(
+      CopyKey,
+      () => MasterKey != null);
+    Owner = owner;
+    MasterKey = masterKeyDescriptor;
+    FileName = fileName;
+    CreateVaultPassEntry = new PasswordEntryViewModel(
+      SetNewVaultKey, "Enter passphrase for the new master vault file");
+    VerifyVaultPassEntry = new PasswordEntryViewModel(
+      ss => ConfirmNewVaultKey(ss), "Re-enter the passphrase for the new vault file");
+    EnterVaultPassEntry = new PasswordEntryViewModel(
+      ss => EnterVaultKey(ss), "Enter the passphrase for this master vault file");
+    UpdateState();
+    UpdateTitleFromFileName();
+    ExpectStates(MasterTabState.CreatingKey, MasterTabState.AwaitingKey);
+    if(State == MasterTabState.CreatingKey)
+    {
+      Modified = true;
+      CreateVaultPassEntry.PasswordTask?.TryFocus();
+    }
+    else if(State == MasterTabState.AwaitingKey)
+    {
+      EnterVaultPassEntry.PasswordTask?.TryFocus();
+    }
+  }
+
+  /// <summary>
+  /// Pseudo-constructor: open an existing master vault file
+  /// </summary>
+  /// <param name="owner">
+  /// The owning <see cref="MainViewModel"/>
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the existing master vault file
+  /// </param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static MasterTabViewModel OpenExisting(
+    MainViewModel owner,
+    string fileName)
+  {
+    if(!File.Exists(fileName))
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to exist: {fileName}");
+    }
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif == null)
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to contain its own key descriptor: {fileName}");
+    }
+    Trace.TraceInformation(
+      $"Preparing to open a master key file: {fileName}");
+    return new MasterTabViewModel(owner, fileName, pkif, false);
+  }
+
+  /// <summary>
+  /// Create a new <see cref="MasterTabViewModel"/> to create a new
+  /// master vault file.
+  /// </summary>
+  /// <param name="owner">
+  /// The owning <see cref="MainViewModel"/>
+  /// </param>
+  /// <param name="fileName">
+  /// The name of the master vault file to create. This file must NOT yet exist.
+  /// </param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static MasterTabViewModel CreateNew(
+    MainViewModel owner,
+    string fileName)
+  {
+    if(File.Exists(fileName))
+    {
+      throw new InvalidOperationException(
+        $"Expecting file to not yet exist: {fileName}");
+    }
+    Trace.TraceInformation(
+      $"Preparing to create a new master key file: {fileName}");
+    return new MasterTabViewModel(owner, fileName, null, false);
+  }
+
+  /// <summary>
+  /// Save the file if modified and switch to view mode if editing
+  /// </summary>
+  public RelayCommand SaveAndViewCommand { get; }
+
+  /// <summary>
+  /// Switch from view mode to edit mode
+  /// </summary>
+  public RelayCommand StartEditingCommand { get; }
+
+  /// <summary>
+  /// Command to copy the master key for this tab
+  /// </summary>
+  public RelayCommand CopyKeyCommand { get; }
+
+  /// <summary>
+  /// The <see cref="MainViewModel"/> of the application (the owner of
+  /// <see cref="TaskTabBaseViewModel.Host"/>)
+  /// </summary>
+  public MainViewModel Owner { get; }
+
+  /// <summary>
+  /// Get the message host for this tab
+  /// </summary>
+  public IMessageHost MessageHost => Owner;
+
+  /// <summary>
+  /// Get the file name associated with this tab
+  /// </summary>
+  public string FileName {
+    get => _fileName;
+    private set {
+      if(SetProperty(ref _fileName, value))
+      {
+        UpdateTitleFromFileName();
+        UpdateFileExists();
+        if(!String.IsNullOrEmpty(_fileName) && File.Exists(_fileName) && MasterKey==null)
+        {
+          Trace.TraceError(
+            "If the destination file exists, MasterKey must be set before setting FileName");
+        }
+      }
+    }
+  }
+  private string _fileName = null!; // The constructor WILL set a non-null value, but the compiler cannot deduce that
+
+  private void UpdateTitleFromFileName()
+  {
+    var title = TitleFromFileName(_fileName);
+    //var keySuffix = "." + KeyId[..8];
+    //if(title.EndsWith(keySuffix, StringComparison.InvariantCultureIgnoreCase))
+    //{
+    //  title = title[..^9];
+    //}
+    Title = title;
+  }
+
+  /// <summary>
+  /// The master key info record (null if not yet known, which happens
+  /// in the process of creating a new vault)
+  /// </summary>
+  public PassphraseKeyInfoFile? MasterKey {
+    get => _masterKey;
+    set {
+      if(value != null && _masterKey != null && value.KeyId != _masterKey.KeyId)
+      {
+        throw new InvalidOperationException(
+          "Once set, the master key cannot be changed");
+      }
+      if(SetProperty(ref _masterKey, value))
+      {
+        UpdateMasterKeyLoaded();
+        // Do not update state here to avoid double updates. Instead, have the caller
+        // do so.
+      }
+    }
+  }
+  private PassphraseKeyInfoFile? _masterKey;
+
+  /// <summary>
+  /// Get the key ID, if available, or a placeholder otherwise
+  /// </summary>
+  public string KeyId => MasterKey?.KeyId.ToString() ?? Guid.Empty.ToString().Replace('0', '?');
+
+  /// <summary>
+  /// True if the master key has been set and loaded. Once set to true this
+  /// is expected to stay true.
+  /// </summary>
+  public bool MasterKeyLoaded {
+    get => _masterKeyLoaded;
+    private set {
+      if(SetProperty(ref _masterKeyLoaded, value))
+      {
+        // Do not update state here to avoid double updates. Instead, have the caller
+        // do so.
+        CopyKeyCommand.NotifyCanExecuteChanged();
+      }
+    }
+  }
+  private bool _masterKeyLoaded;
+
+  /// <summary>
+  /// True if a file is defined and that file exists.
+  /// Updated explicitly via <see cref="UpdateFileExists"/>, or
+  /// implicitly by changing <see cref="FileName"/>.
+  /// </summary>
+  public bool FileExists {
+    get => _fileExistsState;
+    private set {
+      if(SetProperty(ref _fileExistsState, value))
+      {
+        UpdateState();
+      }
+    }
+  }
+  private bool _fileExistsState = false;
+
+  /// <summary>
+  /// The state of this tab, determining what to show in the UI
+  /// </summary>
+  public MasterTabState State {
+    get => _state;
+    private set {
+      if(SetProperty(ref _state, value))
+      {
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsViewing));
+        SaveAndViewCommand.NotifyCanExecuteChanged();
+        StartEditingCommand.NotifyCanExecuteChanged();
+        UnlockedVault?.UpdateCommandEnabledStates();
+      }
+    }
+  }
+  private MasterTabState _state;
+
+  /// <summary>
+  /// The unlocked view on the vault, ready for viewing or editing.
+  /// Or <see langword="null"/> if not yet unlocked.
+  /// </summary>
+  public MasterVaultViewModel? UnlockedVault {
+    get => _unlockedVault;
+    private set {
+      if(SetProperty(ref _unlockedVault, value))
+      {
+        OnPropertyChanged(nameof(IsEditing));
+        OnPropertyChanged(nameof(IsViewing));
+        SaveAndViewCommand.NotifyCanExecuteChanged();
+        StartEditingCommand.NotifyCanExecuteChanged();
+        UnlockedVault?.UpdateCommandEnabledStates();
+      }
+    }
+  }
+  private MasterVaultViewModel? _unlockedVault;
+
+  /// <summary>
+  /// True if the state is <see cref="MasterTabState.Editing"/> and the unlocked
+  /// vault model is available
+  /// </summary>
+  public bool IsEditing => _unlockedVault != null && State == MasterTabState.Editing;
+
+  /// <summary>
+  /// True if the state is <see cref="MasterTabState.Viewing"/> and the unlocked
+  /// vault model is available
+  /// </summary>
+  public bool IsViewing => _unlockedVault != null && State == MasterTabState.Viewing;
+
+  /// <summary>
+  /// The password handling logic for creating a brand new vault
+  /// </summary>
+  public PasswordEntryViewModel CreateVaultPassEntry { get; }
+
+  /// <summary>
+  /// The password handling logic for verifying the new vault key
+  /// </summary>
+  public PasswordEntryViewModel VerifyVaultPassEntry { get; }
+
+  /// <summary>
+  /// The password handling logic for verifying an existing vault key
+  /// </summary>
+  public PasswordEntryViewModel EnterVaultPassEntry { get; }
+
+  internal void MarkModified(bool modified)
+  {
+    Modified = modified;
+  }
+
+  /// <summary>
+  /// Start the process of creating a new key for a new vault file by generating a new
+  /// master key using the given <paramref name="passphrase"/>.
+  /// </summary>
+  /// <param name="passphrase"></param>
+  private void SetNewVaultKey(SecureString? passphrase)
+  {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return;
+    }
+    ExpectStates(MasterTabState.CreatingKey);
+    using(var ppk = PassphraseKey.FromSecureString(passphrase))
+    {
+      _masterKeyChain.PutCopy(ppk);
+      var pkif = new PassphraseKeyInfoFile(ppk);
+      MasterKey = pkif;
+      Trace.TraceInformation($"Initialized key {MasterKey?.KeyId}");
+    }
+    UpdateState();
+    ExpectStates(MasterTabState.ConfirmingKey);
+  }
+
+  /// <summary>
+  /// Confirm the previously loaded master key for the new master vault.
+  /// Upon failure: show a message and return false.
+  /// Upon success: create the new (empty) vault file and return true
+  /// </summary>
+  /// <param name="passphrase"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  private bool ConfirmNewVaultKey(SecureString? passphrase)
+  {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return false;
+    }
+    ExpectStates(MasterTabState.ConfirmingKey);
+    if(MasterKey == null || !_masterKeyChain.ContainsKey(MasterKey.KeyId) || String.IsNullOrEmpty(FileName))
+    {
+      State = MasterTabState.Panic;
+      throw new InvalidOperationException(
+        "Cannot confirm a master key that hasn't been loaded yet");
+    }
+    // Rename the output file to include the first 8 characters of the key
+    var segments = Path.GetFileName(FileName).Split('.');
+    if(segments[^1].Equals("mzvlt", StringComparison.InvariantCultureIgnoreCase))
+    {
+      var infix = MasterKey.KeyId.ToString()[..8];
+      if(!segments[^2].Equals(infix, StringComparison.InvariantCultureIgnoreCase))
+      {
+        var extension = $".{infix}.mzvlt";
+        FileName = Path.ChangeExtension(FileName, extension);
+      }
+    }
+    using(var ppk = PassphraseKey.TryPassphrase(passphrase, MasterKey))
+    {
+      if(ppk == null)
+      {
+        MessageHost.ShowError("Passphrase did not match");
+        return false;
+      }
+    }
+    VaultFile.WriteMasterKeyFile(FileName, MasterKey, [], _childKeyChain, _masterKeyChain);
+    Modified = false;
+    UpdateFileExists();
+    UpdateState();
+    ExpectStates(MasterTabState.Editing, MasterTabState.Viewing);
+    UnlockedVault = new MasterVaultViewModel(this, _childKeyChain, _masterKeyChain);
+    return FileExists;
+  }
+
+  /// <summary>
+  /// Verify the passphrase for the file that is being opened
+  /// </summary>
+  /// <param name="passphrase"></param>
+  /// <returns></returns>
+  /// <exception cref="InvalidOperationException"></exception>
+  private bool EnterVaultKey(SecureString? passphrase)
+  {
+    if(passphrase == null)
+    {
+      Trace.TraceInformation("Canceled key entry.");
+      return false;
+    }
+    ExpectStates(MasterTabState.AwaitingKey);
+    if(MasterKey == null)
+    {
+      State = MasterTabState.Panic;
+      throw new InvalidOperationException(
+        "Internal error: Expecting the master key metadata to be available");
+    }
+    using(var ppk = PassphraseKey.TryPassphrase(passphrase, MasterKey))
+    {
+      if(ppk == null)
+      {
+        MessageHost.ShowError("Incorrect passphrase for this vault");
+        return false;
+      }
+      _masterKeyChain.PutCopy(ppk);
+      UpdateMasterKeyLoaded();
+      Trace.TraceInformation($"Successfully unlocked key {MasterKey.KeyId}");
+    }
+    UpdateState();
+    ExpectStates(MasterTabState.Viewing, MasterTabState.Editing);
+    UnlockedVault = new MasterVaultViewModel(this, _childKeyChain, _masterKeyChain);
+    return MasterKeyLoaded;
+  }
+
+  private void UpdateMasterKeyLoaded()
+  {
+    MasterKeyLoaded = MasterKey != null && _masterKeyChain.ContainsKey(MasterKey.KeyId);
+    OnPropertyChanged(nameof(KeyId));
+  }
+
+  /// <summary>
+  /// Updates the state of <see cref="FileExists"/> to match
+  /// the existence of the file named by <see cref="FileName"/>.
+  /// </summary>
+  private void UpdateFileExists()
+  {
+    FileExists = !String.IsNullOrEmpty(FileName) && File.Exists(FileName);
+  }
+
+  /// <summary>
+  /// Update the state to the automatically calculated value
+  /// </summary>
+  private void UpdateState()
+  {
+    var oldState = State;
+    State = CalculateState();
+    if(oldState == MasterTabState.CreatingKey && State == MasterTabState.ConfirmingKey)
+    {
+      VerifyVaultPassEntry.PasswordTask?.TryFocus();
+    }
+  }
+
+  private void ExpectStates(params MasterTabState[] expectedStates)
+  {
+    if(!expectedStates.Any(expected => State == expected))
+    {
+      var list = String.Join(", ", expectedStates);
+      var oldstate = State;
+      State = MasterTabState.Panic;
+      throw new InvalidOperationException(
+        $"Unexpected state. Got '{oldstate}' while expecting one of: {list}");
+    }
+  }
+
+  private MasterTabState CalculateState()
+  {
+    if(!File.Exists(FileName))
+    {
+      if(MasterKey == null)
+      {
+        // creating a new key, for a new file
+        return MasterTabState.CreatingKey;
+      }
+      if(!MasterKeyLoaded)
+      {
+        // transient state (should not happen if key is loaded before MasterKey is set)
+        return MasterTabState.CreatingKey;
+      }
+      return MasterTabState.ConfirmingKey;
+    }
+    if(MasterKey == null)
+    {
+      Trace.TraceError(
+        "Not expecting Master Key Info to be missing once the file is known to exist");
+      return MasterTabState.Panic;
+    }
+    if(!MasterKeyLoaded)
+    {
+      return MasterTabState.AwaitingKey;
+    }
+    if(Modified || State == MasterTabState.ConfirmingKey || State == MasterTabState.Editing)
+    {
+      // Already in modified state or just completed new file creation: enter edit mode
+      return MasterTabState.Editing;
+    }
+    if(State == MasterTabState.Closed)
+    {
+      return MasterTabState.Closed;
+    }
+    return MasterTabState.Viewing;
+  }
+
+  /// <summary>
+  /// Save if modified and change from edit mode to view mode
+  /// (implementation for <see cref="SaveAndViewCommand"/>)
+  /// </summary>
+  public void SaveAndStopEditing()
+  {
+    if(State != MasterTabState.Editing || UnlockedVault == null)
+    {
+      ShowErrorMessage(
+        "Invalid state, expecting to be in edit state");
+      return;
+    }
+    if(Modified)
+    {
+      TrySave();
+      if(Modified)
+      {
+        MessageHost.ShowWarning(
+          "Saving failed");
+        return;
+      }
+    }
+    State = MasterTabState.Viewing;
+  }
+
+  /// <summary>
+  /// Get the label to show on the Save / View button in the edit mode UI
+  /// </summary>
+  public string SaveButtonLabel {
+    get => _saveButtonLabel;
+    private set {
+      SetProperty(ref _saveButtonLabel, value);
+    }
+  }
+  private string _saveButtonLabel = "Done Editing";
+
+  /// <summary>
+  /// Get the icon to show on the Save / View button in the edit mode UI
+  /// </summary>
+  public string SaveButtonIcon {
+    get => _saveButtonIcon;
+    private set {
+      SetProperty(ref _saveButtonIcon, value);
+    }
+  }
+  private string _saveButtonIcon = "PencilOff";
+
+  /// <summary>
+  /// Callback when the <see cref="TaskTabBaseViewModel.Modified"/> flag changes
+  /// </summary>
+  protected override void ModifiedChanged()
+  {
+    SaveButtonLabel = Modified ? "Save" : "Done Editing";
+    SaveButtonIcon = Modified ? "ContentSaveOutline" : "PencilOff";
+    UnlockedVault?.UpdateCommandEnabledStates();
+  }
+
+  /// <summary>
+  /// Switch from view mode to edit mode.
+  /// Implementation for <see cref="StartEditingCommand"/>.
+  /// </summary>
+  public void StartEditing()
+  {
+    if(State != MasterTabState.Viewing || UnlockedVault == null)
+    {
+      ShowErrorMessage(
+        "Invalid state, expecting to be in edit state");
+      return;
+    }
+    State = MasterTabState.Editing;
+  }
+
+  /// <summary>
+  /// Try to save, updating <see cref="TaskTabBaseViewModel.Modified"/> on success
+  /// </summary>
+  protected override void TrySave()
+  {
+    if(Modified)
+    {
+      if(String.IsNullOrEmpty(FileName))
+      {
+        Trace.TraceError(
+          "Cannot save if there is no file name known");
+        return;
+      }
+
+      if(UnlockedVault == null)
+      {
+        MessageHost.ShowError("Cannot save a locked vault");
+        return;
+      }
+
+      UnlockedVault.Save(); // clears the Modified flag, if all goes well
+    }
+  }
+
+  /// <summary>
+  /// Overrides error message display to use the pseudo-dialog instead of
+  /// <see cref="MessageBox"/>.
+  /// </summary>
+  /// <param name="message"></param>
+  /// <param name="title"></param>
+  protected override void ShowErrorMessage(string message, string title = "Error")
+  {
+    MessageHost.ShowError(message, title);
+  }
+
+  private void CopyKey()
+  {
+    if(MasterKey == null)
+    {
+      MessageHost.ShowError(
+        "Cannot copy the key ID before it is known...");
+      return;
+    }
+    var key = MasterKey.KeyId.ToString();
+    Clipboard.SetText(key);
+    MessageHost.SetStatus("Key ID copied to clipboard", TimeSpan.FromSeconds(2.0));
+  }
+
+  /// <summary>
+  /// Clean up
+  /// </summary>
+  /// <param name="disposing"></param>
+  protected override void Dispose(bool disposing)
+  {
+    if(!_disposed)
+    {
+      _disposed=true;
+      if(disposing)
+      {
+        _masterKeyChain.Dispose();
+        _childKeyChain.Dispose();
+      }
+    }
+    base.Dispose(disposing);
+  }
+
+  private static string TitleFromFileName(string? fileName)
+  {
+    if(String.IsNullOrEmpty(fileName))
+    {
+      return "Untitled";
+    }
+    return Path.GetFileNameWithoutExtension(fileName);
+  }
+}

@@ -1,0 +1,97 @@
+﻿<UserControl
+    x:Class="KeyLoader.Main.MasterVaults.ViewingView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+    xmlns:local="clr-namespace:KeyLoader.Main.MasterVaults"
+    xmlns:mah="clr-namespace:MahApps.Metro.Controls;assembly=MahApps.Metro"
+    xmlns:iconPacks="http://metro.mahapps.com/winfx/xaml/iconpacks"
+    d:DataContext="{d:DesignInstance local:MasterVaultViewModel, IsDesignTimeCreatable=False}"
+    mc:Ignorable="d" 
+    d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <!-- body -->
+        <Border
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            BorderThickness="1"
+            Grid.Row="0">
+            <ItemsControl
+                ItemsSource="{Binding Keys}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate >
+                        <local:ViewingKeyView/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Border>
+        <!-- buttons -->
+        <Border
+            MinHeight="45"
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Accent3}"
+            BorderThickness="1"
+            Grid.Row="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Column="0"
+                    Margin="5,5"
+                    Command="{Binding TryUploadAllCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <iconPacks:PackIconMaterial
+                            Kind="TrayArrowUp"
+                            Margin="5,0"
+                            Height="24"
+                            Width="24"/>
+                        <TextBlock
+                            Margin="10,5"
+                            VerticalAlignment="Stretch"
+                            Text="Upload All"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+        <!-- footer -->
+        <Border
+            BorderBrush="{DynamicResource MahApps.Brushes.AccentBase}"
+            Background="{DynamicResource MahApps.Brushes.Accent4}"
+            BorderThickness="1"
+            Grid.Row="2">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border
+                    Grid.Column="1">
+                    <Button
+                        MinWidth="120"
+                        Margin="5,5"
+                        Command="{Binding Owner.StartEditingCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <iconPacks:PackIconMaterial
+                                Kind="PencilOutline"
+                                Margin="5,0"
+                                Height="16"
+                                Width="16"/>
+                            <TextBlock
+                                Margin="5,0"
+                                TextAlignment="Center"
+                                VerticalAlignment="Center"
+                                Text="Edit"/>
+                        </StackPanel>
+                    </Button>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -1,0 +1,487 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+
+using FldVault.Core.Crypto;
+using FldVault.Core.Vaults;
+using FldVault.Core.Zvlt2;
+using FldVault.KeyServer;
+
+using KeyLoader.UserMessages;
+
+namespace KeyLoader.Main.MasterVaults;
+
+/// <summary>
+/// ViewModel for an unlocked master key vault and its contents.
+/// </summary>
+public class MasterVaultViewModel: ObservableObject
+{
+  /// <summary>
+  /// A copy of <see cref="Owner"/>'s child key chain
+  /// </summary>
+  private readonly KeyChain _childKeyChain;
+  private readonly KeyChain _masterKeyChain;
+  private readonly Dictionary<Guid, ChildKeyViewModel> _children;
+
+  /// <summary>
+  /// Create a new <see cref="MasterVaultViewModel"/>
+  /// </summary>
+  /// <param name="owner">
+  /// The owning <see cref="MasterTabViewModel"/> providing the details
+  /// of the vault
+  /// </param>
+  /// <param name="childKeyChain">
+  /// The child key chain from <paramref name="owner"/>
+  /// </param>
+  /// <param name="masterKeyChain">
+  /// The master key chain containing the key to unlock the master vault
+  /// </param>
+  public MasterVaultViewModel(
+    MasterTabViewModel owner,
+    KeyChain childKeyChain,
+    KeyChain masterKeyChain)
+  {
+    Owner = owner;
+    _childKeyChain = childKeyChain;
+    _masterKeyChain = masterKeyChain;
+    Keys = new ObservableCollection<ChildKeyViewModel>();
+    _children = new Dictionary<Guid, ChildKeyViewModel>();
+    if(!Owner.FileExists)
+    {
+      throw new InvalidOperationException(
+        "Cannot create the MasterVaultViewModel: the file does not exist");
+    }
+    if(!Owner.MasterKeyLoaded)
+    {
+      throw new InvalidOperationException(
+        "Cannot create the MasterVaultViewModel: the key is not available");
+    }
+    TryPasteCommand = new RelayCommand(
+      TryPaste,
+      () => Owner.IsEditing);
+    TryUploadAllCommand = new AsyncRelayCommand(
+      TryPushAllKeys,
+      () => true); // for now, simplify the enabled handling
+    RevertCommand = new RelayCommand(
+      ReloadContent,
+      () => Owner.Modified);
+    CreateRandomKeyCommand = new RelayCommand(
+      NewRandomRawKey,
+      () => Owner.IsEditing);
+    ReloadContent();
+  }
+
+  /// <summary>
+  /// Command to attempt to paste information currently in the clipboard
+  /// as a partial key (or even a full key)
+  /// </summary>
+  public RelayCommand TryPasteCommand { get; }
+
+  /// <summary>
+  /// Command to upload all child keys at once
+  /// </summary>
+  public AsyncRelayCommand TryUploadAllCommand { get; }
+
+  /// <summary>
+  /// Revert all changes, reloading the data from the file and marking
+  /// this master vault as "unmodified"
+  /// </summary>
+  public RelayCommand RevertCommand { get; }
+
+  /// <summary>
+  /// Create a new random key. The key can only be recovered from this master vault,
+  /// there is no passphrase for it.
+  /// </summary>
+  public RelayCommand CreateRandomKeyCommand { get; }
+
+  /// <summary>
+  /// The owner of this unlocked master vault viewmodel, providing the details
+  /// of the vault that are not related to the fact that the vault is unlocked,
+  /// as well as the parts that assert it is unlocked.
+  /// </summary>
+  public MasterTabViewModel Owner { get; }
+
+  /// <summary>
+  /// The list child keys in this vault, as a list. This is an MVVM friendly
+  /// copy of the list in the key map.
+  /// </summary>
+  public ObservableCollection<ChildKeyViewModel> Keys { get; }
+
+  /// <summary>
+  /// Get or create a <see cref="ChildKeyViewModel"/> for the key
+  /// indicated by <paramref name="keyId"/>
+  /// </summary>
+  /// <param name="keyId"></param>
+  /// <returns></returns>
+  public ChildKeyViewModel GetKey(Guid keyId)
+  {
+    if(!_children.TryGetValue(keyId, out var childVm))
+    {
+      childVm = new ChildKeyViewModel(_childKeyChain, this, keyId);
+      _children.Add(keyId, childVm);
+      Keys.Add(childVm);
+      Owner.MarkModified(true);
+    }
+    return childVm;
+  }
+
+  /// <summary>
+  /// Add a key to this list. Refreshes the key-known state. If necessary
+  /// this creates the <see cref="ChildKeyViewModel"/> for the key first.
+  /// </summary>
+  /// <param name="keyId"></param>
+  public ChildKeyViewModel AddKey(Guid keyId)
+  {
+    var vm = GetKey(keyId);
+    vm.UpdateKeyKnown();
+    return vm;
+  }
+
+  /// <summary>
+  /// Set the <see cref="ChildKeyViewModel.KeyInfo"/> for the child key
+  /// indicated by <see cref="PassphraseKeyInfoFile.KeyId"/>, adding a new
+  /// <see cref="ChildKeyViewModel"/> first if necessary.
+  /// </summary>
+  /// <param name="pkif"></param>
+  /// <returns></returns>
+  public ChildKeyViewModel AddKey(PassphraseKeyInfoFile pkif)
+  {
+    var vm = GetKey(pkif.KeyId);
+    vm.KeyInfo = pkif;
+    return vm;
+  }
+
+  /// <summary>
+  /// Delete both raw key and key info for a key. No questions asked.
+  /// The key is not removed from the key chain (but no longer accessible without
+  /// re-adding it)
+  /// </summary>
+  /// <param name="keyId"></param>
+  public void DeleteKey(Guid keyId)
+  {
+    if(TryFindKey(keyId, out var vm))
+    {
+      _children.Remove(keyId);
+      vm.UpdateKeyKnown();
+      Keys.Remove(vm);
+      // for now, do NOT remove the key from the key chain
+      Owner.MarkModified(true);
+    }
+  }
+
+  /// <summary>
+  /// Try to get the <see cref="ChildKeyViewModel"/> for the given <paramref name="keyId"/>
+  /// </summary>
+  /// <param name="keyId">
+  /// The ID to look up
+  /// </param>
+  /// <param name="childVm">
+  /// Receives the value if found. May be null otherwise
+  /// </param>
+  /// <returns>
+  /// True if found, false if unknown.
+  /// </returns>
+  public bool TryFindKey(Guid keyId, [MaybeNullWhen(false)] out ChildKeyViewModel childVm)
+  {
+    return _children.TryGetValue(keyId, out childVm);
+  }
+
+  /// <summary>
+  /// Try to save the vault file given the current state.
+  /// </summary>
+  /// <returns></returns>
+  internal void Save()
+  {
+    if(!Owner.Modified)
+    {
+      Trace.TraceWarning($"Saving unmodified vault '{Owner.Title}'");
+    }
+    else
+    {
+      Trace.TraceInformation($"Saving modified vault '{Owner.Title}'");
+    }
+    var destination = Owner.FileName;
+    var masterKey = Owner.MasterKey ?? throw new InvalidOperationException("Missing master key info");
+    var keyIds = Keys.Select(ckv => ckv.KeyId).Where(_childKeyChain.ContainsKey).ToList();
+    var links = Keys.Where(ckv => ckv.KeyInfo != null).Select(ckv => ckv.KeyInfo!).ToList();
+    VaultFile.WriteMasterKeyFile(
+      destination,
+      masterKey,
+      keyIds,
+      _childKeyChain,
+      _masterKeyChain,
+      links);
+    Owner.MarkModified(false);
+  }
+
+  private void NewRandomRawKey()
+  {
+    var newGuid = _childKeyChain.CreateNewRandomKey();
+    AddKey(newGuid);
+    Owner.MessageHost.SetStatus(
+      $"Created new random key {newGuid}. Beware! There is no passphrase to ever recover it!",
+      TimeSpan.FromSeconds(15));
+    Trace.TraceInformation(
+      $"Created new random key {newGuid}");
+  }
+
+  /// <summary>
+  /// Try to paste whatever is found on the clipboard. As a new key, an update to an existing key,
+  /// or even a new master key tab.
+  /// </summary>
+  /// <remarks>
+  /// Tries to recognize the following:
+  /// <list type="bullet">
+  /// <item>A guid, treated as bare key id. Known master key ids are rejected</item>
+  /// <item>A ZKEY record, with or without passphrase</item>
+  /// <item>A master key file or master key file name</item>
+  /// <item>Another type of key-bearing file or their name (extracting a key-info record)</item>
+  /// </list>
+  /// </remarks>
+  private void TryPaste()
+  {
+    if(Clipboard.ContainsFileDropList())
+    {
+      // One or more files were copied in explorer or similar apps
+      var fileDropList = Clipboard.GetFileDropList();
+      if(fileDropList != null && fileDropList.Count > 0)
+      {
+        foreach(var file in fileDropList)
+        {
+          if(!String.IsNullOrEmpty(file) && File.Exists(file))
+          {
+            TryPasteFile(file);
+          }
+        }
+        return;
+      }
+    }
+    else if(Clipboard.ContainsText())
+    {
+      var text = Clipboard.GetText();
+      var lines = text.Split(["\r\n", "\n"], StringSplitOptions.None);
+      if(lines.Length > 0)
+      {
+        using var zkeyEx = ZkeyEx.TryFromTransferLines(lines);
+        if(zkeyEx != null)
+        {
+          PasteZKey(zkeyEx);
+          return;
+        }
+        else if(lines.Length == 1 && Guid.TryParse(lines[0], out var keyId))
+        {
+          TryPasteGuid(keyId);
+          return;
+        }
+      }
+    }
+    Owner.MessageHost.ShowWarning(
+      "No content suitable for pasting found on the clipboard.");
+  }
+
+  private void TryPasteFile(string fileName)
+  {
+    var extension = Path.GetExtension(fileName).ToLowerInvariant();
+    switch(extension)
+    {
+      case ".mzvlt":
+        Owner.Owner.OpenDroppedMasterKeyFile(fileName);
+        break;
+      case ".zvlt":
+      case ".mvlt":
+      case ".key-info":
+      case ".zkey":
+        TryPasteKeyBearingFile(fileName);
+        break;
+    }
+  }
+
+  private void TryPasteKeyBearingFile(string fileName)
+  {
+    var pkif = PassphraseKeyInfoFile.TryFromFile(fileName);
+    if(pkif != null)
+    {
+      AddKey(pkif);
+      Owner.MessageHost.SetStatus(
+        $"Added info for key {pkif.KeyId}",
+        TimeSpan.FromSeconds(3));
+    }
+  }
+
+  private void PasteZKey(ZkeyEx zkeyData)
+  {
+    var cvm = TryPasteGuid(zkeyData.KeyGuid);
+    if(cvm != null) // else: rejected, and message is already showing
+    {
+      var pkif = zkeyData.ToPassphraseKeyInfoFile();
+      if(zkeyData.Passphrase != null)
+      {
+        using(var ppk = PassphraseKey.TryPassphrase(zkeyData.Passphrase, pkif))
+        {
+          if(ppk == null)
+          {
+            Owner.MessageHost.ShowError(
+              "The ZKEY contained a passphrase, but it was not correct",
+              "Error");
+            return;
+          }
+          _childKeyChain.PutCopy(ppk);
+          cvm.UpdateKeyKnown();
+        }
+      }
+      AddKey(pkif); // returns the same vm as 'cvm'
+    }
+  }
+
+  private ChildKeyViewModel? TryPasteGuid(Guid keyId)
+  {
+    if(Owner.Owner.KnownMasterKeys().Any(mk => mk == keyId))
+    {
+      Owner.MessageHost.ShowError(
+        $"Key '{keyId}' is known to be in use as master key. Paste aborted.",
+        "Key rejected");
+      return null;
+    }
+    var cvm = AddKey(keyId);
+    return cvm;
+  }
+
+  /// <summary>
+  /// Callback when changes may affect whether or not commands are enabled.
+  /// Triggered when the Modified flag or State of the owner changes, as well
+  /// as when this object is installed as the owner's unlocked vault.
+  /// </summary>
+  internal void UpdateCommandEnabledStates()
+  {
+    TryPasteCommand.NotifyCanExecuteChanged();
+    RevertCommand.NotifyCanExecuteChanged();
+    CreateRandomKeyCommand.NotifyCanExecuteChanged();
+  }
+
+  internal bool HasChildKey(Guid keyId)
+  {
+    return _childKeyChain.ContainsKey(keyId);
+  }
+
+  private async Task TryPushAllKeys()
+  {
+    var tabVm = Owner;
+    var mainVm = tabVm.Owner;
+    var serverWidget = mainVm.ServerWidget;
+    var server = serverWidget.Server;
+    var messageHost = tabVm.MessageHost;
+    if(server.ServerAvailable)
+    {
+      var keys =
+        Keys.Select(k => k.KeyId).Where(kid => HasChildKey(kid)).ToList();
+      var keyInfos =
+        Keys.Where(k => k.KeyInfo != null).Select(k => k.KeyInfo!).ToList();
+      if(keys.Count == 0 && keyInfos.Count == 0)
+      {
+        messageHost.ShowInfo(
+          "No keys or key info objects available to upload");
+      }
+      else
+      {
+        if(keyInfos.Count > 0)
+        {
+          var result = await server.UploadKeyInfosAsync(
+            keyInfos, mainVm.AppShutdownToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+        if(keys.Count > 0)
+        {
+          var result = await server.UploadKeysAsync(
+            _childKeyChain, keys, mainVm.AppShutdownToken);
+          switch(result)
+          {
+            case KeyServerMessages.KeyUploadedCode:
+              // success, continue
+              break;
+            case KeyServerMessages.NoServer:
+              messageHost.ShowError(
+                "The key server is not responding",
+                "Key server down");
+              return;
+            case KeyServerMessages.Unrecognized:
+              messageHost.ShowWarning(
+                "Unable to upload key descriptor to server. Please update your key server. Functionality is limited.",
+                "Incompatible key server detected");
+              return;
+            default:
+              // should not happen
+              messageHost.ShowError(
+                $"Unexpected server response 0x{result:X8}",
+                "Internal error");
+              return;
+          }
+        }
+      }
+    }
+    else
+    {
+      messageHost.ShowError(
+        "The Key Server is not running",
+        "No key server found");
+    }
+  }
+
+  private void ReloadContent()
+  {
+    Trace.TraceInformation(
+      $"Loading master vault '{Owner.Title}'");
+    Keys.Clear();
+    _children.Clear();
+    var vault = new VaultFile(Owner.FileName, ZvltPurpose.Master);
+    using var cryptor = vault.CreateCryptor(_masterKeyChain);
+    using var reader = new VaultFileReader(vault, cryptor);
+    var keyset = reader.ReadChildKeys(_childKeyChain);
+    var linkmap = reader.ReadExternalPassphraseLinks();
+    var fullKeySet = new HashSet<Guid>();
+    fullKeySet.UnionWith(keyset);
+    fullKeySet.UnionWith(linkmap.Keys);
+    var sortedKeys = fullKeySet.OrderBy(guid => guid.ToString()).ToList();
+    foreach(var key in sortedKeys)
+    {
+      AddKey(key);
+      if(linkmap.TryGetValue(key, out var pkif))
+      {
+        AddKey(pkif);
+      }
+    }
+    Trace.TraceInformation(
+      $"  loaded {Keys.Count} child keys for master vault '{Owner.Title}'");
+    Owner.MarkModified(false);
+  }
+}

@@ -32,7 +32,7 @@ public class VaultFile: IBlockElementContainer
   private BlockElementContainer? _elementContainerCache;
 
   /// <summary>
-  /// Create a new VaultFile object for an existing *.zvlt file
+  /// Create a new VaultFile object for an existing *.zvlt file (or compatible)
   /// </summary>
   private VaultFile(
     string fileName,
@@ -48,7 +48,7 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.OpenRead(FileName))
     {
-      Header = VaultHeader.ReadSync(stream);
+      Header = VaultHeader.ReadSync(stream, anyPurpose, purpose);
       if(!anyPurpose && purpose != Header.Purpose)
       {
         throw new InvalidOperationException(
@@ -78,7 +78,8 @@ public class VaultFile: IBlockElementContainer
 
   /// <summary>
   /// Create a new VaultFile object for an existing *.zvlt file known to have
-  /// purpose <see cref="ZvltPurpose.Default"/>.
+  /// purpose <see cref="ZvltPurpose.Default"/>. This overload exists primarily
+  /// for backward compatibility.
   /// </summary>
   /// <param name="fileName">
   /// The file name
@@ -120,12 +121,14 @@ public class VaultFile: IBlockElementContainer
   /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <param name="purpose">
-  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// The purpose of the file (default <see cref="ZvltPurpose.Default"/>).
+  /// For nonstandard cases consider using <see cref="PurposeForFileExtension(string)"/>.
   /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, Guid keyId, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
+  public static VaultFile OpenOrCreate(
+    string fileName, Guid keyId, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -165,12 +168,14 @@ public class VaultFile: IBlockElementContainer
   /// This argument primarily exists to support Unit Tests.
   /// </param>
   /// <param name="purpose">
-  /// The purpose of the file (normally <see cref="ZvltPurpose.Default"/>)
+  /// The purpose of the file (default <see cref="ZvltPurpose.Default"/>)
+  /// For nonstandard cases consider using <see cref="PurposeForFileExtension(string)"/>.
   /// </param>
   /// <returns>
   /// The VaultFile instance
   /// </returns>
-  public static VaultFile OpenOrCreate(string fileName, IKeySeed keyInfo, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
+  public static VaultFile OpenOrCreate(
+    string fileName, IKeySeed keyInfo, DateTime? stamp = null, int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -231,14 +236,26 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
-  /// Create an empty passphrase based vault file
+  /// Create an empty passphrase based vault file.
+  /// Optionally creates a file with a nonstandard purpose (e.g. a master key file)
   /// </summary>
-  /// <param name="fileName"></param>
-  /// <param name="pkif"></param>
+  /// <param name="fileName">
+  /// File name. By convention this should have the extension <c>*.zvlt</c>
+  /// if <paramref name="purpose"/> is omitted or is <see cref="ZvltPurpose.Default"/>,
+  /// or <c>*.mzvlt</c> if <paramref name="purpose"/> is
+  /// <see cref="ZvltPurpose.Master"/>.
+  /// </param>
+  /// <param name="pkif">
+  /// </param>
+  /// <param name="purpose">
+  /// The "purpose" of the file, by convention also affecting the file extension.
+  /// Defaults to <see cref="ZvltPurpose.Default"/>.
+  /// </param>
   /// <returns></returns>
   public static VaultFile CreateEmpty(
     string fileName,
-    PassphraseKeyInfoFile pkif)
+    PassphraseKeyInfoFile pkif,
+    int purpose = ZvltPurpose.Default)
   {
     fileName = Path.GetFullPath(fileName);
     if(File.Exists(fileName))
@@ -252,19 +269,55 @@ public class VaultFile: IBlockElementContainer
     }
     using(var stream = File.Create(fileName))
     {
-      VaultHeader.WriteSync(stream, pkif.KeyId);
+      VaultHeader.WriteSync(stream, pkif.KeyId, purpose: purpose);
       pkif.WriteBlock(stream);
     }
-    return new VaultFile(fileName);
+    return new VaultFile(fileName, purpose);
   }
 
   /// <summary>
-  /// Open an existing vault file. This method exists for symmetry with the 
-  /// OpenOrCreate() factory methods but is just an alias for the constructor.
+  /// Open an existing vault file. If not explicitly specified as <paramref name="purpose"/>,
+  /// the file's purpose is derived from the file's extension.
   /// </summary>
-  public static VaultFile Open(string fileName)
+  /// <param name="fileName">
+  /// The file name
+  /// </param>
+  /// <param name="purpose">
+  /// The explicitly requested purpose, or null to derive from the file extension
+  /// </param>
+  public static VaultFile Open(string fileName, int? purpose = null)
   {
-    return new VaultFile(fileName);
+    var purpose2 = purpose ?? PurposeForFileExtension(fileName) ?? ZvltPurpose.Default;
+    return new VaultFile(fileName, false, purpose2);
+  }
+
+  /// <summary>
+  /// Open an existing vault file without locking in its purpose. This overload
+  /// allows reading the file's purpose from the vault header without prescribing it.
+  /// </summary>
+  /// <param name="fileName">
+  /// The name of the file
+  /// </param>
+  /// <returns></returns>
+  public static VaultFile OpenAnyVault(string fileName)
+  {
+    return new VaultFile(fileName, true);
+  }
+
+  /// <summary>
+  /// Return the vault purpose as derived from the file extension (*.zvlt or *.mzvlt),
+  /// or null if the extension is not recognized.
+  /// </summary>
+  /// <param name="fileName"></param>
+  /// <returns></returns>
+  public static int? PurposeForFileExtension(string fileName)
+  {
+    var extension = Path.GetExtension(fileName).ToLowerInvariant();
+    return extension switch {
+      ".zvlt" => ZvltPurpose.Default,
+      ".mzvlt" => ZvltPurpose.Master,
+      _ => null,
+    };
   }
 
   /// <summary>
@@ -404,6 +457,27 @@ public class VaultFile: IBlockElementContainer
   }
 
   /// <summary>
+  /// Enumerate the top level <see cref="IBlockElement"/>s whose block has the
+  /// given <paramref name="kind"/>.
+  /// </summary>
+  /// <param name="kind"></param>
+  /// <returns></returns>
+  public IEnumerable<IBlockElement> ElementsOfKind(int kind)
+  {
+    return Children.Where(ibe => ibe.Block.Kind == kind);
+  }
+
+  /// <summary>
+  /// Enumerate the top level blocks that have the given <paramref name="kind"/>.
+  /// </summary>
+  /// <param name="kind"></param>
+  /// <returns></returns>
+  public IEnumerable<IBlockInfo> BlocksOfKind(int kind)
+  {
+    return Children.Where(ibe => ibe.Block.Kind == kind).Select(ibe => ibe.Block);
+  }
+
+  /// <summary>
   /// Check if the name is valid for use as the logical name
   /// of a file in a z-vault, throwing an exception if it isn't.
   /// </summary>
@@ -454,11 +528,92 @@ public class VaultFile: IBlockElementContainer
       && sourceVault.Header.TimeStamp == Header.TimeStamp;
   }
 
+  /// <summary>
+  /// Write a new master key file. If the file already exists, a backup file is created
+  /// before creating the new file
+  /// </summary>
+  /// <param name="fileName">
+  /// The master vault file name. Must end with ".mzvlt"
+  /// </param>
+  /// <param name="masterPkif">
+  /// The <see cref="PassphraseKeyInfoFile"/> describing the master key
+  /// </param>
+  /// <param name="childKeyIds">
+  /// The key ids to include in the file
+  /// </param>
+  /// <param name="childKeyChain">
+  /// The key chain providing the keys specified by <paramref name="childKeyIds"/>.
+  /// </param>
+  /// <param name="masterKeyChain">
+  /// If not null, the key chain providing the master key as identified by
+  /// <paramref name="masterPkif"/>. If null, the master key must be in
+  /// <paramref name="childKeyChain"/>.
+  /// </param>
+  /// <param name="passphraseLinks">
+  /// If not null: passphrase info blocks to include in the master key file.
+  /// In common scenarios it may be better to not include any, since they
+  /// publicly declare the IDs of the keys that are present.
+  /// </param>
+  /// <exception cref="ArgumentException"></exception>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static void WriteMasterKeyFile(
+    string fileName,
+    PassphraseKeyInfoFile masterPkif,
+    IReadOnlyCollection<Guid> childKeyIds,
+    KeyChain childKeyChain,
+    KeyChain? masterKeyChain = null,
+    IEnumerable<PassphraseKeyInfoFile>? passphraseLinks = null)
+  {
+    if(!fileName.EndsWith(".mzvlt", StringComparison.InvariantCultureIgnoreCase))
+    {
+      throw new ArgumentException(
+        "Expecting file name to end with '.mzvlt'");
+    }
+    masterKeyChain ??= childKeyChain;
+    if(!masterKeyChain.ContainsKey(masterPkif.KeyId))
+    {
+      throw new InvalidOperationException(
+        $"Master key '{masterPkif.KeyId}' not found in the master key chain.");
+    }
+    var tmpName = fileName + ".tmp";
+    var vault = VaultFile.CreateEmpty(tmpName, masterPkif, ZvltPurpose.Master);
+    using(var cryptor = vault.CreateCryptor(masterKeyChain))
+    using(var writer = new VaultFileWriter(vault, cryptor))
+    {
+      if(passphraseLinks != null)
+      {
+        foreach(var link in passphraseLinks)
+        {
+          writer.AppendExternalPassphraseLink(link);
+        }
+      }
+      if(childKeyIds.Count > 0)
+      {
+        writer.AppendChildKeyList(childKeyIds, childKeyChain);
+      }
+    }
+    if(File.Exists(fileName))
+    {
+      var bakName = fileName + ".bak";
+      if(File.Exists(bakName))
+      {
+        File.Delete(bakName);
+      }
+      File.Replace(tmpName, fileName, bakName);
+    }
+    else
+    {
+      File.Move(tmpName, fileName);
+    }
+  }
+
   private PassphraseKeyInfoFile? GetPassphraseInfo(Stream? stream)
   {
     if(!_pkifSearched)
     {
       _pkifSearched = true;
+      // Require the first PASS block to match the file key (checked later)
+      // Silently accept but ignore other PASS blocks
       var passBlock = Blocks.Blocks.FirstOrDefault(bi => bi.Kind == Zvlt2BlockType.PassphraseLink);
       PassphraseKeyInfoFile pkif;
       if(passBlock != null)

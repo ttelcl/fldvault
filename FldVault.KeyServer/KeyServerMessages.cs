@@ -104,6 +104,34 @@ public static class KeyServerMessages
   public const int KeyInfoResponseCode = 0x10010008;
 
   /// <summary>
+  /// Upload one or more keys to the server in one operation. The payload is the
+  /// N*32 keys to upload.
+  /// The response is <see cref="KeyUploadedCode"/>, which is an alias for
+  /// <see cref="MessageCodes.OkNoContent"/>.
+  /// </summary>
+  public const int KeyUploadManyCode = 0x10010009;
+
+  /// <summary>
+  /// Upload one or more key information blocks to the server. The payload is the
+  /// N*96 key info blocks (binary <see cref="PassphraseKeyInfoFile"/> blocks).
+  /// The response is <see cref="KeyUploadedCode"/>, which is an alias for
+  /// <see cref="MessageCodes.OkNoContent"/>.
+  /// </summary>
+  public const int KeyInfoUploadManyCode = 0x1001000A;
+
+  /// <summary>
+  /// A duplicate of <see cref="MessageCodes.NoServer"/>. Not an actual message code,
+  /// but a library response code indicating the server was unreachable.
+  /// </summary>
+  public const int NoServer = MessageCodes.NoServer;
+
+  /// <summary>
+  /// A duplicate of <see cref="MessageCodes.Unrecognized"/>. Indicates that the
+  /// server did not recognize or support the request.
+  /// </summary>
+  public const int Unrecognized = MessageCodes.Unrecognized;
+
+  /// <summary>
   /// Read the key to look up from the key request message in the frame
   /// </summary>
   /// <param name="frame">
@@ -312,6 +340,162 @@ public static class KeyServerMessages
   }
 
   /// <summary>
+  /// Write a multikey upload message into the output frame.
+  /// Consider using <see cref="WriteKeysUpload(MessageFrameOut, KeyChain, IEnumerable{Guid})"/>
+  /// instead.
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <param name="keys">
+  /// One or more keys to upload (there must be at least one)
+  /// </param>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static void WriteKeysUpload(this MessageFrameOut frame, IEnumerable<IBytesWrapper> keys)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyUploadManyCode);
+    var checkpoint = frame.Position;
+    foreach(var key in keys)
+    {
+      frame.AppendBytes(key.Bytes);
+    }
+    if(checkpoint == frame.Position)
+    {
+      throw new InvalidOperationException(
+        "There should be at least 1 key as argument");
+    }
+  }
+
+  /// <summary>
+  /// Write a multikey upload message into the output frame
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <param name="keyChain">
+  /// The keychain containing the actual keys
+  /// </param>
+  /// <param name="keyIds">
+  /// The IDs of one or more keys to upload (there must be at least one, and all keys
+  /// must be present in <paramref name="keyChain"/>)
+  /// </param>
+  /// <exception cref="InvalidOperationException"></exception>
+  public static void WriteKeysUpload(this MessageFrameOut frame, KeyChain keyChain, IEnumerable<Guid> keyIds)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyUploadManyCode);
+    var checkpoint = frame.Position;
+    foreach(var keyId in keyIds)
+    {
+      if(!keyChain.TryUseKey(keyId, (id,keyBytes) => frame.AppendBytes(keyBytes.Bytes)))
+      {
+        throw new InvalidOperationException(
+          $"Key {keyId} is missing from the provided key chain");
+      }
+    }
+    if(checkpoint == frame.Position)
+    {
+      throw new InvalidOperationException(
+        "There should be at least 1 key as argument");
+    }
+  }
+
+  /// <summary>
+  /// Read the keys of a <see cref="KeyUploadManyCode"/> message and load them into
+  /// <paramref name="keyChain"/>. If successful, a list of the ids of the keys that were
+  /// read is returned (an empty message is silently accepted, returning an empty list).
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <param name="keyChain"></param>
+  /// <returns></returns>
+  public static IReadOnlyList<Guid> ReadKeysUpload(this MessageFrameIn frame, KeyChain keyChain)
+  {
+    var keylist = new List<Guid>();
+    frame
+      .Rewind()
+      .ValidateI32(KeyUploadManyCode, "Unsupported message code for key transfer");
+    if(frame.Space % 32 != 0)
+    {
+      throw new InvalidOperationException(
+        "Invalid request size: expecting one or more 32-byte keys and nothing else");
+    }
+    // silently accept an empty upload list (0 keys) as well
+    while(frame.Space > 0)
+    {
+      frame.TakeSlice(32, out var span);
+      using(var kb = new KeyBuffer(span))
+      {
+        keyChain.PutCopy(kb);
+        keylist.Add(kb.GetId());
+      }
+    }
+    return keylist;
+  }
+
+  /// <summary>
+  /// Write a <see cref="KeyInfoUploadManyCode"/> message, carying one or more key-info objects
+  /// (binarized <see cref="PassphraseKeyInfoFile"/>s) into this frame.
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <param name="keyinfos">
+  /// The key info objects to be serialized inside the message. There must be at least one.
+  /// </param>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown if <paramref name="keyinfos"/> appears to be empty.
+  /// </exception>
+  public static void WriteKeyInfosUpload(this MessageFrameOut frame, IEnumerable<PassphraseKeyInfoFile> keyinfos)
+  {
+    frame
+      .Clear()
+      .AppendI32(KeyInfoUploadManyCode);
+    Span<byte> keyInfoBytes = stackalloc byte[96];
+    var checkpoint = frame.Position;
+    foreach(var pkif in keyinfos)
+    {
+      pkif.SerializeToSpan(keyInfoBytes);
+      frame.AppendBytes(keyInfoBytes);
+    }
+    if(checkpoint == frame.Position)
+    {
+      throw new InvalidOperationException(
+        "There should be at least 1 keyinfo as argument");
+    }
+  }
+
+  /// <summary>
+  /// Read the content of a <see cref="KeyInfoUploadManyCode"/> message, returning the
+  /// <see cref="PassphraseKeyInfoFile"/>s read. While an "empty" message is not valid, that is
+  /// silently accepted (returning an empty list). A message that does not contain an integer
+  /// number of key-info blocks causes an exception.
+  /// </summary>
+  /// <param name="frame"></param>
+  /// <returns>
+  /// A list with the <see cref="PassphraseKeyInfoFile"/> objects read
+  /// </returns>
+  /// <exception cref="InvalidOperationException">
+  /// Thrown when the message payload size is invalid (not a multiple of 96 bytes)
+  /// </exception>
+  public static IReadOnlyList<PassphraseKeyInfoFile> ReadKeyInfosUpload(this MessageFrameIn frame)
+  {
+    frame
+      .Rewind()
+      .ValidateI32(KeyInfoUploadManyCode, "Unsupported message code for key info transfer");
+    var keyinfos = new List<PassphraseKeyInfoFile>();
+    if(frame.Space % 96 != 0)
+    {
+      throw new InvalidOperationException(
+        "Invalid request size: expecting one or more 96-byte key-info blocks and nothing else");
+    }
+    // silently accept an empty upload list (0 keys) as well
+    while(frame.Space > 0)
+    {
+      frame.TakeSlice(96, out var span);
+      var pkif = PassphraseKeyInfoFile.ReadFrom(span);
+      keyinfos.Add(pkif);
+    }
+    return keyinfos;
+  }
+
+  /// <summary>
   /// Read the found key from a key response.
   /// Then store it into the key chain and return the key ID
   /// </summary>
@@ -444,7 +628,7 @@ public static class KeyServerMessages
   {
     frame
       .Clear()
-      .AppendI32(KeyRemovedCode)
+      .AppendI32(KeyRemoveCode)
       .AppendGuid(keyId);
   }
 }

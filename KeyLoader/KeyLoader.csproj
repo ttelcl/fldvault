@@ -1,0 +1,42 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <ApplicationIcon>Assets\keyloader.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      This prevents other language resources being emitted.
+      In particular, without this setting, the german resources from
+      MahApps.Metro would be included.
+    -->
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\keyloader.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\keyloader.ico" />
+    <Resource Include="Assets\keyloader.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.11" />
+    <PackageReference Include="MahApps.Metro.IconPacks.Material" Version="6.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FldVault.Core\FldVault.Core.csproj" />
+    <ProjectReference Include="..\FldVault.KeyServer\FldVault.KeyServer.csproj" />
+  </ItemGroup>
+
+</Project>

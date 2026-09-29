@@ -96,5 +96,27 @@ public static class BlockInfoExtensions
     return info;
   }
 
+  /// <summary>
+  /// Synchronously read the block's content from the given stream
+  /// </summary>
+  /// <param name="info"></param>
+  /// <param name="source"></param>
+  /// <param name="content"></param>
+  /// <exception cref="InvalidOperationException"></exception>
+  /// <exception cref="EndOfStreamException"></exception>
+  public static void ReadContentSync(this IBlockInfo info, Stream source, Span<byte> content)
+  {
+    if(content.Length != info.Size-8)
+    {
+      throw new InvalidOperationException(
+        $"Buffer size mismatch. Expecting buffer size {info.Size-8} but got {content.Length}");
+    }
+    source.Position = info.Offset + 8;
+    if(source.Read(content) != content.Length)
+    {
+      throw new EndOfStreamException("Block read failed");
+    }
+  }
+
 }
 

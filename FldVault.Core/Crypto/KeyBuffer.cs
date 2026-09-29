@@ -57,12 +57,22 @@ namespace FldVault.Core.Crypto
     }
 
     /// <summary>
-    /// Get a GUID for the stored key bytes calculated via the
-    /// SHA256 hash of the key bytes.
+    /// Get a type 4 GUID for the stored key bytes calculated via the
+    /// SHA256 hash of the key bytes. For brand new applications prefer
+    /// <see cref="GetFingerprint"/> instead (which returns a type 8 GUID)
     /// </summary>
     public Guid GetId()
     {
       return GetSha256().AsGuid;
+    }
+
+    /// <summary>
+    /// Get a type 8 GUID for the stored key bytes calculated via the
+    /// SHA256 hash of the key bytes.
+    /// </summary>
+    public Guid GetFingerprint()
+    {
+      return GetSha256().AsGuid8;
     }
 
     /// <summary>

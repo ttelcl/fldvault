@@ -17,12 +17,18 @@ open GitVaultLib.Bundles
 open GitVaultLib.Configuration
 open GitVaultLib.Delta
 open GitVaultLib.GitThings
+open GitVaultLib.Layers
 
 open ColorPrint
 open CommonTools
 
+type private TagSource =
+  | Explicit of string
+  | Automatic
+  | FromScaffold
+
 type private Options = {
-  LayerTag: string option
+  LayerTag: TagSource option
   Dependencies: string list
   Force: bool
   Scaffold: string option
@@ -43,27 +49,34 @@ let private parseOptions args =
         None
       else
         let tag =
-          if tag |> String.IsNullOrEmpty then
-            None
+          if tag |> GitUtils.isValidTagName then
+            tag |> TagSource.Explicit |> Some
           else
-            // TODO: tag syntax validation
-            cp "\frTODO:\f0 check tag validity"
-            tag |> Some
+            cp $"\fo'\fy{tag}\fo' is not a valid tag name\f0."
+            None
         rest |> parseMore {o with LayerTag = tag }
-    | "-for" :: groupname :: rest ->
-      if o.LayerTag |> Option.isSome then
-        cp "\fg-tag\fo and \fg-for\fo are mutually exclusive\f0."
-        None
-      elif groupname |> String.IsNullOrEmpty then
-        cp "\fothe scaffold group name cannot be empty\f0."
+    | "-autotag" :: rest | "-auto" :: rest ->
+      if o.Scaffold |> Option.isSome then
+        cp "\fg-autotag\fo and \fg-for\fo are mutually exclusive\f0."
         None
       else
-        // TODO: validate group name syntax
-        cp "\fmTODO:\f0 check scaffold group name validity"
-        rest |> parseMore {o with Scaffold = groupname |> Some}
+        rest |> parseMore {o with LayerTag = TagSource.Automatic |> Some}
+    | "-for" :: groupname :: rest ->
+      let hasTag =
+        match o.LayerTag with
+        | None | Some(FromScaffold) -> false
+        | _ -> true
+      if hasTag then
+        cp "\fg-tag\fo/\fg-autotag\fo and \fg-for\fo are mutually exclusive\f0."
+        None
+      elif groupname |> GitUtils.isValidTagName |> not then // tags and scaffold groups have same rule
+        cp $"\fo'\fy{groupname}\fo' is not a valid scaffold group name\f0."
+        None
+      else
+        rest |> parseMore {o with Scaffold = groupname |> Some; LayerTag = TagSource.FromScaffold |> Some}
     | "-on" :: tag :: rest ->
-      if tag |> String.IsNullOrEmpty then
-        cp "\fo-on\fr argument cannot be empty\f0."
+      if tag |> GitUtils.isValidTagName |> not then
+        cp $"\fg-on\fo: '\fy{tag}\fo' is not a valid layer tag\f0."
         None
       else
         rest |> parseMore {o with Dependencies = tag :: o.Dependencies}
@@ -82,14 +95,7 @@ let private parseOptions args =
   }
 
 let private runLayer o =
-  let now = DateTime.Now
-  let tag =
-    match o.LayerTag, o.Scaffold with
-    | Some(tag), None -> tag
-    | None, Some(group) -> group
-    | None, None -> now.ToString("yyyyMMdd-HHmmss")
-    | Some(tag), Some(group) ->
-      failwith "internal error. -tag and -for are mutually exclusive"
+      
   let centralSettings = CentralSettings.Load()
   let status, repoRoot, repoSettings =
     let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
@@ -111,18 +117,53 @@ let private runLayer o =
         else
           0, repoRoot, repoSettings
   if status <> 0 then
+    cp ""
+    Usage.usage "layer"
     status
   else
-    let anchorSettings = repoSettings.ByAnchor.Values |> Seq.exactlyOne
-    let anchorName = anchorSettings.VaultAnchor
-    let hostName = anchorSettings.HostName
-    let repoName = anchorSettings.RepoName
-    let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
-    let kss = new KeyServerService()
-    use keychain = new KeyChain()
-    cp $"Building layer bundle '\fc{repoName}\f0.\fy{hostName}\f0.\fg{tag}\f0' in anchor '\fb{anchorName}\f0'."
-    cp "\frNYI\f0!"
-    1
+    use repo = new Repository(repoRoot.Folder)
+    let refsdb = repo |> GitRefsDb.ForRepository
+    let allrepotips = refsdb.ReferencedCommits |> Seq.toArray
+    let latestTip =
+      if allrepotips.Length = 0 then
+        None
+      else
+        allrepotips
+        |> Seq.maxBy (fun commit -> commit.Committer.When)
+        |> Some
+    let latestCommitUtc =
+      match latestTip with
+      | Some(commit) -> commit.Committer.When.ToUniversalTime()
+      | None -> DateTimeOffset.UtcNow
+    let tagOption =
+      match o.LayerTag, o.Scaffold with
+      | Some(Explicit(tag)), None -> tag |> Some
+      | Some(FromScaffold), Some(group) -> group |> Some
+      | Some(Automatic), None -> latestCommitUtc.ToString("yyyyMMdd-HHmmss") |> Some
+      | None, None ->
+        cp "\foMissing \fg-tag\fo, \fg-autotag\fo, or \fg-scaffold\f0."
+        cp ""
+        Usage.usage "layer"
+        None
+      | _, _ ->
+        cp "\frInternal error\f0."
+        None
+    match tagOption with
+    | Some(tag) ->
+      let anchorSettings = repoSettings.ByAnchor.Values |> Seq.exactlyOne
+      let anchorName = anchorSettings.VaultAnchor
+      let hostName = anchorSettings.HostName
+      let repoName = anchorSettings.RepoName
+      let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
+      let kss = new KeyServerService()
+      use keychain = new KeyChain()
+      cp $"Building layer bundle '\fc{repoName}\f0.\fy{hostName}\f0.\fg{tag}\f0.lbundle' in anchor '\fb{anchorName}\f0'."
+      let prefix = $"{repoName}.{hostName}.{tag}"
+
+      cp "\frNYI\f0!"
+      1
+    | None ->
+      1
 
 let run args =
   let oo = args |> parseOptions

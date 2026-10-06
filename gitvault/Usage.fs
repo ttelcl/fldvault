@@ -94,13 +94,13 @@ let usage focus =
     cp "  \fg-R\f0\fx             Run the default recipe, if defined (default when omitting \fg-r\f0 and \fg-all\f0)"
     cp ""
   if showSection "layer" then
-    cp "\fogitvault \fylayer \f0[\fg-tag \fctag\f0|\fg-scaffold \fcgroup\f0] {\fg-on \fclayertag\f0} [\fg-F\f0]"
+    cp "\fogitvault \fylayer \f0[\fg-tag \fctag\f0|\fg-autotag\f0|\fg-for \fcscaffold\f0] {\fg-on \fclayertag\f0} [\fg-F\f0]"
     cp "  Create an incremental layer bundle using the older layers identified by \fg-on\f0 options as prerequisites."
     cp "  A 'layer bundle' contains the actual bundle plus references to the dependency bundles."
     cp "  \fmWork in progress\f0!"
   if showDetail "layer" then
-    cp "  \fg-tag \fctag\f0       The tag to identify the bundle to create. Defaults to a tag generated from the latest commit time."
-    cp "  \fx\fx\fx               Mutually exclusive with \fg-for\f0."
+    cp "  \fg-tag \fctag\f0       The tag to identify the bundle to create. Mutually exclusive with \fg-for\f0 and \fg-autotag\f0."
+    cp "  \fg-autotag\f0\fx       Like \fg-tag\f0, but generate a default from the latest commit time in UTC."
     cp "  \fg-on \fclayertag\f0   A layer to depend upon. Repeatable."
     cp "  \fg-for \fcscaffold\f0  Create a layer not for the current tips, but for a state of the repository in the past, defined by"
     cp "  \fx\fx\fx               the scaffold group \fcscaffold\f0. Scaffold groups are managed using \fogitscaffold.exe\f0. The"

@@ -39,7 +39,7 @@ let private parseOptions args =
       None
     | "-tag" :: tag :: rest ->
       if o.Scaffold |> Option.isSome then
-        cp "\fg-tag\f0 and \fg-scaffold\f0 are mutaually exclusive"
+        cp "\fg-tag\fo and \fg-for\fo are mutually exclusive\f0."
         None
       else
         let tag =
@@ -50,16 +50,16 @@ let private parseOptions args =
             cp "\frTODO:\f0 check tag validity"
             tag |> Some
         rest |> parseMore {o with LayerTag = tag }
-    | "-scaffold" :: groupname :: rest ->
+    | "-for" :: groupname :: rest ->
       if o.LayerTag |> Option.isSome then
-        cp "\fg-tag\f0 and \fg-scaffold\f0 are mutaually exclusive"
+        cp "\fg-tag\fo and \fg-for\fo are mutually exclusive\f0."
         None
       elif groupname |> String.IsNullOrEmpty then
-        cp "the scaffold group name cannot be empty"
+        cp "\fothe scaffold group name cannot be empty\f0."
         None
       else
         // TODO: validate group name syntax
-        cp "\frTODO:\f0 check scaffold group name validity"
+        cp "\fmTODO:\f0 check scaffold group name validity"
         rest |> parseMore {o with Scaffold = groupname |> Some}
     | "-on" :: tag :: rest ->
       if tag |> String.IsNullOrEmpty then
@@ -82,6 +82,14 @@ let private parseOptions args =
   }
 
 let private runLayer o =
+  let now = DateTime.Now
+  let tag =
+    match o.LayerTag, o.Scaffold with
+    | Some(tag), None -> tag
+    | None, Some(group) -> group
+    | None, None -> now.ToString("yyyyMMdd-HHmmss")
+    | Some(tag), Some(group) ->
+      failwith "internal error. -tag and -for are mutually exclusive"
   let centralSettings = CentralSettings.Load()
   let status, repoRoot, repoSettings =
     let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
@@ -112,11 +120,6 @@ let private runLayer o =
     let bundleRecordCache = new BundleRecordCache(centralSettings, null, null, null)
     let kss = new KeyServerService()
     use keychain = new KeyChain()
-    let now = DateTime.Now
-    let tag =
-      match o.LayerTag with
-      | Some tag -> tag
-      | None -> now.ToString("yyyyMMdd-HHmmss")
     cp $"Building layer bundle '\fc{repoName}\f0.\fy{hostName}\f0.\fg{tag}\f0' in anchor '\fb{anchorName}\f0'."
     cp "\frNYI\f0!"
     1

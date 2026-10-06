@@ -8,8 +8,6 @@ using GitVaultLib.GitThings;
 
 using LibGit2Sharp;
 
-using static FldVault.KeyServer.KeyServerSeedService;
-
 namespace GitVaultLib.Delta;
 
 /// <summary>

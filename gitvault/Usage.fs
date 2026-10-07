@@ -107,6 +107,7 @@ let usage focus =
     cp "  \fx\fx\fx               \fcscaffold\f0 group name will be used as the layer tag. Scaffold refs will only be"
     cp "  \fx\fx\fx               visible in the created bundle for tips that have no non-scaffold ref available."
     cp "  \fg-F\fx\f0             Enable overwriting existing files"
+    cp "  \fg-a \fcanchor\f0      Explicitly select the gitvault anchor to use (in case there is more than one)"
     cp ""
   if showSection "bundles-fetch" then // name changed to "ingest"
     cp "\fogitvault \fyingest \f0[\fg-f \fcwitnessfolder\f0|\fg-a \fcanchorname\f0[\fo::\fcreponame\f0]|\fg-all\f0]"

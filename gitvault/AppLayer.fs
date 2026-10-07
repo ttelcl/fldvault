@@ -32,6 +32,7 @@ type private Options = {
   Dependencies: string list
   Force: bool
   Scaffold: string option
+  Anchor: string option
 }
 
 let private parseOptions args =
@@ -82,6 +83,12 @@ let private parseOptions args =
         rest |> parseMore {o with Dependencies = tag :: o.Dependencies}
     | "-F" :: rest ->
       rest |> parseMore {o with Force = true}
+    | "-a" :: anchor :: rest ->
+      if anchor |> CentralSettings.IsValidAnchor |> not then
+        cp $"\fg-a\o: '\fc{anchor}\fo' is not a valid anchor name\f0."
+        None
+      else
+        rest |> parseMore {o with Anchor = anchor |> Some}
     | [] ->
       {o with Dependencies = o.Dependencies |> List.rev} |> Some
     | x :: _ ->
@@ -92,12 +99,12 @@ let private parseOptions args =
     Dependencies = []
     Force = false
     Scaffold = None
+    Anchor = None
   }
 
 let private runLayer o =
-      
   let centralSettings = CentralSettings.Load()
-  let status, repoRoot, repoSettings =
+  let status, repoRoot, anchorSettings =
     let repoRoot = "." |> GitRepoFolder.LocateRepoRootFrom
     if repoRoot = null then
       cp "\frNo git repository found in the current folder or its parents\f0."
@@ -108,14 +115,32 @@ let private runLayer o =
         cp $"\foNo gitvault settings found in repository \fg{repoRoot.Folder}\f0."
         1, repoRoot, null
       else
-        if repoSettings.ByAnchor.Count > 1 then
-          cp $"\foMulti-anchor repositories are not yet supported by the \fylayer\fo command\f0."
-          1, repoRoot, repoSettings
-        elif repoSettings.ByAnchor.Count = 0 then
-          cp "\frError: no anchors found for this repository (internal error)\f0."
-          1, repoRoot, repoSettings
-        else
-          0, repoRoot, repoSettings
+        match o.Anchor with
+        | None ->
+          if repoSettings.ByAnchor.Count > 1 then
+            cp $"\foThis repository is connected to multiple anchors, select one using '\fg-a\fo'\f0. Known anchors:"
+            for anchorName in repoSettings.ByAnchor.Keys do
+              cp $"  '\fb{anchorName}\f0'"
+            1, repoRoot, null
+          elif repoSettings.ByAnchor.Count = 0 then
+            cp "\frError: no anchors found for this repository (internal error)\f0."
+            1, repoRoot, null
+          else
+            0, repoRoot, (repoSettings.ByAnchor.Values |> Seq.exactlyOne)
+        | Some(anchorKey) ->
+          if repoSettings.ByAnchor.Count = 0 then
+            cp "\frError: no anchors found for this repository (internal error)\f0."
+            1, repoRoot, null
+          else
+            let ok, anchorSettings = anchorKey |> repoSettings.ByAnchor.TryGetValue
+            if ok then
+              0, repoRoot, anchorSettings
+            else
+              cp $"\fo'\fy{anchorKey}\fo' is not an anchor connected to this repository\f0. Known anchors:"
+              for anchorName in repoSettings.ByAnchor.Keys do
+                cp $"  '\fb{anchorName}\f0'"
+              1, repoRoot, null
+          
   if status <> 0 then
     cp ""
     Usage.usage "layer"
@@ -150,7 +175,6 @@ let private runLayer o =
         None
     match tagOption with
     | Some(tag) ->
-      let anchorSettings = repoSettings.ByAnchor.Values |> Seq.exactlyOne
       let anchorName = anchorSettings.VaultAnchor
       let hostName = anchorSettings.HostName
       let repoName = anchorSettings.RepoName

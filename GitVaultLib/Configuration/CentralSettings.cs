@@ -393,4 +393,25 @@ public class CentralSettings
     }
   }
 
+  /// <summary>
+  /// Get a new <see cref="LogicalRepository"/> instance for the given anchor and repo.
+  /// </summary>
+  /// <param name="anchorName"></param>
+  /// <param name="repoName"></param>
+  /// <returns></returns>
+  public LogicalRepository GetLogicalRepository(string anchorName, string repoName)
+  {
+    return new LogicalRepository(this, anchorName, repoName);
+  }
+
+  /// <summary>
+  /// Get a new <see cref="LogicalRepository"/> instance for the anchor and repository
+  /// in <paramref name="anchorSettings"/>.
+  /// </summary>
+  /// <param name="anchorSettings"></param>
+  /// <returns></returns>
+  public LogicalRepository GetLogicalRepository(AnchorRepoSettings anchorSettings)
+  {
+    return new LogicalRepository(this, anchorSettings.VaultAnchor, anchorSettings.RepoName);
+  }
 }

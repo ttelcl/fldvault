@@ -31,7 +31,7 @@ let usage focus =
     cp "                    - \fcanchorfolder\f0 ends with '\fy/GitVault\f0'"
     cp ""
   if showSection "repo-init" then
-    cp "\fogitvault \fyrepo init \fg-a \fcanchorname\f0[\fo::\fcreponame\f0] [\fg-host \fchostname\f0] [\fg-f \fcwitnessfolder\f0]"
+    cp "\fogitvault \f0[\fyrepo\f0]\fy init \fg-a \fcanchorname\f0[\fo::\fcreponame\f0] [\fg-host \fchostname\f0] [\fg-f \fcwitnessfolder\f0]"
     cp "  Initialize an existing git repository for use with gitvault. Note that key initialization is separate"
   if showDetail "repo-init" then
     cp "  \fg-a \fcanchorname     \f0Alias for the vault anchor folder in which the repo vaults will be published"

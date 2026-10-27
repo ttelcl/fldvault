@@ -25,7 +25,8 @@ let rec run arglist =
   | "anchors" :: rest
   | "settings" :: rest ->
     rest |> AppSettingsShow.run
-  | "repo" :: "init" :: rest ->
+  | "repo" :: "init" :: rest 
+  | "init" :: rest ->
     rest |> AppRepoInit.run
   | "anchor" :: "add" :: rest ->
     rest |> AppAnchorAdd.run

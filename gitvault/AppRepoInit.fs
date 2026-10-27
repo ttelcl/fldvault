@@ -99,6 +99,12 @@ let run args =
     cp "Use the \fogitvault anchor add\f0 command to get started."
     1
   else
+    let printKnownAnchors () =
+      cp "\fyThe following are the known anchors\f0:"
+      for kvp in centralSettings.Anchors do
+        let anchor = kvp.Key
+        let folder = kvp.Value
+        cp $"  \fg{anchor,24}\f0  (\fo{folder}\f0)"
     let rec parseMore o args =
       match args with
       | "-v" :: rest ->
@@ -113,6 +119,9 @@ let run args =
         let ok, _ = centralSettings.Anchors.TryGetValue(name)
         if ok |> not then
           cp $"\foVault anchor name \fy{name}\fo is not defined\f0."
+          cp ""
+          printKnownAnchors()
+          cp ""
           None
         else
           if parts.Length > 1 then
@@ -152,9 +161,15 @@ let run args =
             o
         if o.AnchorName |> String.IsNullOrEmpty then
           cp "\foVault anchor name not specified\f0."
+          cp ""
+          printKnownAnchors()
+          cp ""
           None
         elif o.AnchorName |> centralSettings.Anchors.ContainsKey |> not then
           cp $"\foVault anchor name \fy{o.AnchorName}\fo is not defined\f0."
+          cp ""
+          printKnownAnchors()
+          cp ""
           None
         elif o.RepoFolder = null then
           // This implies that using the current directory as the witness folder failed
